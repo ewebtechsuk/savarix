@@ -756,7 +756,7 @@
         <form name="propertiesForm" id="propertiesForm" action="" method="post" onsubmit="formtopopup(this, 'width=800,height=600,resizable=1,scrollbars=1'); return true;" target="newpopup">
             &nbsp;&nbsp;&nbsp;
             <table style="table-layout:fixed; word-wrap:break-word;" width="100%" border="0" cellspacing="0" cellpadding="0" class="table-list-inner overflow-none-table phases" id="phases">
-                <tbody>
+                <thead>
                 <tr>
                     <td width="20" height="26" align="left" class="table-list-row1-inactive1">
                         <div class="overflow-none"><input type="checkbox" name="checkall2" id="checkall2" value="1" onclick="check_all(document.getElementById('print_results'), 2)"></div>
@@ -811,6 +811,8 @@
                         <div class="overflow-none">Actions</div>
                     </td>
                 </tr>
+                </thead>
+                <tbody>
                 <tr id="" class="table-list-row-bg1" ng-repeat = "property in properties">
                     <td align="left" height="" class="">
                         <div class="overflow-none"><input type="checkbox" name="pid[]" id="{{property.id}}" value="{{property.id}}" onclick="aToggle()"></div>

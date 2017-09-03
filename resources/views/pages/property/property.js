@@ -225,17 +225,4 @@ angular
           });           
       }
     };
-
-    /*$scope.saveProperty = function() {
-        var url = '/api/property';
-        Request.request({
-            url: url,
-            method: 'POST',
-            data: $scope.propertyData
-        }).then(function(response){
-            console.log(response);
-        }, function(error){
-            console.log(error);
-        });
-    }*/
   }]);
