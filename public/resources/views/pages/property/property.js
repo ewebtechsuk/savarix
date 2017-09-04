@@ -157,7 +157,7 @@ angular
           $scope.propertyData.property_no = $scope.property_no;
           $scope.propertyData.property_name = $scope.property_name;
           $scope.propertyData.add1 = $scope.add1;
-          $scope.propertyData.add2 = $scope.add2;
+          $scope.propertyData.add2 = $scope.add2;@
           $scope.propertyData.area = $scope.area;
           $scope.propertyData.county = $scope.county;
           $scope.propertyData.country = $scope.country;

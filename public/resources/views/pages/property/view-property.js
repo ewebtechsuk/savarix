@@ -2,7 +2,17 @@
 
 angular
     .module('myApp.Property', ['ngRoute'])
-    .controller('ViewPropertyCtrl', ['$scope', '$http', 'config', 'Properties',
-        function($scope, $http, config, Properties) {
+    .controller('ViewPropertyCtrl', ['$scope', '$http', '$route', 'config', 'Properties',
+        function($scope, $http, $route, config, Properties) {
+            var id = $route.current.params.property_id.split(":")[1];
+            $scope.getProperty = function() {
+                Properties.retrieve({id:id})
+                    .$promise.then(function(data)
+                {
+                    $scope.property = data;
+                    console.log($scope.property);
+                });
+            };
 
+            $scope.getProperty();
     }]);
