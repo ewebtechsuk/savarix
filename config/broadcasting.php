@@ -41,7 +41,7 @@ return [
         ],
 
         'redis' => [
-            'driver' => 'redis',jins
+            'driver' => 'redis',
             'connection' => 'default',
         ],
 
