@@ -18,6 +18,21 @@
   <link type="text/css" rel="stylesheet" href="/resources/views/lib/jscal2/jscal2.css">
   <link type="text/css" rel="stylesheet" href="/resources/views/css/jquery-ui.css">
 
+
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/logo-gnomen.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/property-page.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/quick-links.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/styles.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/top-banner.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/unit-page.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/css/standard/styles/workflow.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/lib/jscal2/jscal2.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/lib/tooltip2/style.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/lib/jquery-sortable/jquery.ui.core.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/lib/uploadify/uploadify.css" type="text/css">
+  <link rel="stylesheet" href="/resources/views/lib/diary/jquery-ui.css" type="text/css">
+
+
   <link type="text/css" rel="stylesheet" href="/resources/views/lib/slick/slick.css" />
   <link type="text/css" rel="stylesheet" href="/resources/views/lib/slick/slick-theme.css" />
   <link href="/resources/views/css/font.css" rel="stylesheet">
@@ -38,26 +53,31 @@
   <script type="text/javascript" src="/resources/views/lib/datetimepicker.js" ></script>
   <script type="text/javascript" src="/resources/views/lib/jscal2/jscal2.js"></script>
   <script type="text/javascript" src="/resources/views/lib/jscal2/en.js"></script>
+  <script type="text/javascript" src="/resources/views/lib/slick/slick.js"></script>
 
   <script type="text/javascript" src="/resources/views/bower_components/tinymce/tinymce.js"></script>
   <script type="text/javascript" src="/resources/views/bower_components/angular/angular.js"></script>
   <script type="text/javascript" src="/resources/views/bower_components/angular-ui-tinymce/src/tinymce.js"></script>
- 
+
   <script src="/resources/views/bower_components/angular-route/angular-route.js"></script>
   <script src="/resources/views/bower_components/angular-resource/angular-resource.js"></script>
   <script src="/resources/views/js/app.js"></script>
   <script src="/resources/views/js/config/routes.js"></script>
-  <script type="text/javascript" src="/resources/views/lib/slick/slick.js"></script>
   <script src="/resources/views/pages/home/home.js"></script>
   <script src="/resources/views/pages/sell/sell.js"></script>
 
   <!--- Controllers for every components --->
   <!-- Controllers for Property -->
-  <script src="/resources/views/pages/property/property.js"></script>
-  <!--<script src="/resources/views/pages/property/list-property.js"></script>-->
-  <script src="/resources/views/pages/property/view-property.js"></script>
   <script src="/resources/views/js/factories/Property.js"></script>
-  
+  <script src="/resources/views/pages/property/property.module.js"></script>
+  <script src="/resources/views/pages/property/AddProperty/add-property.module.js"></script>
+  <script src="/resources/views/pages/property/AddProperty/add-property.controller.js"></script>
+  <script src="/resources/views/pages/property/ListProperty/list-property.module.js"></script>
+  <script src="/resources/views/pages/property/ListProperty/list-property.controller.js"></script>
+  <script src="/resources/views/pages/property/ViewProperty/view-property.module.js"></script>
+  <script src="/resources/views/pages/property/ViewProperty/view-property.controller.js"></script>
+  <!-- Property --!>
+
   <script src="/resources/views/components/version/version.js"></script>
   <script src="/resources/views/components/version/version-directive.js"></script>
   <script src="/resources/views/components/version/interpolate-filter.js"></script>

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Properties</title>
+</head>
+<body>
+<div class="new-content-wrap-padding" ng-app = "Property" ng-controller = "ListPropertyCtrl">
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tbody><tr>
+            <td class="new-main-panel-title-bg"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tbody><tr>
+                    <td><table border="0" cellspacing="0" cellpadding="0">
+                        <tbody><tr>
+                            <td style="padding-right:32px;"><table border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td class="new-main-panel-title new-main-panel-title-properties">Properties</td>
+                                </tr>
+                                </tbody></table></td>
+                            <td class="colour-grey-medium"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr>
+                                    <td align="left"><table border="0" cellspacing="0" cellpadding="0">
+                                        <tbody><tr>
+                                            <td>
+                                                <select name="view" class="dropdown-174" id="view" onchange="location.href='?mod=properties&amp;sl=0&amp;view='+this.value">
+                                                    <option value="18">Active tenancy</option>
+                                                    <option value="21">Adams Sales</option>
+                                                    <option value="22">All London Rooms Flatshare</option>
+                                                    <option value="25">All London Rooms House share</option>
+                                                    <option value="2">All properties</option>
+                                                    <option value="23">Antonio's list E1,E2, E3, N1</option>
+                                                    <option value="24">aw</option>
+                                                    <option value="19">Central London Lettings</option>
+                                                    <option value="17">Commercial</option>
+                                                    <option value="1" selected="selected">Default view</option>
+                                                    <option value="16">Hackney Lettings</option>
+                                                    <option value="3">Lettings</option>
+                                                    <option value="8">Lettings all</option>
+                                                    <option value="9">Lettings, archived/disabled</option>
+                                                    <option value="7">Lettings, occupied, let/managed/let agreed</option>
+                                                    <option value="11">Rooms</option>
+                                                    <option value="10">Sales all</option>
+                                                    <option value="6">Sales, Sold/Archived/Disabled/Withdrawn</option>
+                                                    <option value="4">Sales, still on the market</option>
+                                                    <option value="5">Sales, under offer/Sold STC</option> </select>
+                                            </td>
+                                            <td align="right" style="padding-left:30px;"><a href="/?mod=properties&amp;action=setview&amp;view=1">Set as my default preset</a></td>
+                                            <td align="right"></td>
+                                        </tr>
+                                        </tbody></table></td>
+                                    <td align="right"></td>
+                                </tr>
+                                </tbody></table></td>
+                        </tr>
+                        </tbody></table></td>
+                    <td align="right"><table border="0" cellspacing="0" cellpadding="0">
+                        <tbody><tr>
+                            <td><table border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr class="new-main-stats-tr">
+                                    <td class="new-main-stats-title-padding"><a href="/?mod=systems&amp;action=propertiesconfigmngviews" target="_blank">Manage presets</a></td>
+                                    <td><a href="/?mod=systems&amp;action=propertiesconfigmngviews" target="_blank"><img src="/resources/views/image/icons16px/cog.png" alt="Manage presets" width="24" height="16"></a></td>
+                                </tr>
+                                </tbody></table></td>
+                            <td><table border="0" cellspacing="0" cellpadding="0">
+                                <tbody><tr class="new-main-stats-tr">
+                                    <td class="new-main-stats-title-padding" ng-click="show_stats(1);"><a href="#" id="statsicon">Stats</a></td>
+                                    <td ng-click="show_stats(1);"><a href="#"><img src="/resources/views/image/icons16px/stats-quick2.png" alt="Quick stats" width="24" height="16" border="0" id=""></a></td>
+                                </tr>
+                                </tbody></table></td>
+                        </tr>
+                        </tbody></table>
+                    </td>
+                </tr>
+                </tbody></table></td>
+        </tr>
+        <tr>
+            <td valign="middle" class="new-main-panel-content-2">
+
+
+
+
+                <div class="new-main-panel-filter-wrapper" style="display:block;">
+                <form action="/?mod=properties&amp;view=1" method="get" id="prop_custome_filters" name="prop_custome_filters">
+                    <input type="hidden" name="mod" value="properties">
+                    <input type="hidden" name="action" value="search">
+                    <input type="hidden" name="ph1_v" id="ph1_v" value="0">
+                    <input type="hidden" name="ph2_v" id="ph2_v" value="0">
+                    <input type="hidden" name="ph3_v" id="ph3_v" value="0">
+                    <input type="hidden" name="ph4_v" id="ph4_v" value="0">
+                    <input type="hidden" name="ph5_v" id="ph5_v" value="0">
+                    <input type="hidden" name="ph6_v" id="ph6_v" value="0">
+                    <input type="hidden" name="ph7_v" id="ph7_v" value="0">
+                    <input type="hidden" name="ph8_v" id="ph8_v" value="0">
+                    <input type="hidden" name="ph9_v" id="ph9_v" value="0">
+
+                    <input type="hidden" name="save_preset" id="save_preset" value="0">
+                    <input type="hidden" name="preset_name" id="preset_name" value="">
+
+
+
+                    <div class="ll-filter-buttons-wrapper">
+                        <div class="ll-filter-button">
+
+
+                            <input class="button-big-white" name="save_preset" id="save_preset" type="button" value="Save as preset" ng-click="savePreset();">
+                        </div>
+
+                        <div class="ll-filter-button-2">
+                            <input class="button-big-blue-properties" name="apply_filters" id="apply_filters" type="submit" value="Apply filters">
+                        </div>
+                    </div>
+
+
+                    <div class="ll-filter-wrapper">
+                        <div class="ll-filter-box-1">Category<br>
+                            <div class="form-dropdown-99-percent">
+                                <select name="cat" class="form-add-dropdown-100" id="cat" onchange="update_prop_types();">
+                                    <option value="" selected="selected">All</option>
+                                    <option value="4">Commercial</option>
+                                    <option value="5">Land</option>
+                                    <option value="2">New Development</option>
+                                    <option value="6">Overseas</option>
+                                    <option value="1">Residential</option>
+                                </select>
+                            </div></div>
+
+                        <div class="ll-filter-box-2">For<br>
+                            <div class="form-dropdown-99-percent">
+                                <select name="for" class="form-add-dropdown-100" id="for" onchange="check_for(this.value);">
+                                    <option value="">Show all</option>
+                                    <option value="1">Sale</option>
+                                    <option value="2">Letting</option>
+                                </select>
+                            </div></div>
+
+                        <div class="ll-filter-box-3">Area/Postcode<br>
+                            <div class="form-textfield-99-percent"><input id="a" name="a" type="text" value=""></div></div>
+                    </div>
+
+                    <div class="ll-filter-wrapper-r">
+                        <div class="ll-filter-box-5"><span id="minp_span">Min price</span> &nbsp;&nbsp;<span id="maxp_span">Max price</span>
+                            <div class="field-wrapper-price"><input id="min_price" name="min_price" type="text" value="" class="form-add-texfield-100-20" disabled=""> <input id="max_price" name="max_price" type="text" value="" class="form-add-texfield-100-20" disabled=""></div></div>
+                        <div class="ll-filter-box-6" style="display:block;">Beds<br><div class="field-wrapper-price">
+                            <select name="min_beds" class="form-add-dropdown-100" id="min_beds">
+                                <option value="0" selected="selected">Min beds</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                            </select>
+                            <select name="max_beds" class="form-add-dropdown-100" id="max_beds">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="9999" selected="selected">Max beds</option>
+                            </select>
+                        </div></div>
+
+                        <div class="ll-filter-box-7">Sort<br>
+                            <div class="form-dropdown-99-percent">
+                                <select name="sort" class="form-add-dropdown-100" id="sort">
+                                    <option value="ID">ID</option>
+                                    <option value="Price/Rent">Price/Rent</option>
+                                    <option value="Bedrooms" selected="selected">Bedrooms</option>
+                                    <option value="Property name">Property name</option>
+                                    <option value="Property">Property address</option>
+                                    <option value="Branch">Branch</option>
+                                    <option value="Internal reference">Internal reference</option>
+                                    <option value="Added by">Added by</option>
+                                    <option value="Status">Status</option>
+                                    <option value="Town">Town</option>
+                                    <option value="Postcode">Postcode</option>
+                                    <option value="County">County</option>
+                                    <option value="Property type">Property type</option>
+                                    <option value="Category">Category</option>
+                                    <option value="Development">Development</option>
+                                    <option value="Added on">Added on</option>
+                                    <option value="Board">Board</option>
+                                    <option value="Available from">Available from</option>
+                                    <option value="Furnished">Furnished</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Service type">Service type</option>
+                                    <option value="Property type">Property type</option>
+                                    <option value="Annual rent">Annual rent</option>
+                                    <option value="Floor area">Floor area</option>
+                                </select>
+                            </div></div>
+
+                        <div class="ll-filter-box-phases">Phases<br>
+                            <div class="phase-hover-prop-info-complete"><div id="ph1" class="phase-inactive2"><a ng-mouseover="tooltip.show('Details &amp; images ready');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph1','phase-prop-info-complete2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Details &amp; images ready" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-pub-web"><div id="ph2" class="phase-inactive2"><a ng-mouseover="tooltip.show('Published on website');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph2','phase-pub-web2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Pulished on website" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-pub-portals"><div id="ph3" class="phase-inactive2"><a ng-mouseover="tooltip.show('Published on portals');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph3','phase-pub-portals2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Pulished on portals" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-viewings-done"> <div id="ph4" class="phase-inactive2"><a ng-mouseover="tooltip.show('Viewings arranged/carried out');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph4','phase-viewings-done2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Viewings arranged/carried out" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-viewings-interested"><div id="ph5" class="phase-inactive2"><a ng-mouseover="tooltip.show('Applicants interested without an appointment');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph5','phase-viewings-interested2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Applicants interested without an appointment" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-tenant-instructed"><div id="ph6" class="phase-inactive2"><a ng-mouseover="tooltip.show('Tenant application in progress');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph6','phase-tenant-instructed2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Tenant application in progress" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-offers-made"><div id="ph7" class="phase-inactive2"><a ng-mouseover="tooltip.show('Offers activities');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph7','phase-offers-made2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Offers activities" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-active-sale"><div id="ph8" class="phase-inactive2"><a ng-mouseover="tooltip.show('Sale in progress');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph8','phase-active-sale2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Sale in progress" width="12" height="23" border="0"></a></div></div>
+                            <div class="phase-hover-active-tenancy"><div id="ph9" class="phase-inactive2"><a ng-mouseover="tooltip.show('Active tenancy');" onmouseout="tooltip.hide();" class="ctip" ng-click="togglePhase('ph9','phase-active-tenancy2');" href="javascript:;"><img src="/resources/views/image/transp.gif" title="Active tenancy" width="12" height="23" border="0"></a></div></div>
+                        </div>
+
+                    </div>
+
+                    <div style="clear:both"><img src="/resources/views/image/transp.gif" width="1" height="1"></div>
+                    <div id="showmore_div"><a ng-click="jQuery('#filters_adv').slideToggle('slow'); if(this.innerHTML=='Show more options'){this.innerHTML='-less options';}else{this.innerHTML='- less options';}; return false;" href="#" class="more-options">+ more options</a></div>
+                    <div id="filters_adv" style="display:none;" class="more-options-wrap">
+                        <div class="search-type-wrap2">
+                            <h4 class="nego-h3">Negotiator</h4>
+                            <div class="field-wrapper1">
+                                <div class="checkbox-list-font-11px"><table border="0" cellspacing="0" cellpadding="2"><tbody><tr><td><input id="at[]" name="at[]" type="checkbox" value="Me">Me (Logged in user)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="1">admin (Gnomen Support Team)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="136">ayesha (Ayesha N)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="133">biden (Godefroid Lulendo)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="137">camille (Camille Castillo)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="140">christian (Christian)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="141">islam (Mohammed Islam)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="5">jaber (Andrew Hayward Estates)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="134">nazmul (Nazmul Islam)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="135">petrov (mike petrov)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="131">tracey (Tracey Lulendo)</td></tr><tr><td><input id="at[]" name="at[]" type="checkbox" value="139">user12 (admin assistant)</td></tr><tr></tr></tbody></table><br></div>
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap">
+                            <h4 class=" nego-h3">Branch</h4>
+                            <div class="field-wrapper2">
+                                <div style="width:110px; overflow:auto;">
+                                    <div class="checkbox-list-font-11px"><table border="0" cellspacing="0" cellpadding="2"><tbody><tr><td><input id="b[]" name="b[]" type="checkbox" value="1">Andrew Hayward Estates</td></tr><tr></tr></tbody></table></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap" style="">
+                            <h4>Status</h4>
+                            <div id="statuses_div">
+                                <select name="status[]" class="form-add-selectbox-150" id="status" multiple="multiple" size="8">
+                                    <option value="For sale">For sale</option><option value="Coming soon">Coming soon</option><option value="New instruction">New instruction</option><option value="Awaiting review">Awaiting review</option><option value="Awaiting valuation">Awaiting valuation</option><option value="Price reduction">Price reduction</option><option value="Under offer">Under offer</option><option value="Sold STC">Sold STC</option><option value="Sold">Sold</option><option value="To let">To let</option><option value="Short let">Short let</option><option value="Let agreed">Let agreed</option><option value="Let">Let</option><option value="Let and Managed">Let and Managed</option><option value="Withdrawn">Withdrawn</option></select>
+
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap">
+                            <h4><span ng-mouseover="tooltip.show('The types displayed depend on the Category you have chosen above. Types can be customised in Control Panel / Properties / Manage property types.');" onmouseout="tooltip.hide();" class="hint-underline">Types</span></h4>
+                            <div id="property_types_div"><select name="t[]" class="form-add-selectbox-150" id="t" size="8" multiple="multiple">
+                                <option value="24">A1 Commercial</option>
+                                <option value="21">A3 Commercial</option>
+                                <option value="8">Apartment</option>
+                                <option value="16">Bedsit</option>
+                                <option value="23">Commercial Shop</option>
+                                <option value="9">Cottage</option>
+                                <option value="13">Flat</option>
+                                <option value="15">Flat share</option>
+                                <option value="18">Hostel</option>
+                                <option value="19">Hotel</option>
+                                <option value="6">House</option>
+                                <option value="14">House share</option>
+                                <option value="11">Maisonette</option>
+                                <option value="20">Office Space</option>
+                                <option value="22">Olympic property</option>
+                                <option value="7">Penthouse</option>
+                                <option value="17">Studio</option>
+                                <option value="10">Villa</option>
+                                <option value="12">Warehouse conversion</option>
+                            </select>
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap">
+                            <h4><span ng-mouseover="tooltip.show('The features displayed depend on the Category you have chosen above. Features can be customised in Control Panel / Properties / Manage features.');" onmouseout="tooltip.hide();" class="hint-underline">Features</span></h4>
+                            <div class="checkbox-list-font-11px"><div id="features_div" class="field-wrapper2"><table boder="0" cellspacing="0" cellpadding="2"><tbody><tr><td><input id="features[]" name="features[]" type="checkbox" value="17" class="features">Fully Furnished</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="22" class="features">River view</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="21" class="features">Shops and amenities nearby</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="20" class="features">Air Conditioning</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="27" class="features">Gym</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="18" class="features">Guest cloakroom</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="24" class="features">Mezzanine</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="16" class="features">Fitted Kitchen</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="15" class="features">En suite</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="28" class="features">Video Entry</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="13" class="features">Double glazing</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="12" class="features">Conservatory</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="11" class="features">Concierge</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="10" class="features">Close to public transport</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="29" class="features">Un-Furnished</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="23" class="features">Swimming Pool</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="5" class="features">Garden</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="26" class="features">Communal Garden</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="30" class="features">Roof Terrace</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="9" class="features">Balcony</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="25" class="features">Underground Parking</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="14" class="features">Driveway</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="19" class="features">Parking</td></tr><tr></tr></tbody></table><br><table boder="0" cellspacing="0" cellpadding="2"><tbody><tr><td><input id="features[]" name="features[]" type="checkbox" value="31" class="features">Meeting Room and Conference Facilities</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="7" class="features">24 hour on-site security</td></tr><tr><td><input id="features[]" name="features[]" type="checkbox" value="8" class="features">Receptionist</td></tr><tr></tr></tbody></table><br></div></div></div>
+
+                        <div class="search-type-wrap">
+                            <h4>Size</h4><div class="field-wrapper3">
+                            <p>Living/Floor space (sqm)</p>
+                            <input id="min_spc" name="min_spc" type="text" value="" class="form-add-texfield-100-20"> to <input id="max_spc" name="max_spc" type="text" value="" class="form-add-texfield-100-20"><br>
+                            <p>Land size (sqm)</p>
+                            <input id="min_lnd" name="min_lnd" type="text" value="" class="form-add-texfield-100-20"> to <input id="max_lnd" name="max_lnd" type="text" value="" class="form-add-texfield-100-20">
+                            <p>Outbuildings</p>
+
+                            <select name="min_ob" class="form-add-dropdown-100" id="min_ob">
+                                <option value="0" selected="selected">Minimum</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                            </select>
+                            to
+                            <select name="max_ob" class="form-add-dropdown-100" id="max_ob">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                                <option value="9999" selected="selected">Maximum</option>
+                            </select>
+                        </div>
+                        </div>
+                        <div class="search-type-wrap" style="display:block;">
+                            <h4>Property</h4><div class="field-wrapper3">
+                            <p>Receptions</p>
+
+                            <select name="min_rec" class="form-add-dropdown-100" id="min_rec">
+                                <option value="0" selected="selected">Minimum</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                            </select>
+                            to
+                            <select name="max_rec" class="form-add-dropdown-100" id="max_rec">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                                <option value="9999" selected="selected">Maximum</option>
+                            </select>
+
+                            <p>Bathrooms</p>
+
+                            <select name="min_bath" class="form-add-dropdown-100" id="min_bath">
+                                <option value="0" selected="selected">Minimum</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                            to
+                            <select name="max_bath" class="form-add-dropdown-100" id="max_bath">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="9999" selected="selected">Maximum</option>
+                            </select>
+
+                            <p>Parking</p>
+
+                            <select name="min_prk" class="form-add-dropdown-100" id="min_prk">
+                                <option value="0" selected="selected">Minimum</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                            </select>
+                            to
+                            <select name="max_prk" class="form-add-dropdown-100" id="max_prk">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                                <option value="9999" selected="selected">Maximum</option>
+                            </select>
+
+                        </div>
+                        </div>
+
+
+
+
+                        <div class="search-type-wrap">
+                            <h4>Other</h4>
+                            <div class="field-wrapper4">
+                                <p>Furnishing</p>
+
+                                <select name="fur" class="form-add-dropdown-150" id="fur">
+                                    <option value="" selected="selected">Any</option>
+                                    <option value="Full">Furnished</option>
+                                    <option value="Semi">Part furnished</option>
+                                    <option value="No">Unfurnished</option>
+                                    <option value="Furnished/Unfurnished">Furnished/Unfurnished</option>
+                                </select>
+
+                                <p>Development</p>
+
+                                <select name="d" class="form-add-dropdown-150" id="d">
+                                    <option value="0" selected="selected">No development</option>
+                                    <option value="1">Oxygen</option>
+                                    <option value="2">New River Village</option>
+                                    <option value="3">Headlam Street</option>
+                                    <option value="4">Cazenove Apartments</option>
+                                    <option value="5">Centre Ville</option>
+                                    <option value="6">Altius</option>
+                                    <option value="7">The Manhattan Portfolio</option>
+                                </select>
+
+
+                                <p>Rightmove RTF</p>
+
+                                <select name="rm" class="form-add-dropdown-150" id="rm">
+                                    <option value="" selected="selected">Any</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+
+                                <p>Zoopla</p>
+
+                                <select name="zp" class="form-add-dropdown-150" id="zp">
+                                    <option value="" selected="selected">Any</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+
+                            </div>
+                        </div>
+
+
+
+
+                        <div class="search-type-wrap">
+                            <h4 class="commercial-h3"><span ng-mouseover="tooltip.show('Commercial fields are only selectable when you choose the Commercial option from the Category menu.');" onmouseout="tooltip.hide();" class="hint-underline">Commercial</span></h4>
+                            <div class="field-wrapper3">
+                                <p>Workstations</p>
+
+                                <select name="min_ws" class="form-add-dropdown-100" id="min_ws">
+                                    <option value="0" selected="selected">Minimum</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                </select>
+                                to
+                                <select name="max_ws" class="form-add-dropdown-100" id="max_ws">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="9999" selected="selected">Maximum</option>
+                                </select>
+
+                                <p>Meeting rooms</p>
+
+                                <select name="min_mr" class="form-add-dropdown-100" id="min_mr">
+                                    <option value="0" selected="selected">Minimum</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                </select>
+                                to
+                                <select name="max_mr" class="form-add-dropdown-100" id="max_mr">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="9999" selected="selected">Maximum</option>
+                                </select>
+
+                            </div>
+
+                        </div>
+
+
+
+
+                        <div class="search-type-wrap" style="width:211px;">
+                            <h4 class="custom-h3"><span ng-mouseover="tooltip.show('These are user defined fields and can be customised in Control Panel / Properties / Custom search fields.');" onmouseout="tooltip.hide();" class="hint-underline">Custom field 1 &amp; 2</span></h4>
+                            <div id="features_div" class="field-wrapper2-custom-fields">
+
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap" style="width:211px;">
+                            <h4 class="custom-h3"><span ng-mouseover="tooltip.show('These are user defined fields and can be customised in Control Panel / Properties / Custom search fields.');" onmouseout="tooltip.hide();" class="hint-underline">Custom field 3 &amp; 4</span></h4>
+                            <div id="features_div" class="field-wrapper2-custom-fields">
+                                <span class="csf-title">Key number</span><br><input id="csf_field3" name="csf_field3" type="text" value="" class="form-dropdown-99-percent">
+                            </div>
+                        </div>
+
+                        <div class="search-type-wrap">
+                            <h4 class="custom-h3"><span ng-mouseover="tooltip.show('These are user defined fields and can be customised in Control Panel / Properties / Custom search fields.');" onmouseout="tooltip.hide();" class="hint-underline">Custom field 5 &amp; 6</span></h4>
+                            <div id="features_div" class="field-wrapper2">
+                                <div style="padding:3px;"><span class="csf-title">Outbuildings</span><br>
+                                    <select name="csf_field6_min" class="form-add-dropdown-100" id="csf_field6_min">
+                                        <option value="Any" selected="selected">Ignore</option>
+                                        <option value="-999999">Minimum</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="999999999">Maximum</option>
+                                    </select>
+                                    to
+                                    <select name="csf_field6_max" class="form-add-dropdown-100" id="csf_field6_max">
+                                        <option value="Any" selected="selected">Ignore</option>
+                                        <option value="-999999">Minimum</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="999999999">Maximum</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="clearing-div"><img src="/resources/views/image/transp.gif" width="600" height="1"></div>
+
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" class="more-options-bot-table" style="display:">
+                            <tbody><tr>
+                                <td valign="middle" align="left">
+                                    <table border="0" cellspacing="0" cellpadding="0">
+                                        <tbody><tr>
+                                            <td><input type="checkbox" name="hold" id="hold" value="1" checked="checked">
+                                                <label for="hold">Show onhold properties</label></td>
+                                            <td><input type="checkbox" name="arch" id="arch" value="1">
+                                                <label for="arch">Show archived properties</label></td>
+                                            <td> <input type="checkbox" name="disb" id="disb" value="1">
+                                                <label for="disb">Show disabled properties</label></td>
+                                        </tr>
+                                        </tbody></table>
+
+                                </td>
+                                <td valign="middle" align="right"><table width="0%" border="0" cellspacing="8" cellpadding="0">
+                                    <tbody><tr>
+                                        <td><input class="button-big-blue-properties" name="apply_filters" id="apply_filters" type="submit" value="Apply filters"></td>
+                                        <td><input class="button-big-white" name="save_preset" id="save_preset" type="button" value="Save as preset" ng-click="savePreset();"></td>
+                                    </tr>
+                                    </tbody></table></td>
+                            </tr>
+                            </tbody></table>
+
+                    </div>
+                </form>
+
+</div>
+
+</td>
+</tr>
+<tr>
+    <td valign="middle" class="new-main-panel-content-2"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tbody><tr>
+            <td align="left"><table border="0" cellspacing="0" cellpadding="4">
+                <tbody><tr>
+                    <td><a href="/?mod=properties&amp;tn="><img src="/resources/views/image/icon-views-list.gif" title="List view" width="15" height="15"></a></td>
+                    <td><a href="/?mod=properties&amp;tn=img"><img src="/resources/views/image/icon-views-images-a.gif" title="View images" width="15" height="15"></a></td>
+                    <td></td>
+                    <td style="padding-left:30px;">Total properties: </td>
+                </tr>
+                </tbody></table></td>
+            <td align="right" valign="top">
+                <!--<a href="#" ng-click="show_prop_adv_options(); return false;"><img src="/resources/views/image/advanced-options.gif" alt="Advanced filter options" width="136" height="26" border="0" /></a>-->
+                <a href="#!/add-property"  class="more-options">+ Add New Property</a>
+            </td>
+        </tr>
+        </tbody></table></td>
+</tr>
+<tr>
+    <td class="new-main-panel-content-2 dash-panel-wrapper-wo" id="multi-select">
+        <form name="propertiesForm" id="propertiesForm" action="" method="post" onsubmit="formtopopup(this, 'width=800,height=600,resizable=1,scrollbars=1'); return true;" target="newpopup">
+            &nbsp;&nbsp;&nbsp;
+            <table style="table-layout:fixed; word-wrap:break-word;" width="100%" border="0" cellspacing="0" cellpadding="0" class="table-list-inner overflow-none-table phases" id="phases">
+                <thead>
+                <tr>
+                    <td width="20" height="26" align="left" class="table-list-row1-inactive1">
+                        <div class="overflow-none"><input type="checkbox" name="checkall2" id="checkall2" value="1" ng-click="check_all(document.getElementById('print_results'), 2)"></div>
+                    </td>
+                    <td width="35" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none">
+                            <a href="?mod=properties&amp;s=1&amp;sort=Board&amp;order=DESC">Board</a>
+                        </div>
+                    </td>
+                    <td width="45" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none">
+                            <a href="?mod=properties&amp;s=1&amp;sort=ID&amp;order=DESC">ID</a>
+                        </div>
+                    </td>
+                    <td width="20" height="26" align="left" class="table-list-row1-actions">
+                        <div class="overflow-none"></div>
+                    </td>
+                    <td width="300" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none">
+                            <a href="?mod=properties&amp;s=1&amp;sort=Property&amp;order=DESC">Property</a>
+                        </div>
+                    </td>
+                    <td width="" height="26" align="left" class="table-list-row1-inactive1">
+                        <div class="overflow-none">Category</div>
+                    </td>
+                    <td width="" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none">
+                            <a href="?mod=properties&amp;s=1&amp;sort=Property type&amp;order=DESC">Property type</a>
+                        </div>
+                    </td>
+                    <td width="" height="26" align="left" class="table-list-row1-inactive1">
+                        <div class="overflow-none">Transaction</div>
+                    </td>
+                    <td width="" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none">
+                            <a href="?mod=properties&amp;s=1&amp;sort=Status&amp;order=DESC">Status</a>
+                        </div>
+                    </td>
+                    <td width="" height="26" align="left" class="table-list-row1-inactive1">
+                        <div class="overflow-none">Available</div>
+                    </td>
+                    <td width="" height="26" class="table-list-row1-inactive">
+                        <div class="overflow-none"><a href="?mod=properties&amp;s=1&amp;sort=Price/Rent&amp;order=DESC">Price/Rent</a></div>
+                    </td>
+                    <td width="" height="26" class="table-list-row1-sort-down">
+                        <div class="overflow-none"><a href="?mod=properties&amp;s=1&amp;sort=Bedrooms&amp;order=DESC">Bedrooms</a></div>
+                    </td>
+                    <td width="165" height="26" align="left" class="table-list-row1-inactive1">
+                        <div class="overflow-none">Phases</div>
+                    </td>
+                    <td width="110" height="26" align="left" class="table-list-row1-actions">
+                        <div class="overflow-none">Actions</div>
+                    </td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr id="" class="table-list-row-bg1" ng-repeat = "property in properties">
+                    <td align="left" height="" class="">
+                        <div class="overflow-none"><input type="checkbox" name="pid[]" id="{{property.id}}" value="{{property.id}}" ng-click="aToggle()"></div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none"></div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.id}}');">{{property.id}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none">
+                            <a href="#" target="_self" class="">
+                            <img src="/resources/views/image/icons16px/preview.png" width="24" height="16" border="0" id="pimg_0" name="pimg_0" alt="Quick preview" title="Quick preview" ng-click="showPreview('0', '{{property.id}}'); return false;">
+                        </a>
+                        </div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.address}}');"> <a href="#!/view-property/:{{property.id}}" target="_parent">{{property.address}}</a></div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.category_label}}');">{{property.category_label}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.property_type_label}}');">{{property.property_type_label}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.transaction_type}}');">{{property.transaction_type}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.status}}');">{{property.status}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.portal_status_label}}');">{{property.portal_status_label}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.currency_label+property.price_rent}}');">{{property.currency_label+property.price_rent}}</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.beds}}');" ng-if="property.beds > 0">{{property.beds}}</div>
+                        <div class="overflow-none" onmouseout="tooltip.hide();" ng-mouseover="tooltip.show('{{property.beds}}');" ng-if="property.beds == 0">Studio</div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none">
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Details &amp; images ready" title="Details &amp; images ready" width="8" height="18" border="0"></a></div>
+                            <div class="phase-pub-web"><a href="#"><img src="/resources/views/image/transp.gif" alt="Published on website" title="Published on website" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Published on portals" title="Published on portals" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Viewings arranged/carried out" title="Viewings arranged/carried out" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Shortlisted" title="Applicants interested without an appointment" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Tenant application in progress" title="Tenant application in progress" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Offers made" title="Offers activities" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Active sale in progress" title="Sale in progress" width="8" height="18" border="0"></a></div>
+                            <div class="phase-inactive"><a href="#"><img src="/resources/views/image/transp.gif" alt="Active tenancy" title="Active tenancy" width="8" height="18" border="0"></a></div>
+                        </div>
+                    </td>
+                    <td align="left" height="" class="">
+                        <div class="overflow-none">
+                            <a href="/?mod=properties&amp;action=edit&amp;id=3608" target="_parent" class="action-edit">
+                                <img src="/resources/views/image/icons16px/transp.gif" border="0" alt="Edit" title="Edit">
+                            </a>
+                            <a href="/?mod=properties&amp;action=images&amp;id=3608" target="_parent" class="action-camera">
+                                <img src="/resources/views/image/icons16px/transp.gif" border="0" alt="Manage images" title="Manage images">
+                            </a>
+                            <a href="/?mod=properties&amp;action=match&amp;id=3608" target="_parent" class="action-matching">
+                                <img src="/resources/views/image/icons16px/transp.gif" border="0" alt="Matching applicants" title="Matching applicants">
+                            </a>
+                            <a href="?mod=properties&amp;action=delete&amp;id=3608" ng-click="return confirm('Are you sure you want to delete?')" class="action-trash">
+                                <img src="/resources/views/image/transp.gif" alt="Delete" title="Delete">
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <input type="hidden" name="etmpid" id="etmpid" value="6">
+                <tr class="table-list-bottom-row">
+                    <td colspan="5" width="300" align="left" valign="top" style="padding:10px 0px 0 8px; border-top:1px solid #d0d0d0;">
+                        <select onchange="selectAction(this);" name="ll_actions" id="ll_actions" class="dropdown-100">
+                            <option value="">Actions</option>
+                            <option value="email">Email</option>
+                            <option value="book viewings">Book viewings</option>
+                            <option value="email_ll">Email landlords/vendors</option>
+                            <option value="slideshow">Start slideshow</option>
+                        </select>
+                        <select name="tempid" class="AdminFormPullDown100per" id="tempid">
+                            <option value="" selected="selected">Select a template</option>
+                            <option value="948">List, 3 per page, Coloured, RC</option>
+                            <option value="949">List, 3 per page, Inverted, RC</option>
+                            <option value="950">List, 4 per page, Coloured, RC</option>
+                            <option value="951">List, 4 per page, Inverted, RC</option>
+                            <option value="952">List, 6 per page, Coloured, RC</option>
+                            <option value="954">List, 8 per page, Coloured, RC</option>
+                            <option value="955">List, 8 per page, Inverted, RC</option>
+                            <option value="953">List,6 per page, Inverted, RC</option>
+                            <option value="11">Print Property List 1</option>
+                            <option value="12">Print Property List 2</option>
+                            <option value="13">Print Property List 3</option>
+                            <option value="14">Print Property List 4</option>
+                        </select>
+                        <input type="submit" name="Submit" value="Print" ng-click="if(document.getElementById('tempid').value==''){alert('Please select a Template'); return false;}else{document.propertiesForm.action='/?mod=printer&amp;smode=transparent';}" class="button-sml-blue-properties">
+                    </td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td align="left" style="border-top:1px solid #d0d0d0;">&nbsp;</td>
+                    <td class="legend_td" style="padding:10px 0px 10px 0px; border-top:1px solid #d0d0d0;" colspan="2" align="left">
+                        <img src="/resources/views/image/legends.png" hspace="0" border="0" usemap="#Map">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="8"><div class="short-list-wrap">Property shortlist:(0)<br>
+                        <a href="javascript:;" ng-click="shortlist(0);" class="short-list-but-active"><span>1</span> Add properties to list</a>
+                        <a href="/?mod=properties&amp;action=my_shortlist" class="short-list-but"><span>2</span> View/Edit list</a>
+                        <a href="/?mod=enquiries&amp;s=1&amp;sl=1" class="short-list-but"><span>3</span> Email list to applicants</a></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="left"><div class="list-panel-bottom-row"><div class="pagination-bottom"></div></div></td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+    </td>
+</tr>
+<tr>
+    <td>&nbsp;</td>
+</tr>
+</tbody></table>
+</div>
+</body>
+</html>

@@ -2,12 +2,12 @@
 
 angular.module('ngConfig', [])
 	.constant('config', {
-		  //api : 'http://localhost/east_backend/public/' ,
-      //api : 'http://test.eastlondonestateagents.com/api/public/',
-        api : 'http://13.58.142.173:8080/api/',
+        //api : 'http://localhost:8000/api/',
+        api : 'http://13.58.142.173:8000/api/',
 	    views: '/resources/views/pages/',
-      url: '/east_frontend/#!/',
+        url: '/east_frontend/#!/',
 	});
+
 // Declare app level module which depends on views, and components
 var ressApp = angular.module('myApp', [
   'ui.tinymce',
@@ -15,9 +15,7 @@ var ressApp = angular.module('myApp', [
   'ngConfig',
   "ngResource" ,
   'myApp.home',
-//  'myApp.sell',
-//  'myApp.version',
-//  'myApp.Property',
+  'myApp.property'
 ])
 .config(['$locationProvider', '$routeProvider', function($locationProvider, $routeProvider) {
   $locationProvider.hashPrefix('!');
