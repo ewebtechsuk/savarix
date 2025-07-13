@@ -1,9 +1,10 @@
+// Property controller
 'use strict';
 
 angular
   .module('myApp.Property', ['ngRoute'])
-  .controller('PropertyCtrl', ['$scope', '$http', 'config', '$route', 'Properties', '$window', 
-    function($scope, $http, config, $route, Properties, $window) {
+  .controller('PropertyCtrl', ['$scope', '$http', 'config', '$route', 'Properties', '$window', 'Request',
+    function($scope, $http, config, $route, Properties, $window, Request) {
     
     // Initialize the variable
 
@@ -41,7 +42,7 @@ angular
           $scope.selectAll = false;
         }
       });
-    }
+    };
     
     $scope.toggleAll = function() {
       var bool = true;
@@ -52,7 +53,7 @@ angular
         v.checked = !bool;
         $scope.selectAll = !bool;
       });
-    } 
+    };
 
     $scope.available = strDate;
     $scope.for = "2";
@@ -226,3 +227,4 @@ angular
       }
     };
   }]);
+
