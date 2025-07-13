@@ -10,5 +10,6 @@ class TokenVerfier extends Model
 
     public $timestamps = false;
 
+
     protected $guarded = ['id'];
 }

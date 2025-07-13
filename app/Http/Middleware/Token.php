@@ -8,6 +8,7 @@ use App\Models\TokenVerfier;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as Auth;
 
+
 class Token
 {
     /**
@@ -24,6 +25,7 @@ class Token
      * @return void
      */
     public function __construct(Auth $auth)
+
     {
         $this->auth = $auth;
     }
@@ -46,7 +48,7 @@ class Token
                 return response()->json ( [ 'status'=>'error', 'error'=>['message' => 'Please Login to continue!' ]] , 403 );
         }
 
-        $token = TokenVerfier::where ( 'token' , '=' , $token )->first ();
+        $token = TokenVerifier::where ( 'token' , '=' , $token )->first ();
         if ( ! $token )
         {
             return response()->json ( [ 'status'=>'error', 'error'=>['message' => 'token is missing' ]] , 403 );

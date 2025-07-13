@@ -15,5 +15,6 @@ require('laravel-elixir-vue-2');
 
 elixir(mix => {
     mix.sass('app.scss')
-       .webpack('app.js');
+       .webpack('app.js')
+       .copy('resources/views/pages/property/property.js', 'public/resources/views/pages/property/property.js');
 });

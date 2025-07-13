@@ -55,6 +55,7 @@
   <!-- Controllers for Property -->
   <script src="/resources/views/js/factories/Property.js"></script>
   <script src="/resources/views/pages/property/property.module.js"></script>
+  <script src="/resources/views/pages/property/property.js"></script>
   <script src="/resources/views/pages/property/AddProperty/add-property.module.js"></script>
   <script src="/resources/views/pages/property/AddProperty/add-property.controller.js"></script>
   <script src="/resources/views/pages/property/ListProperty/list-property.module.js"></script>
