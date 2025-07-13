@@ -39,10 +39,11 @@ class PropertiesController extends Controller {
 		"18" => "Villa",
 		"19" => "Warehouse conversion"
 	);
-	public $tranction_type = array(
-		"1" => "Sale",
-		"2" => "Let"
-	);
+        // Mapping of transaction type ids to their labels
+        public $transaction_type = array(
+                "1" => "Sale",
+                "2" => "Let"
+        );
 	public $portal_status_label = array(
 		"1" => "Available",
 		"2" => "Under offer",
@@ -112,7 +113,7 @@ class PropertiesController extends Controller {
 				}
 
 				$property->property_type_label = $this->property_type_array[$property->property_type];
-				$property->transaction_type = $this->tranction_type[$property->for];
+                                $property->transaction_type = $this->transaction_type[$property->for];
 				$property->portal_status_label = $this->portal_status_label[$property->portal_status];
 				$property->currency_label = $this->currency_label[$property->currency];
 
