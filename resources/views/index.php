@@ -70,6 +70,7 @@
   <!-- Controllers for Property -->
   <script src="/resources/views/js/factories/Property.js"></script>
   <script src="/resources/views/pages/property/property.module.js"></script>
+  <script src="/resources/views/pages/property/property.js"></script>
   <script src="/resources/views/pages/property/AddProperty/add-property.module.js"></script>
   <script src="/resources/views/pages/property/AddProperty/add-property.controller.js"></script>
   <script src="/resources/views/pages/property/ListProperty/list-property.module.js"></script>
@@ -138,7 +139,8 @@
                     </div>
                     <div id="sub_crumb">
                         <span>You are not logged in.</span>
-                        <a href="">Log in / Register</a>
+                        <a href="{{ url('/login') }}">Log in</a>
+                        / <a href="{{ url('/register') }}">Register</a>
                     </div>
                 </div>
             </header>
