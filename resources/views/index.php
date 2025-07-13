@@ -138,7 +138,8 @@
                     </div>
                     <div id="sub_crumb">
                         <span>You are not logged in.</span>
-                        <a href="">Log in / Register</a>
+                        <a href="{{ url('/login') }}">Log in</a>
+                        / <a href="{{ url('/register') }}">Register</a>
                     </div>
                 </div>
             </header>
