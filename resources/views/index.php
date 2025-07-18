@@ -138,9 +138,14 @@
                         <span>Lorem Ipsum</span>
                     </div>
                     <div id="sub_crumb">
-                        <span>You are not logged in.</span>
-                        <a href="{{ url('/login') }}">Log in</a>
-                        / <a href="{{ url('/register') }}">Register</a>
+                        @auth
+                            <span>Welcome, {{ Auth::user()->name }}.</span>
+                            <a href="{{ url('/dashboard') }}">Dashboard</a>
+                        @else
+                            <span>You are not logged in.</span>
+                            <a href="{{ url('/login') }}">Log in</a>
+                            / <a href="{{ url('/register') }}">Register</a>
+                        @endauth
                     </div>
                 </div>
             </header>
