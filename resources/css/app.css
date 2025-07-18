@@ -1,0 +1,13 @@
+/* resources/css/app.css */
+body {
+    font-family: 'Raleway', sans-serif;
+    background-color: #fff;
+    color: #636b6f;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    font-weight: 600;
+    color: #333;
+}
