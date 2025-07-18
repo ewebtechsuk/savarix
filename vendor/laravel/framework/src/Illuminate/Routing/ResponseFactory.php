@@ -2,14 +2,19 @@
 
 namespace Illuminate\Routing;
 
-use Illuminate\Support\Str;
-use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Contracts\View\Factory as ViewFactory;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Closure;
 use Illuminate\Contracts\Routing\ResponseFactory as FactoryContract;
+use Illuminate\Contracts\View\Factory as ViewFactory;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Exceptions\StreamedResponseException;
+use Illuminate\Support\Js;
+use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Macroable;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedJsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ResponseFactory implements FactoryContract
 {
@@ -43,9 +48,9 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
-     * Return a new response from the application.
+     * Create a new response instance.
      *
-     * @param  string  $content
+     * @param  mixed  $content
      * @param  int  $status
      * @param  array  $headers
      * @return \Illuminate\Http\Response
@@ -56,9 +61,21 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
-     * Return a new view response from the application.
+     * Create a new "no content" response.
      *
-     * @param  string  $view
+     * @param  int  $status
+     * @param  array  $headers
+     * @return \Illuminate\Http\Response
+     */
+    public function noContent($status = 204, array $headers = [])
+    {
+        return $this->make('', $status, $headers);
+    }
+
+    /**
+     * Create a new response for a given view.
+     *
+     * @param  string|array  $view
      * @param  array  $data
      * @param  int  $status
      * @param  array  $headers
@@ -66,11 +83,15 @@ class ResponseFactory implements FactoryContract
      */
     public function view($view, $data = [], $status = 200, array $headers = [])
     {
-        return static::make($this->view->make($view, $data), $status, $headers);
+        if (is_array($view)) {
+            return $this->make($this->view->first($view, $data), $status, $headers);
+        }
+
+        return $this->make($this->view->make($view, $data), $status, $headers);
     }
 
     /**
-     * Return a new JSON response from the application.
+     * Create a new JSON response instance.
      *
      * @param  mixed  $data
      * @param  int  $status
@@ -84,7 +105,7 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
-     * Return a new JSONP response from the application.
+     * Create a new JSONP response instance.
      *
      * @param  string  $callback
      * @param  mixed  $data
@@ -99,9 +120,50 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
-     * Return a new streamed response from the application.
+     * Create a new event stream response.
      *
      * @param  \Closure  $callback
+     * @param  array  $headers
+     * @param  string  $endStreamWith
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function eventStream(Closure $callback, array $headers = [], string $endStreamWith = '</stream>')
+    {
+        return $this->stream(function () use ($callback, $endStreamWith) {
+            foreach ($callback() as $message) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                if (! is_string($message) && ! is_numeric($message)) {
+                    $message = Js::encode($message);
+                }
+
+                echo "event: update\n";
+                echo 'data: '.$message;
+                echo "\n\n";
+
+                ob_flush();
+                flush();
+            }
+
+            echo "event: update\n";
+            echo 'data: '.$endStreamWith;
+            echo "\n\n";
+
+            ob_flush();
+            flush();
+        }, 200, array_merge($headers, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]));
+    }
+
+    /**
+     * Create a new streamed response instance.
+     *
+     * @param  callable  $callback
      * @param  int  $status
      * @param  array  $headers
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
@@ -112,10 +174,58 @@ class ResponseFactory implements FactoryContract
     }
 
     /**
+     * Create a new streamed response instance.
+     *
+     * @param  array  $data
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  int  $encodingOptions
+     * @return \Symfony\Component\HttpFoundation\StreamedJsonResponse
+     */
+    public function streamJson($data, $status = 200, $headers = [], $encodingOptions = JsonResponse::DEFAULT_ENCODING_OPTIONS)
+    {
+        return new StreamedJsonResponse($data, $status, $headers, $encodingOptions);
+    }
+
+    /**
+     * Create a new streamed response instance as a file download.
+     *
+     * @param  callable  $callback
+     * @param  string|null  $name
+     * @param  array  $headers
+     * @param  string|null  $disposition
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     *
+     * @throws \Illuminate\Routing\Exceptions\StreamedResponseException
+     */
+    public function streamDownload($callback, $name = null, array $headers = [], $disposition = 'attachment')
+    {
+        $withWrappedException = function () use ($callback) {
+            try {
+                $callback();
+            } catch (Throwable $e) {
+                throw new StreamedResponseException($e);
+            }
+        };
+
+        $response = new StreamedResponse($withWrappedException, 200, $headers);
+
+        if (! is_null($name)) {
+            $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+                $disposition,
+                $name,
+                $this->fallbackName($name)
+            ));
+        }
+
+        return $response;
+    }
+
+    /**
      * Create a new file download response.
      *
      * @param  \SplFileInfo|string  $file
-     * @param  string  $name
+     * @param  string|null  $name
      * @param  array  $headers
      * @param  string|null  $disposition
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
@@ -125,10 +235,21 @@ class ResponseFactory implements FactoryContract
         $response = new BinaryFileResponse($file, 200, $headers, true, $disposition);
 
         if (! is_null($name)) {
-            return $response->setContentDisposition($disposition, $name, str_replace('%', '', Str::ascii($name)));
+            return $response->setContentDisposition($disposition, $name, $this->fallbackName($name));
         }
 
         return $response;
+    }
+
+    /**
+     * Convert the string to ASCII characters that are equivalent to the given name.
+     *
+     * @param  string  $name
+     * @return string
+     */
+    protected function fallbackName($name)
+    {
+        return str_replace('%', '', Str::ascii($name));
     }
 
     /**
@@ -160,8 +281,8 @@ class ResponseFactory implements FactoryContract
     /**
      * Create a new redirect response to a named route.
      *
-     * @param  string  $route
-     * @param  array  $parameters
+     * @param  \BackedEnum|string  $route
+     * @param  mixed  $parameters
      * @param  int  $status
      * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
@@ -174,8 +295,8 @@ class ResponseFactory implements FactoryContract
     /**
      * Create a new redirect response to a controller action.
      *
-     * @param  string  $action
-     * @param  array  $parameters
+     * @param  array|string  $action
+     * @param  mixed  $parameters
      * @param  int  $status
      * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse

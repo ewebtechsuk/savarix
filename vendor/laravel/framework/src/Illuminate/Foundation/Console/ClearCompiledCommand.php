@@ -3,7 +3,9 @@
 namespace Illuminate\Foundation\Console;
 
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Attribute\AsCommand;
 
+#[AsCommand(name: 'clear-compiled')]
 class ClearCompiledCommand extends Command
 {
     /**
@@ -25,19 +27,16 @@ class ClearCompiledCommand extends Command
      *
      * @return void
      */
-    public function fire()
+    public function handle()
     {
-        $compiledPath = $this->laravel->getCachedCompilePath();
-        $servicesPath = $this->laravel->getCachedServicesPath();
-
-        if (file_exists($compiledPath)) {
-            @unlink($compiledPath);
-        }
-
-        if (file_exists($servicesPath)) {
+        if (is_file($servicesPath = $this->laravel->getCachedServicesPath())) {
             @unlink($servicesPath);
         }
 
-        $this->info('The compiled class file has been removed.');
+        if (is_file($packagesPath = $this->laravel->getCachedPackagesPath())) {
+            @unlink($packagesPath);
+        }
+
+        $this->components->info('Compiled services and packages files removed successfully.');
     }
 }

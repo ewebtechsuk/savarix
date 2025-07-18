@@ -44,8 +44,9 @@ class QueryExecuted
      *
      * @param  string  $sql
      * @param  array  $bindings
-     * @param  float  $time
-     * @param
+     * @param  float|null  $time
+     * @param  \Illuminate\Database\Connection  $connection
+     * @return void
      */
     public function __construct($sql, $bindings, $time, $connection)
     {
@@ -54,5 +55,18 @@ class QueryExecuted
         $this->bindings = $bindings;
         $this->connection = $connection;
         $this->connectionName = $connection->getName();
+    }
+
+    /**
+     * Get the raw SQL representation of the query with embedded bindings.
+     *
+     * @return string
+     */
+    public function toRawSql()
+    {
+        return $this->connection
+            ->query()
+            ->getGrammar()
+            ->substituteBindingsIntoRawSql($this->sql, $this->connection->prepareBindings($this->bindings));
     }
 }

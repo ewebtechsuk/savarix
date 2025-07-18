@@ -17,28 +17,38 @@ use Symfony\Component\DependencyInjection\Extension\Extension as BaseExtension;
  * Allow adding classes to the class cache.
  *
  * @author Fabien Potencier <fabien@symfony.com>
+ *
+ * @internal since Symfony 7.1, to be deprecated in 8.1; use Symfony\Component\DependencyInjection\Extension\Extension instead
  */
 abstract class Extension extends BaseExtension
 {
-    private $classes = array();
+    private array $annotatedClasses = [];
 
     /**
-     * Gets the classes to cache.
+     * Gets the annotated classes to cache.
      *
-     * @return array An array of classes
+     * @return string[]
+     *
+     * @deprecated since Symfony 7.1, to be removed in 8.0
      */
-    public function getClassesToCompile()
+    public function getAnnotatedClassesToCompile(): array
     {
-        return $this->classes;
+        trigger_deprecation('symfony/http-kernel', '7.1', 'The "%s()" method is deprecated since Symfony 7.1 and will be removed in 8.0.', __METHOD__);
+
+        return $this->annotatedClasses;
     }
 
     /**
-     * Adds classes to the class cache.
+     * Adds annotated classes to the class cache.
      *
-     * @param array $classes An array of classes
+     * @param string[] $annotatedClasses An array of class patterns
+     *
+     * @deprecated since Symfony 7.1, to be removed in 8.0
      */
-    public function addClassesToCompile(array $classes)
+    public function addAnnotatedClassesToCompile(array $annotatedClasses): void
     {
-        $this->classes = array_merge($this->classes, $classes);
+        trigger_deprecation('symfony/http-kernel', '7.1', 'The "%s()" method is deprecated since Symfony 7.1 and will be removed in 8.0.', __METHOD__);
+
+        $this->annotatedClasses = array_merge($this->annotatedClasses, $annotatedClasses);
     }
 }

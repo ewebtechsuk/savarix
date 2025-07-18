@@ -2,10 +2,17 @@
 
 namespace Illuminate\Validation\Rules;
 
-class NotIn
+use Illuminate\Contracts\Support\Arrayable;
+use Stringable;
+
+use function Illuminate\Support\enum_value;
+
+class NotIn implements Stringable
 {
     /**
      * The name of the rule.
+     *
+     * @var string
      */
     protected $rule = 'not_in';
 
@@ -19,12 +26,16 @@ class NotIn
     /**
      * Create a new "not in" rule instance.
      *
-     * @param  array  $values
+     * @param  \Illuminate\Contracts\Support\Arrayable|\BackedEnum|\UnitEnum|array|string  $values
      * @return void
      */
-    public function __construct(array $values)
+    public function __construct($values)
     {
-        $this->values = $values;
+        if ($values instanceof Arrayable) {
+            $values = $values->toArray();
+        }
+
+        $this->values = is_array($values) ? $values : func_get_args();
     }
 
     /**
@@ -34,6 +45,12 @@ class NotIn
      */
     public function __toString()
     {
-        return $this->rule.':'.implode(',', $this->values);
+        $values = array_map(function ($value) {
+            $value = enum_value($value);
+
+            return '"'.str_replace('"', '""', $value).'"';
+        }, $this->values);
+
+        return $this->rule.':'.implode(',', $values);
     }
 }

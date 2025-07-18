@@ -2,15 +2,23 @@
 
 namespace Illuminate\Http;
 
-use Exception;
-use Illuminate\Http\Exception\HttpResponseException;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Symfony\Component\HttpFoundation\HeaderBag;
+use Throwable;
 
 trait ResponseTrait
 {
     /**
+     * The original content of the response.
+     *
+     * @var mixed
+     */
+    public $original;
+
+    /**
      * The exception that triggered the error response (if applicable).
      *
-     * @var \Exception|null
+     * @var \Throwable|null
      */
     public $exception;
 
@@ -25,6 +33,16 @@ trait ResponseTrait
     }
 
     /**
+     * Get the status text for the response.
+     *
+     * @return string
+     */
+    public function statusText()
+    {
+        return $this->statusText;
+    }
+
+    /**
      * Get the content of the response.
      *
      * @return string
@@ -35,11 +53,23 @@ trait ResponseTrait
     }
 
     /**
+     * Get the original response content.
+     *
+     * @return mixed
+     */
+    public function getOriginalContent()
+    {
+        $original = $this->original;
+
+        return $original instanceof self ? $original->{__FUNCTION__}() : $original;
+    }
+
+    /**
      * Set a header on the Response.
      *
      * @param  string  $key
      * @param  array|string  $values
-     * @param  bool    $replace
+     * @param  bool  $replace
      * @return $this
      */
     public function header($key, $values, $replace = true)
@@ -52,11 +82,15 @@ trait ResponseTrait
     /**
      * Add an array of headers to the response.
      *
-     * @param  array  $headers
+     * @param  \Symfony\Component\HttpFoundation\HeaderBag|array  $headers
      * @return $this
      */
-    public function withHeaders(array $headers)
+    public function withHeaders($headers)
     {
+        if ($headers instanceof HeaderBag) {
+            $headers = $headers->all();
+        }
+
         foreach ($headers as $key => $value) {
             $this->headers->set($key, $value);
         }
@@ -72,7 +106,7 @@ trait ResponseTrait
      */
     public function cookie($cookie)
     {
-        return call_user_func_array([$this, 'withCookie'], func_get_args());
+        return $this->withCookie(...func_get_args());
     }
 
     /**
@@ -84,7 +118,7 @@ trait ResponseTrait
     public function withCookie($cookie)
     {
         if (is_string($cookie) && function_exists('cookie')) {
-            $cookie = call_user_func_array('cookie', func_get_args());
+            $cookie = cookie(...func_get_args());
         }
 
         $this->headers->setCookie($cookie);
@@ -93,12 +127,41 @@ trait ResponseTrait
     }
 
     /**
-     * Set the exception to attach to the response.
+     * Expire a cookie when sending the response.
      *
-     * @param  \Exception  $e
+     * @param  \Symfony\Component\HttpFoundation\Cookie|mixed  $cookie
+     * @param  string|null  $path
+     * @param  string|null  $domain
      * @return $this
      */
-    public function withException(Exception $e)
+    public function withoutCookie($cookie, $path = null, $domain = null)
+    {
+        if (is_string($cookie) && function_exists('cookie')) {
+            $cookie = cookie($cookie, null, -2628000, $path, $domain);
+        }
+
+        $this->headers->setCookie($cookie);
+
+        return $this;
+    }
+
+    /**
+     * Get the callback of the response.
+     *
+     * @return string|null
+     */
+    public function getCallback()
+    {
+        return $this->callback ?? null;
+    }
+
+    /**
+     * Set the exception to attach to the response.
+     *
+     * @param  \Throwable  $e
+     * @return $this
+     */
+    public function withException(Throwable $e)
     {
         $this->exception = $e;
 
@@ -108,7 +171,9 @@ trait ResponseTrait
     /**
      * Throws the response in a HttpResponseException instance.
      *
-     * @throws \Illuminate\Http\Exception\HttpResponseException
+     * @return never
+     *
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
      */
     public function throwResponse()
     {

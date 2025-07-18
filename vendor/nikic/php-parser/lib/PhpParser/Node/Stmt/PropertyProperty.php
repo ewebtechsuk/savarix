@@ -1,30 +1,13 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpParser\Node\Stmt;
 
-use PhpParser\Node;
+use PhpParser\Node\PropertyItem;
 
-class PropertyProperty extends Node\Stmt
-{
-    /** @var string Name */
-    public $name;
-    /** @var null|Node\Expr Default */
-    public $default;
+require __DIR__ . '/../PropertyItem.php';
 
-    /**
-     * Constructs a class property node.
-     *
-     * @param string         $name       Name
-     * @param null|Node\Expr $default    Default value
-     * @param array          $attributes Additional attributes
-     */
-    public function __construct($name, Node\Expr $default = null, array $attributes = array()) {
-        parent::__construct($attributes);
-        $this->name = $name;
-        $this->default = $default;
-    }
-
-    public function getSubNodeNames() {
-        return array('name', 'default');
+if (false) {
+    // For classmap-authoritative support.
+    class PropertyProperty extends PropertyItem {
     }
 }

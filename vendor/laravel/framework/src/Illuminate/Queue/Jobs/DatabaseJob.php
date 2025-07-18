@@ -3,8 +3,8 @@
 namespace Illuminate\Queue\Jobs;
 
 use Illuminate\Container\Container;
-use Illuminate\Queue\DatabaseQueue;
 use Illuminate\Contracts\Queue\Job as JobContract;
+use Illuminate\Queue\DatabaseQueue;
 
 class DatabaseJob extends Job implements JobContract
 {
@@ -18,7 +18,7 @@ class DatabaseJob extends Job implements JobContract
     /**
      * The database job payload.
      *
-     * @var \StdClass
+     * @var \stdClass
      */
     protected $job;
 
@@ -27,16 +27,31 @@ class DatabaseJob extends Job implements JobContract
      *
      * @param  \Illuminate\Container\Container  $container
      * @param  \Illuminate\Queue\DatabaseQueue  $database
-     * @param  \StdClass  $job
+     * @param  \stdClass  $job
+     * @param  string  $connectionName
      * @param  string  $queue
      * @return void
      */
-    public function __construct(Container $container, DatabaseQueue $database, $job, $queue)
+    public function __construct(Container $container, DatabaseQueue $database, $job, $connectionName, $queue)
     {
         $this->job = $job;
         $this->queue = $queue;
         $this->database = $database;
         $this->container = $container;
+        $this->connectionName = $connectionName;
+    }
+
+    /**
+     * Release the job back into the queue after (n) seconds.
+     *
+     * @param  int  $delay
+     * @return void
+     */
+    public function release($delay = 0)
+    {
+        parent::release($delay);
+
+        $this->database->deleteAndRelease($this->queue, $this, $delay);
     }
 
     /**
@@ -49,21 +64,6 @@ class DatabaseJob extends Job implements JobContract
         parent::delete();
 
         $this->database->deleteReserved($this->queue, $this->job->id);
-    }
-
-    /**
-     * Release the job back into the queue.
-     *
-     * @param  int  $delay
-     * @return void
-     */
-    public function release($delay = 0)
-    {
-        parent::release($delay);
-
-        $this->delete();
-
-        $this->database->release($this->queue, $this->job, $delay);
     }
 
     /**
@@ -97,31 +97,11 @@ class DatabaseJob extends Job implements JobContract
     }
 
     /**
-     * Get the IoC container instance.
+     * Get the database job record.
      *
-     * @return \Illuminate\Container\Container
+     * @return \Illuminate\Queue\Jobs\DatabaseJobRecord
      */
-    public function getContainer()
-    {
-        return $this->container;
-    }
-
-    /**
-     * Get the underlying queue driver instance.
-     *
-     * @return \Illuminate\Queue\DatabaseQueue
-     */
-    public function getDatabaseQueue()
-    {
-        return $this->database;
-    }
-
-    /**
-     * Get the underlying database job.
-     *
-     * @return \StdClass
-     */
-    public function getDatabaseJob()
+    public function getJobRecord()
     {
         return $this->job;
     }

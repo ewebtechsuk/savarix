@@ -2,8 +2,17 @@
 
 namespace Illuminate\Http;
 
+use Illuminate\Support\Str;
+
 trait FileHelpers
 {
+    /**
+     * The cache copy of the file's hash name.
+     *
+     * @var string|null
+     */
+    protected $hashName = null;
+
     /**
      * Get the fully qualified path to the file.
      *
@@ -25,19 +34,9 @@ trait FileHelpers
     }
 
     /**
-     * Get the file's extension supplied by the client.
+     * Get a filename for the file.
      *
-     * @return string
-     */
-    public function clientExtension()
-    {
-        return $this->guessClientExtension();
-    }
-
-    /**
-     * Get a filename for the file that is the MD5 hash of the contents.
-     *
-     * @param  string  $path
+     * @param  string|null  $path
      * @return string
      */
     public function hashName($path = null)
@@ -46,6 +45,22 @@ trait FileHelpers
             $path = rtrim($path, '/').'/';
         }
 
-        return $path.md5_file($this->getRealPath()).'.'.$this->guessExtension();
+        $hash = $this->hashName ?: $this->hashName = Str::random(40);
+
+        if ($extension = $this->guessExtension()) {
+            $extension = '.'.$extension;
+        }
+
+        return $path.$hash.$extension;
+    }
+
+    /**
+     * Get the dimensions of the image (if applicable).
+     *
+     * @return array|null
+     */
+    public function dimensions()
+    {
+        return @getimagesize($this->getRealPath());
     }
 }

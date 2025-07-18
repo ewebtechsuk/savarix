@@ -24,6 +24,8 @@ class InputFormField extends FormField
     /**
      * Initializes the form field.
      *
+     * @return void
+     *
      * @throws \LogicException When node type is incorrect
      */
     protected function initialize()
@@ -32,11 +34,12 @@ class InputFormField extends FormField
             throw new \LogicException(sprintf('An InputFormField can only be created from an input or button tag (%s given).', $this->node->nodeName));
         }
 
-        if ('checkbox' === strtolower($this->node->getAttribute('type'))) {
+        $type = strtolower($this->node->getAttribute('type'));
+        if ('checkbox' === $type) {
             throw new \LogicException('Checkboxes should be instances of ChoiceFormField.');
         }
 
-        if ('file' === strtolower($this->node->getAttribute('type'))) {
+        if ('file' === $type) {
             throw new \LogicException('File inputs should be instances of FileFormField.');
         }
 

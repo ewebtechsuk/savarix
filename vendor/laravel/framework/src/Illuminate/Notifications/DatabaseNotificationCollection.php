@@ -2,19 +2,33 @@
 
 namespace Illuminate\Notifications;
 
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
-class DatabaseNotificationCollection extends Collection
+/**
+ * @template TKey of array-key
+ * @template TModel of DatabaseNotification
+ *
+ * @extends \Illuminate\Database\Eloquent\Collection<TKey, TModel>
+ */
+class DatabaseNotificationCollection extends EloquentCollection
 {
     /**
-     * Mark all notification as read.
+     * Mark all notifications as read.
      *
      * @return void
      */
     public function markAsRead()
     {
-        $this->each(function ($notification) {
-            $notification->markAsRead();
-        });
+        $this->each->markAsRead();
+    }
+
+    /**
+     * Mark all notifications as unread.
+     *
+     * @return void
+     */
+    public function markAsUnread()
+    {
+        $this->each->markAsUnread();
     }
 }

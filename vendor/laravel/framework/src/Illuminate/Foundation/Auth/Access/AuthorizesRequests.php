@@ -3,6 +3,9 @@
 namespace Illuminate\Foundation\Auth\Access;
 
 use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Support\Str;
+
+use function Illuminate\Support\enum_value;
 
 trait AuthorizesRequests
 {
@@ -17,7 +20,7 @@ trait AuthorizesRequests
      */
     public function authorize($ability, $arguments = [])
     {
-        list($ability, $arguments) = $this->parseAbilityAndArguments($ability, $arguments);
+        [$ability, $arguments] = $this->parseAbilityAndArguments($ability, $arguments);
 
         return app(Gate::class)->authorize($ability, $arguments);
     }
@@ -34,7 +37,7 @@ trait AuthorizesRequests
      */
     public function authorizeForUser($user, $ability, $arguments = [])
     {
-        list($ability, $arguments) = $this->parseAbilityAndArguments($ability, $arguments);
+        [$ability, $arguments] = $this->parseAbilityAndArguments($ability, $arguments);
 
         return app(Gate::class)->forUser($user)->authorize($ability, $arguments);
     }
@@ -48,7 +51,9 @@ trait AuthorizesRequests
      */
     protected function parseAbilityAndArguments($ability, $arguments)
     {
-        if (is_string($ability) && strpos($ability, '\\') === false) {
+        $ability = enum_value($ability);
+
+        if (is_string($ability) && ! str_contains($ability, '\\')) {
             return [$ability, $arguments];
         }
 
@@ -67,26 +72,30 @@ trait AuthorizesRequests
     {
         $map = $this->resourceAbilityMap();
 
-        return isset($map[$ability]) ? $map[$ability] : $ability;
+        return $map[$ability] ?? $ability;
     }
 
     /**
      * Authorize a resource action based on the incoming request.
      *
-     * @param  string  $model
-     * @param  string|null  $parameter
+     * @param  string|array  $model
+     * @param  string|array|null  $parameter
      * @param  array  $options
      * @param  \Illuminate\Http\Request|null  $request
      * @return void
      */
     public function authorizeResource($model, $parameter = null, array $options = [], $request = null)
     {
-        $parameter = $parameter ?: strtolower(class_basename($model));
+        $model = is_array($model) ? implode(',', $model) : $model;
+
+        $parameter = is_array($parameter) ? implode(',', $parameter) : $parameter;
+
+        $parameter = $parameter ?: Str::snake(class_basename($model));
 
         $middleware = [];
 
         foreach ($this->resourceAbilityMap() as $method => $ability) {
-            $modelName = in_array($method, ['index', 'create', 'store']) ? $model : $parameter;
+            $modelName = in_array($method, $this->resourceMethodsWithoutModels()) ? $model : $parameter;
 
             $middleware["can:{$ability},{$modelName}"][] = $method;
         }
@@ -104,6 +113,7 @@ trait AuthorizesRequests
     protected function resourceAbilityMap()
     {
         return [
+            'index' => 'viewAny',
             'show' => 'view',
             'create' => 'create',
             'store' => 'create',
@@ -111,5 +121,15 @@ trait AuthorizesRequests
             'update' => 'update',
             'destroy' => 'delete',
         ];
+    }
+
+    /**
+     * Get the list of resource methods which do not have model parameters.
+     *
+     * @return array
+     */
+    protected function resourceMethodsWithoutModels()
+    {
+        return ['index', 'create', 'store'];
     }
 }

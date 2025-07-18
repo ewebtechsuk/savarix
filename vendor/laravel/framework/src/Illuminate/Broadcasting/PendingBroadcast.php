@@ -34,13 +34,18 @@ class PendingBroadcast
     }
 
     /**
-     * Handle the object's destruction.
+     * Broadcast the event using a specific broadcaster.
      *
-     * @return void
+     * @param  string|null  $connection
+     * @return $this
      */
-    public function __destruct()
+    public function via($connection = null)
     {
-        $this->events->fire($this->event);
+        if (method_exists($this->event, 'broadcastVia')) {
+            $this->event->broadcastVia($connection);
+        }
+
+        return $this;
     }
 
     /**
@@ -55,5 +60,15 @@ class PendingBroadcast
         }
 
         return $this;
+    }
+
+    /**
+     * Handle the object's destruction.
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        $this->events->dispatch($this->event);
     }
 }

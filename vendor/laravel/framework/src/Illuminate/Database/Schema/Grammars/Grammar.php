@@ -2,21 +2,27 @@
 
 namespace Illuminate\Database\Schema\Grammars;
 
-use RuntimeException;
-use Doctrine\DBAL\Types\Type;
-use Illuminate\Support\Fluent;
-use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Schema\Column;
-use Doctrine\DBAL\Schema\TableDiff;
+use BackedEnum;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Concerns\CompilesJsonPaths;
 use Illuminate\Database\Connection;
-use Doctrine\DBAL\Schema\Comparator;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Grammar as BaseGrammar;
-use Doctrine\DBAL\Schema\AbstractSchemaManager as SchemaManager;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Fluent;
+use LogicException;
+use RuntimeException;
 
 abstract class Grammar extends BaseGrammar
 {
+    use CompilesJsonPaths;
+
+    /**
+     * The possible column modifiers.
+     *
+     * @var string[]
+     */
+    protected $modifiers = [];
+
     /**
      * If this Grammar supports schema changes wrapped in a transaction.
      *
@@ -25,57 +31,97 @@ abstract class Grammar extends BaseGrammar
     protected $transactions = false;
 
     /**
+     * The commands to be executed outside of create or alter command.
+     *
+     * @var array
+     */
+    protected $fluentCommands = [];
+
+    /**
+     * Compile a create database command.
+     *
+     * @param  string  $name
+     * @param  \Illuminate\Database\Connection  $connection
+     * @return void
+     *
+     * @throws \LogicException
+     */
+    public function compileCreateDatabase($name, $connection)
+    {
+        throw new LogicException('This database driver does not support creating databases.');
+    }
+
+    /**
+     * Compile a drop database if exists command.
+     *
+     * @param  string  $name
+     * @return void
+     *
+     * @throws \LogicException
+     */
+    public function compileDropDatabaseIfExists($name)
+    {
+        throw new LogicException('This database driver does not support dropping databases.');
+    }
+
+    /**
      * Compile a rename column command.
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
      * @param  \Illuminate\Database\Connection  $connection
-     * @return array
+     * @return array|string
      */
     public function compileRenameColumn(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
-        $schema = $connection->getDoctrineSchemaManager();
-
-        $table = $this->getTablePrefix().$blueprint->getTable();
-
-        $column = $connection->getDoctrineColumn($table, $command->from);
-
-        $tableDiff = $this->getRenamedDiff($blueprint, $command, $column, $schema);
-
-        return (array) $schema->getDatabasePlatform()->getAlterTableSQL($tableDiff);
+        return sprintf('alter table %s rename column %s to %s',
+            $this->wrapTable($blueprint),
+            $this->wrap($command->from),
+            $this->wrap($command->to)
+        );
     }
 
     /**
-     * Get a new column instance with the new column name.
+     * Compile a change column command into a series of SQL statements.
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Doctrine\DBAL\Schema\Column  $column
-     * @param  \Doctrine\DBAL\Schema\AbstractSchemaManager  $schema
-     * @return \Doctrine\DBAL\Schema\TableDiff
+     * @param  \Illuminate\Database\Connection  $connection
+     * @return array|string
+     *
+     * @throws \RuntimeException
      */
-    protected function getRenamedDiff(Blueprint $blueprint, Fluent $command, Column $column, SchemaManager $schema)
+    public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
-        $tableDiff = $this->getDoctrineTableDiff($blueprint, $schema);
-
-        return $this->setRenamedColumns($tableDiff, $command, $column);
+        throw new LogicException('This database driver does not support modifying columns.');
     }
 
     /**
-     * Set the renamed columns on the table diff.
+     * Compile a fulltext index key command.
      *
-     * @param  \Doctrine\DBAL\Schema\TableDiff  $tableDiff
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Doctrine\DBAL\Schema\Column  $column
-     * @return \Doctrine\DBAL\Schema\TableDiff
+     * @return string
+     *
+     * @throws \RuntimeException
      */
-    protected function setRenamedColumns(TableDiff $tableDiff, Fluent $command, Column $column)
+    public function compileFulltext(Blueprint $blueprint, Fluent $command)
     {
-        $newColumn = new Column($command->to, $column->getType(), $column->toArray());
+        throw new RuntimeException('This database driver does not support fulltext index creation.');
+    }
 
-        $tableDiff->renamedColumns = [$command->from => $newColumn];
-
-        return $tableDiff;
+    /**
+     * Compile a drop fulltext index command.
+     *
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  \Illuminate\Support\Fluent  $command
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    public function compileDropFullText(Blueprint $blueprint, Fluent $command)
+    {
+        throw new RuntimeException('This database driver does not support fulltext index removal.');
     }
 
     /**
@@ -87,22 +133,22 @@ abstract class Grammar extends BaseGrammar
      */
     public function compileForeign(Blueprint $blueprint, Fluent $command)
     {
-        $table = $this->wrapTable($blueprint);
-
-        $index = $this->wrap($command->index);
-
-        $on = $this->wrapTable($command->on);
-
         // We need to prepare several of the elements of the foreign key definition
         // before we can create the SQL, such as wrapping the tables and convert
         // an array of columns to comma-delimited strings for the SQL queries.
-        $columns = $this->columnize($command->columns);
+        $sql = sprintf('alter table %s add constraint %s ',
+            $this->wrapTable($blueprint),
+            $this->wrap($command->index)
+        );
 
-        $onColumns = $this->columnize((array) $command->references);
-
-        $sql = "alter table {$table} add constraint {$index} ";
-
-        $sql .= "foreign key ({$columns}) references {$on} ({$onColumns})";
+        // Once we have the initial portion of the SQL statement we will add on the
+        // key name, table name, and referenced columns. These will complete the
+        // main portion of the SQL statement and this SQL will almost be done.
+        $sql .= sprintf('foreign key (%s) references %s (%s)',
+            $this->columnize($command->columns),
+            $this->wrapTable($command->on),
+            $this->columnize((array) $command->references)
+        );
 
         // Once we have the basic foreign key creation statement constructed we can
         // build out the syntax for what should happen on an update or delete of
@@ -119,9 +165,21 @@ abstract class Grammar extends BaseGrammar
     }
 
     /**
-     * Compile the blueprint's column definitions.
+     * Compile a drop foreign key command.
      *
-     * @param  \Illuminate\Database\Schema\Blueprint $blueprint
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  \Illuminate\Support\Fluent  $command
+     * @return string
+     */
+    public function compileDropForeign(Blueprint $blueprint, Fluent $command)
+    {
+        throw new RuntimeException('This database driver does not support dropping foreign keys.');
+    }
+
+    /**
+     * Compile the blueprint's added column definitions.
+     *
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @return array
      */
     protected function getColumns(Blueprint $blueprint)
@@ -129,15 +187,75 @@ abstract class Grammar extends BaseGrammar
         $columns = [];
 
         foreach ($blueprint->getAddedColumns() as $column) {
-            // Each of the column types have their own compiler functions which are tasked
-            // with turning the column definition into its SQL format for this platform
-            // used by the connection. The column's modifiers are compiled and added.
-            $sql = $this->wrap($column).' '.$this->getType($column);
-
-            $columns[] = $this->addModifiers($sql, $blueprint, $column);
+            $columns[] = $this->getColumn($blueprint, $column);
         }
 
         return $columns;
+    }
+
+    /**
+     * Compile the column definition.
+     *
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  \Illuminate\Database\Schema\ColumnDefinition  $column
+     * @return string
+     */
+    protected function getColumn(Blueprint $blueprint, $column)
+    {
+        // Each of the column types has their own compiler functions, which are tasked
+        // with turning the column definition into its SQL format for this platform
+        // used by the connection. The column's modifiers are compiled and added.
+        $sql = $this->wrap($column).' '.$this->getType($column);
+
+        return $this->addModifiers($sql, $blueprint, $column);
+    }
+
+    /**
+     * Get the SQL for the column data type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function getType(Fluent $column)
+    {
+        return $this->{'type'.ucfirst($column->type)}($column);
+    }
+
+    /**
+     * Create the column definition for a generated, computed column type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return void
+     *
+     * @throws \RuntimeException
+     */
+    protected function typeComputed(Fluent $column)
+    {
+        throw new RuntimeException('This database driver does not support the computed type.');
+    }
+
+    /**
+     * Create the column definition for a vector type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    protected function typeVector(Fluent $column)
+    {
+        throw new RuntimeException('This database driver does not support the vector type.');
+    }
+
+    /**
+     * Create the column definition for a raw column type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function typeRaw(Fluent $column)
+    {
+        return $column->offsetGet('definition');
     }
 
     /**
@@ -160,7 +278,7 @@ abstract class Grammar extends BaseGrammar
     }
 
     /**
-     * Get the primary key command if it exists on the blueprint.
+     * Get the command with a given name if it exists on the blueprint.
      *
      * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
      * @param  string  $name
@@ -189,22 +307,29 @@ abstract class Grammar extends BaseGrammar
         });
     }
 
-    /**
-     * Get the SQL for the column data type.
+    /*
+     * Determine if a command with a given name exists on the blueprint.
      *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  string  $name
+     * @return bool
      */
-    protected function getType(Fluent $column)
+    protected function hasCommand(Blueprint $blueprint, $name)
     {
-        return $this->{'type'.ucfirst($column->type)}($column);
+        foreach ($blueprint->getCommands() as $command) {
+            if ($command->name === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Add a prefix to an array of values.
      *
      * @param  string  $prefix
-     * @param  array   $values
+     * @param  array  $values
      * @return array
      */
     public function prefixArray($prefix, array $values)
@@ -217,251 +342,58 @@ abstract class Grammar extends BaseGrammar
     /**
      * Wrap a table in keyword identifiers.
      *
-     * @param  mixed   $table
+     * @param  mixed  $table
      * @return string
      */
     public function wrapTable($table)
     {
-        if ($table instanceof Blueprint) {
-            $table = $table->getTable();
-        }
-
-        return parent::wrapTable($table);
+        return parent::wrapTable(
+            $table instanceof Blueprint ? $table->getTable() : $table
+        );
     }
 
     /**
-     * {@inheritdoc}
+     * Wrap a value in keyword identifiers.
+     *
+     * @param  \Illuminate\Support\Fluent|\Illuminate\Contracts\Database\Query\Expression|string  $value
+     * @return string
      */
-    public function wrap($value, $prefixAlias = false)
+    public function wrap($value)
     {
-        if ($value instanceof Fluent) {
-            $value = $value->name;
-        }
-
-        return parent::wrap($value, $prefixAlias);
+        return parent::wrap(
+            $value instanceof Fluent ? $value->name : $value,
+        );
     }
 
     /**
      * Format a value so that it can be used in "default" clauses.
      *
-     * @param  mixed   $value
+     * @param  mixed  $value
      * @return string
      */
     protected function getDefaultValue($value)
     {
         if ($value instanceof Expression) {
-            return $value;
+            return $this->getValue($value);
         }
 
-        if (is_bool($value)) {
-            return "'".(int) $value."'";
+        if ($value instanceof BackedEnum) {
+            return "'{$value->value}'";
         }
 
-        return "'".strval($value)."'";
+        return is_bool($value)
+                    ? "'".(int) $value."'"
+                    : "'".(string) $value."'";
     }
 
     /**
-     * Create an empty Doctrine DBAL TableDiff from the Blueprint.
+     * Get the fluent commands for the grammar.
      *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Doctrine\DBAL\Schema\AbstractSchemaManager  $schema
-     * @return \Doctrine\DBAL\Schema\TableDiff
-     */
-    protected function getDoctrineTableDiff(Blueprint $blueprint, SchemaManager $schema)
-    {
-        $table = $this->getTablePrefix().$blueprint->getTable();
-
-        $tableDiff = new TableDiff($table);
-
-        $tableDiff->fromTable = $schema->listTableDetails($table);
-
-        return $tableDiff;
-    }
-
-    /**
-     * Compile a change column command into a series of SQL statements.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Illuminate\Database\Connection $connection
-     * @return array
-     *
-     * @throws \RuntimeException
-     */
-    public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
-    {
-        if (! $connection->isDoctrineAvailable()) {
-            throw new RuntimeException(sprintf(
-                'Changing columns for table "%s" requires Doctrine DBAL; install "doctrine/dbal".',
-                $blueprint->getTable()
-            ));
-        }
-
-        $schema = $connection->getDoctrineSchemaManager();
-
-        $tableDiff = $this->getChangedDiff($blueprint, $schema);
-
-        if ($tableDiff !== false) {
-            return (array) $schema->getDatabasePlatform()->getAlterTableSQL($tableDiff);
-        }
-
-        return [];
-    }
-
-    /**
-     * Get the Doctrine table difference for the given changes.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Doctrine\DBAL\Schema\AbstractSchemaManager  $schema
-     * @return \Doctrine\DBAL\Schema\TableDiff|bool
-     */
-    protected function getChangedDiff(Blueprint $blueprint, SchemaManager $schema)
-    {
-        $table = $schema->listTableDetails($this->getTablePrefix().$blueprint->getTable());
-
-        return (new Comparator)->diffTable($table, $this->getTableWithColumnChanges($blueprint, $table));
-    }
-
-    /**
-     * Get a copy of the given Doctrine table after making the column changes.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Doctrine\DBAL\Schema\Table  $table
-     * @return \Doctrine\DBAL\Schema\TableDiff
-     */
-    protected function getTableWithColumnChanges(Blueprint $blueprint, Table $table)
-    {
-        $table = clone $table;
-
-        foreach ($blueprint->getChangedColumns() as $fluent) {
-            $column = $this->getDoctrineColumnForChange($table, $fluent);
-
-            // Here we will spin through each fluent column definition and map it to the proper
-            // Doctrine column definitions - which is necessary because Laravel and Doctrine
-            // use some different terminology for various column attributes on the tables.
-            foreach ($fluent->getAttributes() as $key => $value) {
-                if (! is_null($option = $this->mapFluentOptionToDoctrine($key))) {
-                    if (method_exists($column, $method = 'set'.ucfirst($option))) {
-                        $column->{$method}($this->mapFluentValueToDoctrine($option, $value));
-                    }
-                }
-            }
-        }
-
-        return $table;
-    }
-
-    /**
-     * Get the Doctrine column instance for a column change.
-     *
-     * @param  \Doctrine\DBAL\Schema\Table  $table
-     * @param  \Illuminate\Support\Fluent  $fluent
-     * @return \Doctrine\DBAL\Schema\Column
-     */
-    protected function getDoctrineColumnForChange(Table $table, Fluent $fluent)
-    {
-        return $table->changeColumn(
-            $fluent['name'], $this->getDoctrineColumnChangeOptions($fluent)
-        )->getColumn($fluent['name']);
-    }
-
-    /**
-     * Get the Doctrine column change options.
-     *
-     * @param  \Illuminate\Support\Fluent  $fluent
      * @return array
      */
-    protected function getDoctrineColumnChangeOptions(Fluent $fluent)
+    public function getFluentCommands()
     {
-        $options = ['type' => $this->getDoctrineColumnType($fluent['type'])];
-
-        if (in_array($fluent['type'], ['text', 'mediumText', 'longText'])) {
-            $options['length'] = $this->calculateDoctrineTextLength($fluent['type']);
-        }
-
-        return $options;
-    }
-
-    /**
-     * Get the doctrine column type.
-     *
-     * @param  string  $type
-     * @return \Doctrine\DBAL\Types\Type
-     */
-    protected function getDoctrineColumnType($type)
-    {
-        $type = strtolower($type);
-
-        switch ($type) {
-            case 'biginteger':
-                $type = 'bigint';
-                break;
-            case 'smallinteger':
-                $type = 'smallint';
-                break;
-            case 'mediumtext':
-            case 'longtext':
-                $type = 'text';
-                break;
-            case 'binary':
-                $type = 'blob';
-                break;
-        }
-
-        return Type::getType($type);
-    }
-
-    /**
-     * Calculate the proper column length to force the Doctrine text type.
-     *
-     * @param  string  $type
-     * @return int
-     */
-    protected function calculateDoctrineTextLength($type)
-    {
-        switch ($type) {
-            case 'mediumText':
-                return 65535 + 1;
-            case 'longText':
-                return 16777215 + 1;
-            default:
-                return 255 + 1;
-        }
-    }
-
-    /**
-     * Get the matching Doctrine option for a given Fluent attribute name.
-     *
-     * @param  string  $attribute
-     * @return string|null
-     */
-    protected function mapFluentOptionToDoctrine($attribute)
-    {
-        switch ($attribute) {
-            case 'type':
-            case 'name':
-                return;
-            case 'nullable':
-                return 'notnull';
-            case 'total':
-                return 'precision';
-            case 'places':
-                return 'scale';
-            default:
-                return $attribute;
-        }
-    }
-
-    /**
-     * Get the matching Doctrine value for a given Fluent attribute.
-     *
-     * @param  string  $option
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function mapFluentValueToDoctrine($option, $value)
-    {
-        return $option == 'notnull' ? ! $value : $value;
+        return $this->fluentCommands;
     }
 
     /**

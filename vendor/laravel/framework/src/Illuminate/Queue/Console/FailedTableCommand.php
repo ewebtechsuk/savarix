@@ -2,19 +2,27 @@
 
 namespace Illuminate\Queue\Console;
 
-use Illuminate\Support\Str;
-use Illuminate\Console\Command;
-use Illuminate\Support\Composer;
-use Illuminate\Filesystem\Filesystem;
+use Illuminate\Console\MigrationGeneratorCommand;
+use Symfony\Component\Console\Attribute\AsCommand;
 
-class FailedTableCommand extends Command
+use function Illuminate\Filesystem\join_paths;
+
+#[AsCommand(name: 'make:queue-failed-table', aliases: ['queue:failed-table'])]
+class FailedTableCommand extends MigrationGeneratorCommand
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'queue:failed-table';
+    protected $name = 'make:queue-failed-table';
+
+    /**
+     * The console command name aliases.
+     *
+     * @var array
+     */
+    protected $aliases = ['queue:failed-table'];
 
     /**
      * The console command description.
@@ -24,68 +32,46 @@ class FailedTableCommand extends Command
     protected $description = 'Create a migration for the failed queue jobs database table';
 
     /**
-     * The filesystem instance.
+     * Get the migration table name.
      *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * @var \Illuminate\Support\Composer
-     */
-    protected $composer;
-
-    /**
-     * Create a new failed queue jobs table command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  \Illuminate\Support\Composer    $composer
-     * @return void
-     */
-    public function __construct(Filesystem $files, Composer $composer)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-        $this->composer = $composer;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function fire()
-    {
-        $table = $this->laravel['config']['queue.failed.table'];
-
-        $tableClassName = Str::studly($table);
-
-        $fullPath = $this->createBaseMigration($table);
-
-        $stub = str_replace(
-            ['{{table}}', '{{tableClassName}}'], [$table, $tableClassName], $this->files->get(__DIR__.'/stubs/failed_jobs.stub')
-        );
-
-        $this->files->put($fullPath, $stub);
-
-        $this->info('Migration created successfully!');
-
-        $this->composer->dumpAutoloads();
-    }
-
-    /**
-     * Create a base migration file for the table.
-     *
-     * @param  string  $table
      * @return string
      */
-    protected function createBaseMigration($table = 'failed_jobs')
+    protected function migrationTableName()
     {
-        $name = 'create_'.$table.'_table';
+        return $this->laravel['config']['queue.failed.table'];
+    }
 
-        $path = $this->laravel->databasePath().'/migrations';
+    /**
+     * Get the path to the migration stub file.
+     *
+     * @return string
+     */
+    protected function migrationStubFile()
+    {
+        return __DIR__.'/stubs/failed_jobs.stub';
+    }
 
-        return $this->laravel['migration.creator']->create($name, $path);
+    /**
+     * Determine whether a migration for the table already exists.
+     *
+     * @param  string  $table
+     * @return bool
+     */
+    protected function migrationExists($table)
+    {
+        if ($table !== 'failed_jobs') {
+            return parent::migrationExists($table);
+        }
+
+        foreach ([
+            join_paths($this->laravel->databasePath('migrations'), '*_*_*_*_create_'.$table.'_table.php'),
+            join_paths($this->laravel->databasePath('migrations'), '0001_01_01_000002_create_jobs_table.php'),
+        ] as $path) {
+            if (count($this->files->glob($path)) !== 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

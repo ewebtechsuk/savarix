@@ -11,8 +11,9 @@
 
 namespace Symfony\Component\HttpKernel\DependencyInjection;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
 
 /**
@@ -22,43 +23,24 @@ use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
  */
 class LazyLoadingFragmentHandler extends FragmentHandler
 {
-    private $container;
-    private $rendererIds = array();
-
     /**
-     * Constructor.
-     *
-     * @param ContainerInterface $container    A container
-     * @param RequestStack       $requestStack The Request stack that controls the lifecycle of requests
-     * @param bool               $debug        Whether the debug mode is enabled or not
+     * @var array<string, bool>
      */
-    public function __construct(ContainerInterface $container, RequestStack $requestStack, $debug = false)
-    {
-        $this->container = $container;
+    private array $initialized = [];
 
-        parent::__construct($requestStack, array(), $debug);
+    public function __construct(
+        private ContainerInterface $container,
+        RequestStack $requestStack,
+        bool $debug = false,
+    ) {
+        parent::__construct($requestStack, [], $debug);
     }
 
-    /**
-     * Adds a service as a fragment renderer.
-     *
-     * @param string $name     The service name
-     * @param string $renderer The render service id
-     */
-    public function addRendererService($name, $renderer)
+    public function render(string|ControllerReference $uri, string $renderer = 'inline', array $options = []): ?string
     {
-        $this->rendererIds[$name] = $renderer;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function render($uri, $renderer = 'inline', array $options = array())
-    {
-        if (isset($this->rendererIds[$renderer])) {
-            $this->addRenderer($this->container->get($this->rendererIds[$renderer]));
-
-            unset($this->rendererIds[$renderer]);
+        if (!isset($this->initialized[$renderer]) && $this->container->has($renderer)) {
+            $this->addRenderer($this->container->get($renderer));
+            $this->initialized[$renderer] = true;
         }
 
         return parent::render($uri, $renderer, $options);

@@ -2,15 +2,25 @@
 
 namespace Illuminate\Cache;
 
-use Illuminate\Contracts\Cache\Store;
-use Illuminate\Contracts\Redis\Database as Redis;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Redis\Factory as Redis;
+use Illuminate\Redis\Connections\PhpRedisClusterConnection;
+use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Redis\Connections\PredisClusterConnection;
+use Illuminate\Redis\Connections\PredisConnection;
+use Illuminate\Support\LazyCollection;
+use Illuminate\Support\Str;
 
-class RedisStore extends TaggableStore implements Store
+class RedisStore extends TaggableStore implements LockProvider
 {
+    use RetrievesMultipleKeys {
+        putMany as private putManyAlias;
+    }
+
     /**
-     * The Redis database connection.
+     * The Redis factory implementation.
      *
-     * @var \Illuminate\Redis\Database
+     * @var \Illuminate\Contracts\Redis\Factory
      */
     protected $redis;
 
@@ -22,16 +32,23 @@ class RedisStore extends TaggableStore implements Store
     protected $prefix;
 
     /**
-     * The Redis connection that should be used.
+     * The Redis connection instance that should be used to manage locks.
      *
      * @var string
      */
     protected $connection;
 
     /**
+     * The name of the connection that should be used for locks.
+     *
+     * @var string
+     */
+    protected $lockConnection;
+
+    /**
      * Create a new Redis store.
      *
-     * @param  \Illuminate\Redis\Database  $redis
+     * @param  \Illuminate\Contracts\Redis\Factory  $redis
      * @param  string  $prefix
      * @param  string  $connection
      * @return void
@@ -46,14 +63,16 @@ class RedisStore extends TaggableStore implements Store
     /**
      * Retrieve an item from the cache by key.
      *
-     * @param  string|array  $key
+     * @param  string  $key
      * @return mixed
      */
     public function get($key)
     {
-        if (! is_null($value = $this->connection()->get($this->prefix.$key))) {
-            return $this->unserialize($value);
-        }
+        $connection = $this->connection();
+
+        $value = $connection->get($this->prefix.$key);
+
+        return ! is_null($value) ? $this->connectionAwareUnserialize($value, $connection) : null;
     }
 
     /**
@@ -66,59 +85,104 @@ class RedisStore extends TaggableStore implements Store
      */
     public function many(array $keys)
     {
-        $return = [];
+        if (count($keys) === 0) {
+            return [];
+        }
 
-        $prefixedKeys = array_map(function ($key) {
+        $results = [];
+
+        $connection = $this->connection();
+
+        $values = $connection->mget(array_map(function ($key) {
             return $this->prefix.$key;
-        }, $keys);
-
-        $values = $this->connection()->mget($prefixedKeys);
+        }, $keys));
 
         foreach ($values as $index => $value) {
-            $return[$keys[$index]] = $this->unserialize($value);
+            $results[$keys[$index]] = ! is_null($value) ? $this->connectionAwareUnserialize($value, $connection) : null;
         }
 
-        return $return;
+        return $results;
     }
 
     /**
-     * Store an item in the cache for a given number of minutes.
+     * Store an item in the cache for a given number of seconds.
      *
      * @param  string  $key
-     * @param  mixed   $value
-     * @param  float|int  $minutes
-     * @return void
+     * @param  mixed  $value
+     * @param  int  $seconds
+     * @return bool
      */
-    public function put($key, $value, $minutes)
+    public function put($key, $value, $seconds)
     {
-        $value = $this->serialize($value);
+        $connection = $this->connection();
 
-        $this->connection()->setex($this->prefix.$key, (int) max(1, $minutes * 60), $value);
+        return (bool) $connection->setex(
+            $this->prefix.$key, (int) max(1, $seconds), $this->connectionAwareSerialize($value, $connection)
+        );
     }
 
     /**
-     * Store multiple items in the cache for a given number of minutes.
+     * Store multiple items in the cache for a given number of seconds.
      *
      * @param  array  $values
-     * @param  float|int  $minutes
-     * @return void
+     * @param  int  $seconds
+     * @return bool
      */
-    public function putMany(array $values, $minutes)
+    public function putMany(array $values, $seconds)
     {
-        $this->connection()->multi();
+        $connection = $this->connection();
 
-        foreach ($values as $key => $value) {
-            $this->put($key, $value, $minutes);
+        // Cluster connections do not support writing multiple values if the keys hash differently...
+        if ($connection instanceof PhpRedisClusterConnection ||
+            $connection instanceof PredisClusterConnection) {
+            return $this->putManyAlias($values, $seconds);
         }
 
-        $this->connection()->exec();
+        $serializedValues = [];
+
+        foreach ($values as $key => $value) {
+            $serializedValues[$this->prefix.$key] = $this->serialize($value);
+        }
+
+        $connection->multi();
+
+        $manyResult = null;
+
+        foreach ($serializedValues as $key => $value) {
+            $result = (bool) $connection->setex(
+                $key, (int) max(1, $seconds), $value
+            );
+
+            $manyResult = is_null($manyResult) ? $result : $result && $manyResult;
+        }
+
+        $connection->exec();
+
+        return $manyResult ?: false;
+    }
+
+    /**
+     * Store an item in the cache if the key doesn't exist.
+     *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @param  int  $seconds
+     * @return bool
+     */
+    public function add($key, $value, $seconds)
+    {
+        $connection = $this->connection();
+
+        return (bool) $connection->eval(
+            LuaScripts::add(), 1, $this->prefix.$key, $this->pack($value, $connection), (int) max(1, $seconds)
+        );
     }
 
     /**
      * Increment the value of an item in the cache.
      *
      * @param  string  $key
-     * @param  mixed   $value
+     * @param  mixed  $value
      * @return int
      */
     public function increment($key, $value = 1)
@@ -130,7 +194,7 @@ class RedisStore extends TaggableStore implements Store
      * Decrement the value of an item in the cache.
      *
      * @param  string  $key
-     * @param  mixed   $value
+     * @param  mixed  $value
      * @return int
      */
     public function decrement($key, $value = 1)
@@ -142,12 +206,47 @@ class RedisStore extends TaggableStore implements Store
      * Store an item in the cache indefinitely.
      *
      * @param  string  $key
-     * @param  mixed   $value
-     * @return void
+     * @param  mixed  $value
+     * @return bool
      */
     public function forever($key, $value)
     {
-        $this->connection()->set($this->prefix.$key, $this->serialize($value));
+        $connection = $this->connection();
+
+        return (bool) $connection->set($this->prefix.$key, $this->connectionAwareSerialize($value, $connection));
+    }
+
+    /**
+     * Get a lock instance.
+     *
+     * @param  string  $name
+     * @param  int  $seconds
+     * @param  string|null  $owner
+     * @return \Illuminate\Contracts\Cache\Lock
+     */
+    public function lock($name, $seconds = 0, $owner = null)
+    {
+        $lockName = $this->prefix.$name;
+
+        $lockConnection = $this->lockConnection();
+
+        if ($lockConnection instanceof PhpRedisConnection) {
+            return new PhpRedisLock($lockConnection, $lockName, $seconds, $owner);
+        }
+
+        return new RedisLock($lockConnection, $lockName, $seconds, $owner);
+    }
+
+    /**
+     * Restore a lock instance using the owner identifier.
+     *
+     * @param  string  $name
+     * @param  string  $owner
+     * @return \Illuminate\Contracts\Cache\Lock
+     */
+    public function restoreLock($name, $owner)
+    {
+        return $this->lock($name, 0, $owner);
     }
 
     /**
@@ -164,11 +263,25 @@ class RedisStore extends TaggableStore implements Store
     /**
      * Remove all items from the cache.
      *
-     * @return void
+     * @return bool
      */
     public function flush()
     {
         $this->connection()->flushdb();
+
+        return true;
+    }
+
+    /**
+     * Remove all expired tag set entries.
+     *
+     * @return void
+     */
+    public function flushStaleTags()
+    {
+        foreach ($this->currentTags()->chunk(1000) as $tags) {
+            $this->tags($tags->all())->flushStale();
+        }
     }
 
     /**
@@ -179,13 +292,65 @@ class RedisStore extends TaggableStore implements Store
      */
     public function tags($names)
     {
-        return new RedisTaggedCache($this, new TagSet($this, is_array($names) ? $names : func_get_args()));
+        return new RedisTaggedCache(
+            $this, new RedisTagSet($this, is_array($names) ? $names : func_get_args())
+        );
+    }
+
+    /**
+     * Get a collection of all of the cache tags currently being used.
+     *
+     * @param  int  $chunkSize
+     * @return \Illuminate\Support\LazyCollection
+     */
+    protected function currentTags($chunkSize = 1000)
+    {
+        $connection = $this->connection();
+
+        // Connections can have a global prefix...
+        $connectionPrefix = match (true) {
+            $connection instanceof PhpRedisConnection => $connection->_prefix(''),
+            $connection instanceof PredisConnection => $connection->getOptions()->prefix ?: '',
+            default => '',
+        };
+
+        $defaultCursorValue = match (true) {
+            $connection instanceof PhpRedisConnection && version_compare(phpversion('redis'), '6.1.0', '>=') => null,
+            default => '0',
+        };
+
+        $prefix = $connectionPrefix.$this->getPrefix();
+
+        return (new LazyCollection(function () use ($connection, $chunkSize, $prefix, $defaultCursorValue) {
+            $cursor = $defaultCursorValue;
+
+            do {
+                [$cursor, $tagsChunk] = $connection->scan(
+                    $cursor,
+                    ['match' => $prefix.'tag:*:entries', 'count' => $chunkSize]
+                );
+
+                if (! is_array($tagsChunk)) {
+                    break;
+                }
+
+                $tagsChunk = array_unique($tagsChunk);
+
+                if (empty($tagsChunk)) {
+                    continue;
+                }
+
+                foreach ($tagsChunk as $tag) {
+                    yield $tag;
+                }
+            } while (((string) $cursor) !== $defaultCursorValue);
+        }))->map(fn (string $tagKey) => Str::match('/^'.preg_quote($prefix, '/').'tag:(.*):entries$/', $tagKey));
     }
 
     /**
      * Get the Redis connection instance.
      *
-     * @return \Predis\ClientInterface
+     * @return \Illuminate\Redis\Connections\Connection
      */
     public function connection()
     {
@@ -193,7 +358,17 @@ class RedisStore extends TaggableStore implements Store
     }
 
     /**
-     * Set the connection name to be used.
+     * Get the Redis connection instance that should be used to manage locks.
+     *
+     * @return \Illuminate\Redis\Connections\Connection
+     */
+    public function lockConnection()
+    {
+        return $this->redis->connection($this->lockConnection ?? $this->connection);
+    }
+
+    /**
+     * Specify the name of the connection that should be used to store data.
      *
      * @param  string  $connection
      * @return void
@@ -204,9 +379,22 @@ class RedisStore extends TaggableStore implements Store
     }
 
     /**
+     * Specify the name of the connection that should be used to manage locks.
+     *
+     * @param  string  $connection
+     * @return $this
+     */
+    public function setLockConnection($connection)
+    {
+        $this->lockConnection = $connection;
+
+        return $this;
+    }
+
+    /**
      * Get the Redis database instance.
      *
-     * @return \Illuminate\Redis\Database
+     * @return \Illuminate\Contracts\Redis\Factory
      */
     public function getRedis()
     {
@@ -231,7 +419,29 @@ class RedisStore extends TaggableStore implements Store
      */
     public function setPrefix($prefix)
     {
-        $this->prefix = ! empty($prefix) ? $prefix.':' : '';
+        $this->prefix = $prefix;
+    }
+
+    /**
+     * Prepare a value to be used with the Redis cache store when used by eval scripts.
+     *
+     * @param  mixed  $value
+     * @param  \Illuminate\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function pack($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection) {
+            if ($connection->serialized()) {
+                return $connection->pack([$value])[0];
+            }
+
+            if ($connection->compressed()) {
+                return $connection->pack([$this->serialize($value)])[0];
+            }
+        }
+
+        return $this->serialize($value);
     }
 
     /**
@@ -242,7 +452,18 @@ class RedisStore extends TaggableStore implements Store
      */
     protected function serialize($value)
     {
-        return is_numeric($value) ? $value : serialize($value);
+        return $this->shouldBeStoredWithoutSerialization($value) ? $value : serialize($value);
+    }
+
+    /**
+     * Determine if the given value should be stored as plain value.
+     *
+     * @param  mixed  $value
+     * @return bool
+     */
+    protected function shouldBeStoredWithoutSerialization($value): bool
+    {
+        return is_numeric($value) && ! in_array($value, [INF, -INF]) && ! is_nan($value);
     }
 
     /**
@@ -254,5 +475,37 @@ class RedisStore extends TaggableStore implements Store
     protected function unserialize($value)
     {
         return is_numeric($value) ? $value : unserialize($value);
+    }
+
+    /**
+     * Handle connection specific considerations when a value needs to be serialized.
+     *
+     * @param  mixed  $value
+     * @param  \Illuminate\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function connectionAwareSerialize($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection && $connection->serialized()) {
+            return $value;
+        }
+
+        return $this->serialize($value);
+    }
+
+    /**
+     * Handle connection specific considerations when a value needs to be unserialized.
+     *
+     * @param  mixed  $value
+     * @param  \Illuminate\Redis\Connections\Connection  $connection
+     * @return mixed
+     */
+    protected function connectionAwareUnserialize($value, $connection)
+    {
+        if ($connection instanceof PhpRedisConnection && $connection->serialized()) {
+            return $value;
+        }
+
+        return $this->unserialize($value);
     }
 }

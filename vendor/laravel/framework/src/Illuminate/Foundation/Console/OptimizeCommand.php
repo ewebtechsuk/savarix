@@ -2,12 +2,13 @@
 
 namespace Illuminate\Foundation\Console;
 
-use ClassPreloader\Factory;
 use Illuminate\Console\Command;
-use Illuminate\Support\Composer;
+use Illuminate\Support\Collection;
+use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputOption;
-use ClassPreloader\Exceptions\VisitorExceptionInterface;
 
+#[AsCommand(name: 'optimize')]
 class OptimizeCommand extends Command
 {
     /**
@@ -22,104 +23,59 @@ class OptimizeCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Optimize the framework for better performance';
-
-    /**
-     * The composer instance.
-     *
-     * @var \Illuminate\Support\Composer
-     */
-    protected $composer;
-
-    /**
-     * Create a new optimize command instance.
-     *
-     * @param  \Illuminate\Support\Composer  $composer
-     * @return void
-     */
-    public function __construct(Composer $composer)
-    {
-        parent::__construct();
-
-        $this->composer = $composer;
-    }
+    protected $description = 'Cache framework bootstrap, configuration, and metadata to increase performance';
 
     /**
      * Execute the console command.
      *
      * @return void
      */
-    public function fire()
+    public function handle()
     {
-        $this->info('Generating optimized class loader');
+        $this->components->info('Caching framework bootstrap, configuration, and metadata.');
 
-        if ($this->option('psr')) {
-            $this->composer->dumpAutoloads();
-        } else {
-            $this->composer->dumpOptimized();
+        $exceptions = Collection::wrap(explode(',', $this->option('except') ?? ''))
+            ->map(fn ($except) => trim($except))
+            ->filter()
+            ->unique()
+            ->flip();
+
+        $tasks = Collection::wrap($this->getOptimizeTasks())
+            ->reject(fn ($command, $key) => $exceptions->hasAny([$command, $key]))
+            ->toArray();
+
+        foreach ($tasks as $description => $command) {
+            $this->components->task($description, fn () => $this->callSilently($command) == 0);
         }
 
-        if ($this->option('force') || ! $this->laravel['config']['app.debug']) {
-            $this->info('Compiling common classes');
-            $this->compileClasses();
-        } else {
-            $this->call('clear-compiled');
-        }
+        $this->newLine();
     }
 
     /**
-     * Generate the compiled class file.
-     *
-     * @return void
-     */
-    protected function compileClasses()
-    {
-        $preloader = (new Factory)->create(['skip' => true]);
-
-        $handle = $preloader->prepareOutput($this->laravel->getCachedCompilePath());
-
-        foreach ($this->getClassFiles() as $file) {
-            try {
-                fwrite($handle, $preloader->getCode($file, false)."\n");
-            } catch (VisitorExceptionInterface $e) {
-                //
-            }
-        }
-
-        fclose($handle);
-    }
-
-    /**
-     * Get the classes that should be combined and compiled.
+     * Get the commands that should be run to optimize the framework.
      *
      * @return array
      */
-    protected function getClassFiles()
+    protected function getOptimizeTasks()
     {
-        $app = $this->laravel;
-
-        $core = require __DIR__.'/Optimize/config.php';
-
-        $files = array_merge($core, $app['config']->get('compile.files', []));
-
-        foreach ($app['config']->get('compile.providers', []) as $provider) {
-            $files = array_merge($files, forward_static_call([$provider, 'compiles']));
-        }
-
-        return array_map('realpath', $files);
+        return [
+            'config' => 'config:cache',
+            'events' => 'event:cache',
+            'routes' => 'route:cache',
+            'views' => 'view:cache',
+            ...ServiceProvider::$optimizeCommands,
+        ];
     }
 
     /**
-     * Get the console command options.
+     * Get the console command arguments.
      *
      * @return array
      */
     protected function getOptions()
     {
         return [
-            ['force', null, InputOption::VALUE_NONE, 'Force the compiled class file to be written.'],
-
-            ['psr', null, InputOption::VALUE_NONE, 'Do not optimize Composer dump-autoload.'],
+            ['except', 'e', InputOption::VALUE_OPTIONAL, 'Do not run the commands matching the key or name'],
         ];
     }
 }

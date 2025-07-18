@@ -14,12 +14,16 @@
         }
     ],
     "require": {
-        "php": ">=5.6.4",
-        "illuminate/container": "5.3.*",
-        "illuminate/contracts": "5.3.*",
-        "illuminate/support": "5.3.*",
-        "psr/log": "~1.0",
-        "swiftmailer/swiftmailer": "~5.4"
+        "php": "^8.2",
+        "illuminate/collections": "^11.0",
+        "illuminate/container": "^11.0",
+        "illuminate/contracts": "^11.0",
+        "illuminate/macroable": "^11.0",
+        "illuminate/support": "^11.0",
+        "league/commonmark": "^2.7",
+        "psr/log": "^1.0|^2.0|^3.0",
+        "symfony/mailer": "^7.0.3",
+        "tijsverkoyen/css-to-inline-styles": "^2.2.5"
     },
     "autoload": {
         "psr-4": {
@@ -28,13 +32,15 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "5.3-dev"
+            "dev-master": "11.x-dev"
         }
     },
     "suggest": {
-        "aws/aws-sdk-php": "Required to use the SES mail driver (~3.0).",
-        "guzzlehttp/guzzle": "Required to use the Mailgun and Mandrill mail drivers (~5.3|~6.0).",
-        "jeremeamia/superclosure": "Required to be able to serialize closures (~2.0)."
+        "aws/aws-sdk-php": "Required to use the SES mail driver (^3.322.9).",
+        "resend/resend-php": "Required to enable support for the Resend mail transport (^0.10.0).",
+        "symfony/http-client": "Required to use the Symfony API mail transports (^7.0).",
+        "symfony/mailgun-mailer": "Required to enable support for the Mailgun mail transport (^7.0).",
+        "symfony/postmark-mailer": "Required to enable support for the Postmark mail transport (^7.0)."
     },
     "config": {
         "sort-packages": true

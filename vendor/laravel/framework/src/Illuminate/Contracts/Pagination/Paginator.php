@@ -2,6 +2,11 @@
 
 namespace Illuminate\Contracts\Pagination;
 
+/**
+ * @template TKey of array-key
+ *
+ * @template-covariant TValue
+ */
 interface Paginator
 {
     /**
@@ -15,7 +20,7 @@ interface Paginator
     /**
      * Add a set of query string values to the paginator.
      *
-     * @param  array|string  $key
+     * @param  array|string|null  $key
      * @param  string|null  $value
      * @return $this
      */
@@ -25,7 +30,7 @@ interface Paginator
      * Get / set the URL fragment to be appended to URLs.
      *
      * @param  string|null  $fragment
-     * @return $this|string
+     * @return $this|string|null
      */
     public function fragment($fragment = null);
 
@@ -46,21 +51,21 @@ interface Paginator
     /**
      * Get all of the items being paginated.
      *
-     * @return array
+     * @return array<TKey, TValue>
      */
     public function items();
 
     /**
      * Get the "index" of the first item being paginated.
      *
-     * @return int
+     * @return int|null
      */
     public function firstItem();
 
     /**
      * Get the "index" of the last item being paginated.
      *
-     * @return int
+     * @return int|null
      */
     public function lastItem();
 
@@ -86,11 +91,18 @@ interface Paginator
     public function hasPages();
 
     /**
-     * Determine if there is more items in the data store.
+     * Determine if there are more items in the data store.
      *
      * @return bool
      */
     public function hasMorePages();
+
+    /**
+     * Get the base path for paginator generated URLs.
+     *
+     * @return string|null
+     */
+    public function path();
 
     /**
      * Determine if the list of items is empty or not.
@@ -100,10 +112,18 @@ interface Paginator
     public function isEmpty();
 
     /**
+     * Determine if the list of items is not empty.
+     *
+     * @return bool
+     */
+    public function isNotEmpty();
+
+    /**
      * Render the paginator using a given view.
      *
      * @param  string|null  $view
+     * @param  array  $data
      * @return string
      */
-    public function render($view = null);
+    public function render($view = null, $data = []);
 }

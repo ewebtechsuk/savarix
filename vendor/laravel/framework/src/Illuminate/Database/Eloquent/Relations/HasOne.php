@@ -2,50 +2,36 @@
 
 namespace Illuminate\Database\Eloquent\Relations;
 
+use Illuminate\Contracts\Database\Eloquent\SupportsPartialRelations;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Concerns\CanBeOneOfMany;
+use Illuminate\Database\Eloquent\Relations\Concerns\ComparesRelatedModels;
+use Illuminate\Database\Eloquent\Relations\Concerns\SupportsDefaultModels;
+use Illuminate\Database\Query\JoinClause;
 
-class HasOne extends HasOneOrMany
+/**
+ * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
+ * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
+ *
+ * @extends \Illuminate\Database\Eloquent\Relations\HasOneOrMany<TRelatedModel, TDeclaringModel, ?TRelatedModel>
+ */
+class HasOne extends HasOneOrMany implements SupportsPartialRelations
 {
-    /**
-     * Indicates if a default model instance should be used.
-     *
-     * Alternatively, may be a Closure to execute to retrieve default value.
-     *
-     * @var \Closure|bool
-     */
-    protected $withDefault;
+    use ComparesRelatedModels, CanBeOneOfMany, SupportsDefaultModels;
 
-    /**
-     * Return a new model instance in case the relationship does not exist.
-     *
-     * @param  \Closure|bool  $callback
-     * @return $this
-     */
-    public function withDefault($callback = true)
-    {
-        $this->withDefault = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the results of the relationship.
-     *
-     * @return mixed
-     */
+    /** @inheritDoc */
     public function getResults()
     {
+        if (is_null($this->getParentKey())) {
+            return $this->getDefaultFor($this->parent);
+        }
+
         return $this->query->first() ?: $this->getDefaultFor($this->parent);
     }
 
-    /**
-     * Initialize the relation on a set of models.
-     *
-     * @param  array   $models
-     * @param  string  $relation
-     * @return array
-     */
+    /** @inheritDoc */
     public function initRelation(array $models, $relation)
     {
         foreach ($models as $model) {
@@ -55,43 +41,78 @@ class HasOne extends HasOneOrMany
         return $models;
     }
 
-    /**
-     * Match the eagerly loaded results to their parents.
-     *
-     * @param  array  $models
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
-     * @param  string  $relation
-     * @return array
-     */
-    public function match(array $models, Collection $results, $relation)
+    /** @inheritDoc */
+    public function match(array $models, EloquentCollection $results, $relation)
     {
         return $this->matchOne($models, $results, $relation);
     }
 
-    /**
-     * Get the default value for this relation.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return \Illuminate\Database\Eloquent\Model|null
-     */
-    protected function getDefaultFor(Model $model)
+    /** @inheritDoc */
+    public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
     {
-        if (! $this->withDefault) {
-            return;
+        if ($this->isOneOfMany()) {
+            $this->mergeOneOfManyJoinsTo($query);
         }
 
-        $instance = $this->related->newInstance()->setAttribute(
-            $this->getPlainForeignKey(), $model->getAttribute($this->localKey)
-        );
+        return parent::getRelationExistenceQuery($query, $parentQuery, $columns);
+    }
 
-        if (is_callable($this->withDefault)) {
-            return call_user_func($this->withDefault, $instance) ?: $instance;
-        }
+    /**
+     * Add constraints for inner join subselect for one of many relationships.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
+     * @param  string|null  $column
+     * @param  string|null  $aggregate
+     * @return void
+     */
+    public function addOneOfManySubQueryConstraints(Builder $query, $column = null, $aggregate = null)
+    {
+        $query->addSelect($this->foreignKey);
+    }
 
-        if (is_array($this->withDefault)) {
-            $instance->forceFill($this->withDefault);
-        }
+    /**
+     * Get the columns that should be selected by the one of many subquery.
+     *
+     * @return array|string
+     */
+    public function getOneOfManySubQuerySelectColumns()
+    {
+        return $this->foreignKey;
+    }
 
-        return $instance;
+    /**
+     * Add join query constraints for one of many relationships.
+     *
+     * @param  \Illuminate\Database\Query\JoinClause  $join
+     * @return void
+     */
+    public function addOneOfManyJoinSubQueryConstraints(JoinClause $join)
+    {
+        $join->on($this->qualifySubSelectColumn($this->foreignKey), '=', $this->qualifyRelatedColumn($this->foreignKey));
+    }
+
+    /**
+     * Make a new related instance for the given model.
+     *
+     * @param  TDeclaringModel  $parent
+     * @return TRelatedModel
+     */
+    public function newRelatedInstanceFor(Model $parent)
+    {
+        return tap($this->related->newInstance(), function ($instance) use ($parent) {
+            $instance->setAttribute($this->getForeignKeyName(), $parent->{$this->localKey});
+            $this->applyInverseRelationToModel($instance, $parent);
+        });
+    }
+
+    /**
+     * Get the value of the model's foreign key.
+     *
+     * @param  TRelatedModel  $model
+     * @return int|string
+     */
+    protected function getRelatedKeyFrom(Model $model)
+    {
+        return $model->getAttribute($this->getForeignKeyName());
     }
 }

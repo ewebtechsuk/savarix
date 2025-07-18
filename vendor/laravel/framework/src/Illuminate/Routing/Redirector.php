@@ -4,9 +4,12 @@ namespace Illuminate\Routing;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Session\Store as SessionStore;
+use Illuminate\Support\Traits\Macroable;
 
 class Redirector
 {
+    use Macroable;
+
     /**
      * The URL generator instance.
      *
@@ -33,35 +36,22 @@ class Redirector
     }
 
     /**
-     * Create a new redirect response to the "home" route.
-     *
-     * @param  int  $status
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function home($status = 302)
-    {
-        return $this->to($this->generator->route('home'), $status);
-    }
-
-    /**
      * Create a new redirect response to the previous location.
      *
-     * @param  int    $status
+     * @param  int  $status
      * @param  array  $headers
-     * @param  string  $fallback
+     * @param  mixed  $fallback
      * @return \Illuminate\Http\RedirectResponse
      */
     public function back($status = 302, $headers = [], $fallback = false)
     {
-        $back = $this->generator->previous($fallback);
-
-        return $this->createRedirect($back, $status, $headers);
+        return $this->createRedirect($this->generator->previous($fallback), $status, $headers);
     }
 
     /**
      * Create a new redirect response to the current URI.
      *
-     * @param  int    $status
+     * @param  int  $status
      * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -74,14 +64,22 @@ class Redirector
      * Create a new redirect response, while putting the current URL in the session.
      *
      * @param  string  $path
-     * @param  int     $status
-     * @param  array   $headers
-     * @param  bool    $secure
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  bool|null  $secure
      * @return \Illuminate\Http\RedirectResponse
      */
     public function guest($path, $status = 302, $headers = [], $secure = null)
     {
-        $this->session->put('url.intended', $this->generator->full());
+        $request = $this->generator->getRequest();
+
+        $intended = $request->isMethod('GET') && $request->route() && ! $request->expectsJson()
+                        ? $this->generator->full()
+                        : $this->generator->previous();
+
+        if ($intended) {
+            $this->setIntendedUrl($intended);
+        }
 
         return $this->to($path, $status, $headers, $secure);
     }
@@ -89,10 +87,10 @@ class Redirector
     /**
      * Create a new redirect response to the previously intended location.
      *
-     * @param  string  $default
-     * @param  int     $status
-     * @param  array   $headers
-     * @param  bool    $secure
+     * @param  mixed  $default
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  bool|null  $secure
      * @return \Illuminate\Http\RedirectResponse
      */
     public function intended($default = '/', $status = 302, $headers = [], $secure = null)
@@ -106,24 +104,22 @@ class Redirector
      * Create a new redirect response to the given path.
      *
      * @param  string  $path
-     * @param  int     $status
-     * @param  array   $headers
-     * @param  bool    $secure
+     * @param  int  $status
+     * @param  array  $headers
+     * @param  bool|null  $secure
      * @return \Illuminate\Http\RedirectResponse
      */
     public function to($path, $status = 302, $headers = [], $secure = null)
     {
-        $path = $this->generator->to($path, [], $secure);
-
-        return $this->createRedirect($path, $status, $headers);
+        return $this->createRedirect($this->generator->to($path, [], $secure), $status, $headers);
     }
 
     /**
      * Create a new redirect response to an external URL (no validation).
      *
      * @param  string  $path
-     * @param  int     $status
-     * @param  array   $headers
+     * @param  int  $status
+     * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
     public function away($path, $status = 302, $headers = [])
@@ -135,8 +131,8 @@ class Redirector
      * Create a new redirect response to the given HTTPS path.
      *
      * @param  string  $path
-     * @param  int     $status
-     * @param  array   $headers
+     * @param  int  $status
+     * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
     public function secure($path, $status = 302, $headers = [])
@@ -147,54 +143,78 @@ class Redirector
     /**
      * Create a new redirect response to a named route.
      *
-     * @param  string  $route
-     * @param  array   $parameters
-     * @param  int     $status
-     * @param  array   $headers
+     * @param  \BackedEnum|string  $route
+     * @param  mixed  $parameters
+     * @param  int  $status
+     * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
     public function route($route, $parameters = [], $status = 302, $headers = [])
     {
-        $path = $this->generator->route($route, $parameters);
+        return $this->to($this->generator->route($route, $parameters), $status, $headers);
+    }
 
-        return $this->to($path, $status, $headers);
+    /**
+     * Create a new redirect response to a signed named route.
+     *
+     * @param  \BackedEnum|string  $route
+     * @param  mixed  $parameters
+     * @param  \DateTimeInterface|\DateInterval|int|null  $expiration
+     * @param  int  $status
+     * @param  array  $headers
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function signedRoute($route, $parameters = [], $expiration = null, $status = 302, $headers = [])
+    {
+        return $this->to($this->generator->signedRoute($route, $parameters, $expiration), $status, $headers);
+    }
+
+    /**
+     * Create a new redirect response to a signed named route.
+     *
+     * @param  \BackedEnum|string  $route
+     * @param  \DateTimeInterface|\DateInterval|int|null  $expiration
+     * @param  mixed  $parameters
+     * @param  int  $status
+     * @param  array  $headers
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function temporarySignedRoute($route, $expiration, $parameters = [], $status = 302, $headers = [])
+    {
+        return $this->to($this->generator->temporarySignedRoute($route, $expiration, $parameters), $status, $headers);
     }
 
     /**
      * Create a new redirect response to a controller action.
      *
-     * @param  string  $action
-     * @param  array   $parameters
-     * @param  int     $status
-     * @param  array   $headers
+     * @param  string|array  $action
+     * @param  mixed  $parameters
+     * @param  int  $status
+     * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
     public function action($action, $parameters = [], $status = 302, $headers = [])
     {
-        $path = $this->generator->action($action, $parameters);
-
-        return $this->to($path, $status, $headers);
+        return $this->to($this->generator->action($action, $parameters), $status, $headers);
     }
 
     /**
      * Create a new redirect response.
      *
      * @param  string  $path
-     * @param  int     $status
-     * @param  array   $headers
+     * @param  int  $status
+     * @param  array  $headers
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function createRedirect($path, $status, $headers)
     {
-        $redirect = new RedirectResponse($path, $status, $headers);
+        return tap(new RedirectResponse($path, $status, $headers), function ($redirect) {
+            if (isset($this->session)) {
+                $redirect->setSession($this->session);
+            }
 
-        if (isset($this->session)) {
-            $redirect->setSession($this->session);
-        }
-
-        $redirect->setRequest($this->generator->getRequest());
-
-        return $redirect;
+            $redirect->setRequest($this->generator->getRequest());
+        });
     }
 
     /**
@@ -216,5 +236,28 @@ class Redirector
     public function setSession(SessionStore $session)
     {
         $this->session = $session;
+    }
+
+    /**
+     * Get the "intended" URL from the session.
+     *
+     * @return string|null
+     */
+    public function getIntendedUrl()
+    {
+        return $this->session->get('url.intended');
+    }
+
+    /**
+     * Set the "intended" URL in the session.
+     *
+     * @param  string  $url
+     * @return $this
+     */
+    public function setIntendedUrl($url)
+    {
+        $this->session->put('url.intended', $url);
+
+        return $this;
     }
 }

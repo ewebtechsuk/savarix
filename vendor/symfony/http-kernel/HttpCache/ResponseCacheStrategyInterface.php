@@ -27,15 +27,11 @@ interface ResponseCacheStrategyInterface
 {
     /**
      * Adds a Response.
-     *
-     * @param Response $response
      */
-    public function add(Response $response);
+    public function add(Response $response): void;
 
     /**
      * Updates the Response HTTP headers based on the embedded Responses.
-     *
-     * @param Response $response
      */
-    public function update(Response $response);
+    public function update(Response $response): void;
 }

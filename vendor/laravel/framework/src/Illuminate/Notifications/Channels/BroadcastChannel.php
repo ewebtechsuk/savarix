@@ -2,11 +2,11 @@
 
 namespace Illuminate\Notifications\Channels;
 
-use RuntimeException;
-use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Notification;
+use RuntimeException;
 
 class BroadcastChannel
 {
@@ -18,7 +18,7 @@ class BroadcastChannel
     protected $events;
 
     /**
-     * Create a new database channel.
+     * Create a new broadcast channel.
      *
      * @param  \Illuminate\Contracts\Events\Dispatcher  $events
      * @return void
@@ -45,10 +45,10 @@ class BroadcastChannel
 
         if ($message instanceof BroadcastMessage) {
             $event->onConnection($message->connection)
-                  ->onQueue($message->queue);
+                ->onQueue($message->queue);
         }
 
-        return $this->events->fire($event);
+        return $this->events->dispatch($event);
     }
 
     /**
@@ -70,8 +70,6 @@ class BroadcastChannel
             return $notification->toArray($notifiable);
         }
 
-        throw new RuntimeException(
-            'Notification is missing toArray method.'
-        );
+        throw new RuntimeException('Notification is missing toBroadcast / toArray method.');
     }
 }
