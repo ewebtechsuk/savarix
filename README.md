@@ -28,3 +28,7 @@ Tests are written with PHPUnit. After installing dependencies with Composer run 
 
 If you have PHPUnit installed globally you can simply run `phpunit` instead.
 
+
+### Continuous Integration
+
+A GitHub Actions workflow runs the PHPUnit suite on every push and pull request. The workflow is defined in `.github/workflows/ci.yml`.
