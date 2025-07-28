@@ -49,3 +49,17 @@ A GitHub Actions workflow runs the PHPUnit suite on every push and pull request.
 
 After configuration the site will be accessible at your Hostinger domain.
 
+
+## Setting up in the Codex environment
+
+To initialize the project when working in Codex or any fresh development container:
+
+1. Ensure the container has internet access to install dependencies.
+2. From the project root make the setup script executable (if it isn't already) and run it:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+The script installs Composer and Node dependencies, copies `.env.example` to `.env` if necessary, generates an application key, runs database migrations and clears caches.
+After it finishes you can run tests or start the application with `php artisan serve`.
