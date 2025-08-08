@@ -49,6 +49,7 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
     Route::resource('contacts', ContactController::class);
     Route::resource('diary', DiaryController::class);
     Route::resource('accounts', AccountController::class);
+    Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
 });
 
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');

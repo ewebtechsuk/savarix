@@ -8,6 +8,7 @@ use App\Jobs\GenerateMonthlyInvoices;
 use App\Models\Invoice;
 use App\Notifications\RentDueNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Services\WorkflowEngine;
 
 class Kernel extends ConsoleKernel
 {
@@ -48,6 +49,10 @@ class Kernel extends ConsoleKernel
                     }
                 });
         })->daily();
+
+        $schedule->call(function () {
+            app(WorkflowEngine::class)->runScheduled();
+        })->everyMinute();
     }
 
     /**
