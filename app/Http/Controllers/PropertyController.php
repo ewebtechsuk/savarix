@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyMedia;
+use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Facades\Tenancy;
 use Illuminate\Support\Facades\Http;
 
@@ -84,6 +85,7 @@ class PropertyController extends Controller
             'type' => 'nullable|string',
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -110,6 +112,20 @@ class PropertyController extends Controller
             }
         }
         $property = Property::create($validated);
+
+        if ($request->hasFile('media')) {
+            $order = $property->media()->max('order') ?? 0;
+            foreach ($request->file('media') as $file) {
+                $order++;
+                $path = Storage::disk('public')->putFile('property_media', $file);
+                $property->media()->create([
+                    'file_path' => $path,
+                    'type' => $file->getClientMimeType(),
+                    'order' => $order,
+                ]);
+            }
+        }
+
         // Save features
         $features = $request->input('features', []);
         foreach ($features as $feature) {
@@ -170,6 +186,7 @@ class PropertyController extends Controller
             'type' => 'nullable|string',
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -191,6 +208,20 @@ class PropertyController extends Controller
             }
         }
         $property->update($validated);
+
+        if ($request->hasFile('media')) {
+            $order = $property->media()->max('order') ?? 0;
+            foreach ($request->file('media') as $file) {
+                $order++;
+                $path = Storage::disk('public')->putFile('property_media', $file);
+                $property->media()->create([
+                    'file_path' => $path,
+                    'type' => $file->getClientMimeType(),
+                    'order' => $order,
+                ]);
+            }
+        }
+
         // Update features
         $property->features()->delete();
         $features = $request->input('features', []);

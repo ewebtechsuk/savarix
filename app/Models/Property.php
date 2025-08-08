@@ -33,7 +33,7 @@ class Property extends Model
     }
     public function media()
     {
-        return $this->hasMany(PropertyMedia::class);
+        return $this->hasMany(PropertyMedia::class)->orderBy('order');
     }
     public function features()
     {

@@ -161,13 +161,10 @@
                                 </div>
                             @endforeach
                         </div>
-                        <form action="{{ route('properties.media.store', $property) }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <div class="mb-2">
-                                <input type="file" name="media[]" multiple class="form-control" accept="image/*">
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary">Upload Images</button>
-                        </form>
+                        <div class="mb-3">
+                            <label for="media" class="form-label">Add Images</label>
+                            <input type="file" name="media[]" multiple class="form-control" accept="image/*">
+                        </div>
                         <div class="mb-3">
                             <label for="features" class="form-label">Property Features</label>
                             <div class="row">
