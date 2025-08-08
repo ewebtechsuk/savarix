@@ -33,4 +33,13 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
+
+    'docusign' => [
+        'key' => env('DOCUSIGN_API_KEY'),
+        'secret' => env('DOCUSIGN_API_SECRET'),
+    ],
+
+    'hellosign' => [
+        'key' => env('HELLOSIGN_API_KEY'),
+    ],
 ];

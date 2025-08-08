@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\DocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,3 +25,5 @@ use Illuminate\Http\Request;
 // Route::group(['middleware'=>'token'],function(){
 // 	Route::post('import-property','PropertiesController@importProperties');
 // });
+
+Route::post('/signing/callback', [DocumentController::class, 'callback'])->name('signing.callback');
