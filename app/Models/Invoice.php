@@ -7,7 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 class Invoice extends Model
 {
     protected $fillable = [
-        'number', 'date', 'contact_id', 'property_id', 'amount', 'status', 'due_date', 'notes'
+        'number',
+        'date',
+        'contact_id',
+        'property_id',
+        'tenancy_id',
+        'amount',
+        'status',
+        'due_date',
+        'notes',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
+        'due_date' => 'date',
     ];
 
     public function payments()
@@ -21,5 +34,10 @@ class Invoice extends Model
     public function property()
     {
         return $this->belongsTo(Property::class);
+    }
+
+    public function tenancy()
+    {
+        return $this->belongsTo(Tenancy::class);
     }
 }

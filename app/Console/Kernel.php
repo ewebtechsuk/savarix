@@ -4,6 +4,10 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Jobs\GenerateMonthlyInvoices;
+use App\Models\Invoice;
+use App\Notifications\RentDueNotification;
+use Illuminate\Support\Facades\Notification;
 
 class Kernel extends ConsoleKernel
 {
@@ -29,8 +33,21 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+        $schedule->job(new GenerateMonthlyInvoices())->daily();
+
+        $schedule->call(function () {
+            Invoice::where('status', 'unpaid')
+                ->whereDate('due_date', now()->toDateString())
+                ->with('tenancy.contact')
+                ->get()
+                ->each(function ($invoice) {
+                    $email = $invoice->tenancy->contact?->email;
+                    if ($email) {
+                        Notification::route('mail', $email)
+                            ->notify(new RentDueNotification($invoice));
+                    }
+                });
+        })->daily();
     }
 
     /**
