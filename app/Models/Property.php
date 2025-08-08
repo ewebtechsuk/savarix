@@ -14,7 +14,8 @@ class Property extends Model
     protected $guarded = ['id'];
 
     protected $fillable = [
-        'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id'
+        'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id',
+        'latitude', 'longitude'
     ];
 
     // Relationships
