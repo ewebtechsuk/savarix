@@ -15,7 +15,7 @@ class Property extends Model
 
     protected $fillable = [
         'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id',
-        'latitude', 'longitude'
+        'latitude', 'longitude', 'valuation_estimate'
     ];
 
     // Relationships

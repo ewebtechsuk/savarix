@@ -63,6 +63,11 @@
                                 <div class="col"><strong>Type:</strong> {{ config('property.property_types')[$property->type] ?? ucfirst($property->type) }}</div>
                                 <div class="col"><strong>Status:</strong> <span class="badge bg-{{ $property->status == 'available' ? 'success' : 'secondary' }}">{{ ucfirst($property->status) }}</span></div>
                             </div>
+                            @if($property->valuation_estimate)
+                                <div class="row mb-2">
+                                    <div class="col"><strong>Valuation Range:</strong> £{{ number_format($property->valuation_estimate * 0.9, 2) }} - £{{ number_format($property->valuation_estimate * 1.1, 2) }}</div>
+                                </div>
+                            @endif
                             <div class="row mb-2">
                                 <div class="col"><strong>Bedrooms:</strong> {{ $property->bedrooms }}</div>
                                 <div class="col"><strong>Bathrooms:</strong> {{ $property->bathrooms }}</div>
