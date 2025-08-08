@@ -8,3 +8,8 @@ window.Alpine = Alpine;
 window.L = L;
 
 Alpine.start();
+
+import './portal/statements';
+import './portal/maintenance';
+import './portal/messaging';
+import './portal/profile';

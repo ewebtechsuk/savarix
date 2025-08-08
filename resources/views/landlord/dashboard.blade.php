@@ -5,14 +5,14 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">Tenant Dashboard</div>
+                <div class="card-header">Landlord Dashboard</div>
                 <div class="card-body space-y-4">
-                    <h3 class="text-xl font-semibold">Welcome to your tenant portal!</h3>
+                    <h3 class="text-xl font-semibold">Welcome to your landlord portal!</h3>
                     <ul class="list-disc pl-5">
-                        <li>View financial statements</li>
-                        <li>Submit maintenance requests</li>
-                        <li>Check messages from your landlord</li>
-                        <li>Manage your profile details</li>
+                        <li>Review tenant statements</li>
+                        <li>Track maintenance requests</li>
+                        <li>Message your tenants</li>
+                        <li>Manage your profile</li>
                     </ul>
                     <form method="POST" action="/logout" class="mt-4">
                         @csrf
