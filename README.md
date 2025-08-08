@@ -33,6 +33,11 @@ If you have PHPUnit installed globally you can simply run `phpunit` instead.
 
 A GitHub Actions workflow runs the PHPUnit suite on every push and pull request. The workflow is defined in `.github/workflows/ci.yml`.
 
+## GitHub Pages preview
+
+The static frontend located in `frontend/` is automatically published to GitHub Pages using the workflow in `.github/workflows/pages.yml`.
+Push changes to `main` and visit the repository's Pages environment to view the site.
+
 ## Deploying to Hostinger
 
 1. Push your local code to a remote Git provider such as GitHub.
