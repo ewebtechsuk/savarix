@@ -7,6 +7,7 @@ use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyMedia;
 use Stancl\Tenancy\Facades\Tenancy;
+use Illuminate\Support\Facades\Http;
 
 class PropertyController extends Controller
 {
@@ -30,6 +31,19 @@ class PropertyController extends Controller
                   ->orWhere('status', 'like', "%$search%") ;
             });
         }
+
+        if ($request->filled('origin') && $request->filled('radius')) {
+            $coords = $this->geocodeAddress($request->input('origin'));
+            if ($coords) {
+                $lat = $coords['lat'];
+                $lng = $coords['lng'];
+                $radius = $request->input('radius');
+                $query->selectRaw("properties.*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", [$lat, $lng, $lat])
+                      ->having('distance', '<=', $radius)
+                      ->orderBy('distance');
+            }
+        }
+
         $properties = $query->get();
         // Always return the view, even if $properties is empty
         return view('properties.index', compact('properties'));
@@ -86,6 +100,14 @@ class PropertyController extends Controller
         $tenant = tenant(); // Stancl Tenancy v3+ helper
         if ($tenant) {
             $validated['tenant_id'] = $tenant->id;
+        }
+        $coords = null;
+        if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
+            $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
+            if ($coords) {
+                $validated['latitude'] = $coords['lat'];
+                $validated['longitude'] = $coords['lng'];
+            }
         }
         $property = Property::create($validated);
         // Save features
@@ -161,6 +183,13 @@ class PropertyController extends Controller
                 $validated['document'] = $request->file('document')->store('property_docs', 'public');
             }
         }
+        if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
+            $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
+            if ($coords) {
+                $validated['latitude'] = $coords['lat'];
+                $validated['longitude'] = $coords['lng'];
+            }
+        }
         $property->update($validated);
         // Update features
         $property->features()->delete();
@@ -196,5 +225,28 @@ class PropertyController extends Controller
         $property->landlord_id = $request->landlord_id;
         $property->save();
         return redirect()->route('properties.show', $property)->with('success', 'Landlord assigned successfully.');
+    }
+
+    /**
+     * Geocode an address to coordinates.
+     */
+    protected function geocodeAddress(string $address): ?array
+    {
+        $response = Http::withHeaders([
+            'User-Agent' => 'Ressapp'
+        ])->get('https://nominatim.openstreetmap.org/search', [
+            'q' => $address,
+            'format' => 'json',
+            'limit' => 1,
+        ]);
+
+        if ($response->successful() && isset($response[0])) {
+            return [
+                'lat' => $response[0]['lat'],
+                'lng' => $response[0]['lon'],
+            ];
+        }
+
+        return null;
     }
 }

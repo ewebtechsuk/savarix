@@ -68,6 +68,9 @@
                                 <div class="col"><strong>Bathrooms:</strong> {{ $property->bathrooms }}</div>
                             </div>
                             <div class="mb-2"><strong>Address:</strong> {{ $property->address }}, {{ $property->city }}, {{ $property->postcode }}</div>
+                            @if($property->latitude && $property->longitude)
+                                <div id="property-map" style="height: 300px;" class="mb-3"></div>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="media" role="tabpanel">
                             <h5>Media Gallery</h5>
@@ -181,7 +184,15 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('property-map')) {
+        const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        L.marker([{{ $property->latitude }}, {{ $property->longitude }}]).addTo(map);
+    }
     $('#landlord-select').select2({
         placeholder: 'Search for a landlord...',
         ajax: {
