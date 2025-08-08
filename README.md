@@ -38,23 +38,6 @@ A GitHub Actions workflow runs the PHPUnit suite on every push and pull request.
 The static frontend located in `frontend/` is automatically published to GitHub Pages using the workflow in `.github/workflows/pages.yml`.
 Push changes to `main` and visit the repository's Pages environment to view the site.
 
-## Deploying to Hostinger
-
-1. Push your local code to a remote Git provider such as GitHub.
-2. In Hostinger's **Git** interface choose **Add repository** and clone the repo into your account.
-3. Set your domain (e.g. `darkorange-chinchilla-918430.hostingersite.com`) to use the project's `public` directory as its document root.
-4. Enable SSH access and run the helper script from the project root:
-
-   ```bash
-   ./hostinger-setup.sh
-   ```
-
-   The script installs Composer dependencies, copies `.env.example` if needed,
-   runs database migrations and adjusts directory permissions.
-
-After configuration the site will be accessible at your Hostinger domain.
-
-
 ## Setting up in the Codex environment
 
 To initialize the project when working in Codex or any fresh development container:
