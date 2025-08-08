@@ -8,9 +8,14 @@ if [ -f ".env" ]; then
   set +a
 fi
 
-# Ensure required environment variables are set
-: "${OPENAI_API_KEY:?OPENAI_API_KEY is not set}"
+# Ensure required environment variables are set. The OpenAI key is
+# expected in the custom variable `ressapp_aktonz`. It is then exported
+# as `OPENAI_API_KEY` for tools that rely on the default name.
+: "${ressapp_aktonz:?ressapp_aktonz is not set}"
 : "${OTHER_REQUIRED_KEY:?OTHER_REQUIRED_KEY is not set}"
+
+# Map custom variable to the standard name used by Codex CLI
+OPENAI_API_KEY="$ressapp_aktonz"
 
 # Install Codex CLI if not already installed
 if ! command -v codex-cli >/dev/null 2>&1; then
