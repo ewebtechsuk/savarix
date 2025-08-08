@@ -5,6 +5,7 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Jobs\GenerateMonthlyInvoices;
+use App\Jobs\UpdateValuations;
 use App\Models\Invoice;
 use App\Models\Property;
 use App\Jobs\SyncPropertyToPortals;
@@ -26,6 +27,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new GenerateMonthlyInvoices())->daily();
+        $schedule->job(new UpdateValuations())->dailyAt('00:00');
 
         $schedule->call(function () {
             Property::where('publish_to_portal', true)->each(function (Property $property) {

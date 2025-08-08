@@ -20,7 +20,8 @@ class Property extends Model
 
     protected $fillable = [
         'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id',
-        'latitude', 'longitude', 'publish_to_portal', 'send_marketing_campaign'
+        'latitude', 'longitude', 'valuation_estimate', 'publish_to_portal', 'send_marketing_campaign'
+
     ];
 
     protected static function booted()
