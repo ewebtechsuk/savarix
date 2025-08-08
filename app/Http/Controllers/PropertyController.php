@@ -86,6 +86,8 @@ class PropertyController extends Controller
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'publish_to_portal' => 'boolean',
+            'send_marketing_campaign' => 'boolean',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -99,6 +101,8 @@ class PropertyController extends Controller
                 $validated['document'] = $request->file('document')->store('property_docs', 'public');
             }
         }
+        $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
+        $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
         $tenant = tenant(); // Stancl Tenancy v3+ helper
         if ($tenant) {
             $validated['tenant_id'] = $tenant->id;
@@ -147,7 +151,7 @@ class PropertyController extends Controller
         if (!$tenant || $property->tenant_id !== $tenant->id) {
             abort(404, 'Property not found for this tenant.');
         }
-        $property->load(['media', 'features', 'landlord']);
+        $property->load(['media', 'features', 'landlord', 'documents']);
         $features = $property->features()->pluck('name')->toArray();
         return view('properties.show', compact('property', 'features'));
     }
@@ -187,6 +191,8 @@ class PropertyController extends Controller
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'publish_to_portal' => 'boolean',
+            'send_marketing_campaign' => 'boolean',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -200,6 +206,8 @@ class PropertyController extends Controller
                 $validated['document'] = $request->file('document')->store('property_docs', 'public');
             }
         }
+        $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
+        $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
         if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
             $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
             if ($coords) {
