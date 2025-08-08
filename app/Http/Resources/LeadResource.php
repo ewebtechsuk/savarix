@@ -15,6 +15,7 @@ class LeadResource extends JsonResource
             'contact_id' => $this->contact_id,
             'property_id' => $this->property_id,
             'notes' => $this->notes,
+            'score' => $this->score,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

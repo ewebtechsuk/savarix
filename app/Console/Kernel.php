@@ -5,17 +5,16 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Jobs\GenerateMonthlyInvoices;
+use App\Jobs\UpdateValuations;
 use App\Models\Invoice;
+use App\Models\Property;
+use App\Jobs\SyncPropertyToPortals;
 use App\Notifications\RentDueNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Services\WorkflowEngine;
 
 class Kernel extends ConsoleKernel
 {
-    /**
-     * The Artisan commands provided by your application.
-     *
-     * @var array
-     */
     protected $commands = [
         \App\Console\Commands\AssignCompanyIds::class,
         \App\Console\Commands\GenerateLoginToken::class,
@@ -25,15 +24,16 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\FixAktonzTenantData::class,
     ];
 
-    /**
-     * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
-     * @return void
-     */
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new GenerateMonthlyInvoices())->daily();
+        $schedule->job(new UpdateValuations())->dailyAt('00:00');
+
+        $schedule->call(function () {
+            Property::where('publish_to_portal', true)->each(function (Property $property) {
+                SyncPropertyToPortals::dispatch($property);
+            });
+        })->daily();
 
         $schedule->call(function () {
             Invoice::where('status', 'unpaid')
@@ -48,13 +48,12 @@ class Kernel extends ConsoleKernel
                     }
                 });
         })->daily();
+
+        $schedule->call(function () {
+            app(WorkflowEngine::class)->runScheduled();
+        })->everyMinute();
     }
 
-    /**
-     * Register the Closure based commands for the application.
-     *
-     * @return void
-     */
     protected function commands()
     {
         require base_path('routes/console.php');
