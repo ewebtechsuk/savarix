@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
-            $table->date('date');
-            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->foreignId('tenancy_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 12, 2);
-            $table->string('method')->nullable();
-            $table->text('notes')->nullable();
+            $table->string('status')->default('pending');
+            $table->string('stripe_reference')->nullable();
+            $table->timestamps();
         });
     }
 
