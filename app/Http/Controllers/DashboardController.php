@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Property;
+use App\Models\Tenancy as TenancyModel;
+use App\Models\Payment;
+use App\Models\Lead;
 use App\Models\Tenant;
 
 class DashboardController extends Controller
@@ -14,13 +19,22 @@ class DashboardController extends Controller
 
     public function index()
     {
-        // Get all tenants, handle if none exist
-        try {
-            $tenants = Tenant::all();
-        } catch (\Exception $e) {
-            $tenants = collect();
-        }
-        return view('dashboard.index', compact('tenants'));
+        $stats = Cache::remember('dashboard.stats', 60, function () {
+            return [
+                'property_count' => Property::count(),
+                'tenancy_count' => TenancyModel::count(),
+                'payment_count' => Payment::count(),
+                'lead_count' => Lead::count(),
+                'monthly_payments' => Payment::selectRaw('DATE_FORMAT(date, "%Y-%m") as month, SUM(amount) as total')
+                    ->where('date', '>=', now()->subMonths(5)->startOfMonth())
+                    ->groupBy('month')
+                    ->orderBy('month')
+                    ->pluck('total', 'month')
+                    ->toArray(),
+            ];
+        });
+
+        return view('dashboard.index', ['stats' => $stats]);
     }
 
     public function impersonate($tenantId)

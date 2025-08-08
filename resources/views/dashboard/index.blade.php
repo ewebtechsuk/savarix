@@ -2,55 +2,55 @@
 
 @section('content')
 <div class="container py-4">
-    <h1 class="fw-bold mb-4">Tenants / Companies</h1>
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-    <form method="POST" action="{{ route('dashboard.create') }}" class="mb-4">
-        @csrf
-        <div class="row mb-2">
-            <div class="col-md-4">
-                <input type="text" name="company_id" class="form-control" placeholder="Company ID" required>
-            </div>
-            <div class="col-md-4">
-                <input type="text" name="name" class="form-control" placeholder="Company Name" required>
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary">Add Tenant</button>
+    <h1 class="fw-bold mb-4">Dashboard</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Properties</h5>
+                    <p class="card-text fs-4">{{ $stats['property_count'] }}</p>
+                </div>
             </div>
         </div>
-    </form>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Company ID</th>
-                <th>Name</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($tenants as $tenant)
-            <tr>
-                <td>{{ $tenant->id ?? 'N/A' }}</td>
-                <td>{{ is_array($tenant->data ?? null) ? ($tenant->data['company_id'] ?? 'N/A') : 'N/A' }}</td>
-                <td>{{ is_array($tenant->data ?? null) ? ($tenant->data['name'] ?? 'N/A') : 'N/A' }}</td>
-                <td>
-                    <form method="POST" action="{{ route('dashboard.destroy', $tenant->id) }}" style="display:inline-block;">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                    <a href="{{ route('dashboard.impersonate', $tenant->id) }}" class="btn btn-warning btn-sm">Impersonate Admin</a>
-                    <a href="http://{{ is_array($tenant->data ?? null) ? ($tenant->data['company_id'] ?? '') : '' }}.ressapp.localhost:8888/login" class="btn btn-secondary btn-sm">Login as Tenant</a>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="4" class="text-center">No tenants found.</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Tenancies</h5>
+                    <p class="card-text fs-4">{{ $stats['tenancy_count'] }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Leads</h5>
+                    <p class="card-text fs-4">{{ $stats['lead_count'] }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Payments</h5>
+                    <p class="card-text fs-4">{{ $stats['payment_count'] }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <canvas id="modelCountsChart"></canvas>
+        </div>
+        <div class="col-md-6 mb-4">
+            <canvas id="paymentsChart"></canvas>
+        </div>
+    </div>
+
+    <div id="stats-data" data-stats='@json($stats)' class="d-none"></div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@vite('resources/js/dashboard.js')
 @endsection
+
