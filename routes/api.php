@@ -1,17 +1,22 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PropertyApiController;
+use App\Http\Controllers\Api\TenancyApiController;
+use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\WebhookApiController;
+use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\DocumentController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
+Route::post('login', [AuthApiController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('properties', PropertyApiController::class);
+    Route::apiResource('tenancies', TenancyApiController::class);
+    Route::apiResource('payments', PaymentApiController::class);
+    Route::apiResource('webhooks', WebhookApiController::class)->only(['index', 'store', 'destroy']);
+});
 
 /*(Route::get('/user', function (Request $request) {
     return $request->user();
@@ -24,3 +29,5 @@ use Illuminate\Http\Request;
 // Route::group(['middleware'=>'token'],function(){
 // 	Route::post('import-property','PropertiesController@importProperties');
 // });
+
+Route::post('/signing/callback', [DocumentController::class, 'callback'])->name('signing.callback');

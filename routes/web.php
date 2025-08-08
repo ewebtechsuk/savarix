@@ -8,6 +8,8 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DiaryController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\InspectionController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,7 +57,11 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
     Route::resource('contacts', ContactController::class);
     Route::resource('diary', DiaryController::class);
     Route::resource('accounts', AccountController::class);
-
+    Route::resource('inspections', InspectionController::class);
+    Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
+    Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+    Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('maintenance/create', [MaintenanceRequestController::class, 'create'])->name('maintenance.create');
     Route::post('maintenance', [MaintenanceRequestController::class, 'store'])->name('maintenance.store');
 });

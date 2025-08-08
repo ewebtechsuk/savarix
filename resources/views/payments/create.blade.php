@@ -2,40 +2,47 @@
 
 @section('content')
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="fw-bold">Add Payment</h1>
-        <a href="{{ route('payments.index') }}" class="btn btn-secondary">Back to Payments</a>
-    </div>
-    <form action="{{ route('payments.store') }}" method="POST">
+    <h1 class="fw-bold mb-4">Pay Rent</h1>
+    <form id="payment-form">
         @csrf
-        <div class="mb-3">
-            <label for="invoice_id" class="form-label">Invoice</label>
-            <select name="invoice_id" id="invoice_id" class="form-select" required>
-                <option value="">Select Invoice</option>
-                @foreach($invoices as $invoice)
-                    <option value="{{ $invoice->id }}" {{ old('invoice_id') == $invoice->id ? 'selected' : '' }}>
-                        {{ $invoice->number }} - £{{ number_format($invoice->amount, 2) }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="date" class="form-label">Date</label>
-            <input type="date" name="date" id="date" class="form-control" value="{{ old('date', date('Y-m-d')) }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="amount" class="form-label">Amount</label>
-            <input type="number" step="0.01" name="amount" id="amount" class="form-control" value="{{ old('amount') }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="method" class="form-label">Method</label>
-            <input type="text" name="method" id="method" class="form-control" value="{{ old('method') }}">
-        </div>
-        <div class="mb-3">
-            <label for="notes" class="form-label">Notes</label>
-            <textarea name="notes" id="notes" class="form-control">{{ old('notes') }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Save Payment</button>
+        <input type="hidden" id="amount" value="{{ $tenancy->rent }}">
+        <div id="card-element" class="mb-3"></div>
+        <button id="submit" class="btn btn-primary">Pay £{{ number_format($tenancy->rent, 2) }}</button>
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const stripe = Stripe('{{ config('services.stripe.key') }}');
+const elements = stripe.elements();
+const card = elements.create('card');
+card.mount('#card-element');
+
+const form = document.getElementById('payment-form');
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = document.getElementById('amount').value;
+    const response = await fetch('{{ route('payments.store', $tenancy) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        },
+        body: JSON.stringify({ amount })
+    });
+    const data = await response.json();
+    const {error} = await stripe.confirmCardPayment(data.client_secret, {
+        payment_method: {
+            card: card
+        }
+    });
+    if (error) {
+        alert(error.message);
+    } else {
+        window.location.href = '/';
+    }
+});
+</script>
+@endpush
