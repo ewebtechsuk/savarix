@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use App\Http\Controllers\VerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,5 +27,11 @@ Route::middleware([
 ])->group(function () {
     Route::get('/', function () {
         return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
+    });
+
+    Route::prefix('onboarding')->group(function () {
+        Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
+        Route::get('verification/callback', [VerificationController::class, 'callback'])->name('verification.callback');
+        Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
     });
 });
