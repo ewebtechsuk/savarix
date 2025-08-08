@@ -32,5 +32,40 @@ return [
         'model' => App\Models\User::class,
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'docusign' => [
+        'key' => env('DOCUSIGN_API_KEY'),
+        'secret' => env('DOCUSIGN_API_SECRET'),
+    ],
+
+    'hellosign' => [
+        'key' => env('HELLOSIGN_API_KEY'),
+
+    'rightmove' => [
+        'endpoint' => env('RIGHTMOVE_ENDPOINT'),
+        'api_key' => env('RIGHTMOVE_API_KEY'),
+        'api_secret' => env('RIGHTMOVE_API_SECRET'),
+    ],
+
+    'zoopla' => [
+        'endpoint' => env('ZOOPLA_ENDPOINT'),
+        'api_key' => env('ZOOPLA_API_KEY'),
+        'api_secret' => env('ZOOPLA_API_SECRET'),
+    ],
+
+    'marketing' => [
+        'providers' => [
+            [
+                'endpoint' => env('MARKETING_EMAIL_ENDPOINT'),
+                'api_key' => env('MARKETING_EMAIL_KEY'),
+            ],
+            [
+                'endpoint' => env('MARKETING_SOCIAL_ENDPOINT'),
+                'api_key' => env('MARKETING_SOCIAL_KEY'),
+            ],
+        ],
+
     ],
 ];

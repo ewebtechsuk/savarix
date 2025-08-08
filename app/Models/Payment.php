@@ -3,15 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Tenancy;
 
 class Payment extends Model
 {
     protected $fillable = [
-        'date', 'invoice_id', 'amount', 'method', 'notes'
+        'tenancy_id',
+        'amount',
+        'status',
+        'stripe_reference',
     ];
 
-    public function invoice()
+    public function tenancy()
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(Tenancy::class);
     }
 }

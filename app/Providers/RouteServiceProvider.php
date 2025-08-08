@@ -39,6 +39,10 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapWebRoutes();
 
+        $this->mapTenantRoutes();
+
+        $this->mapLandlordRoutes();
+
         //
     }
 
@@ -74,6 +78,36 @@ class RouteServiceProvider extends ServiceProvider
             'prefix' => 'api',
         ], function ($router) {
             require base_path('routes/api.php');
+        });
+    }
+
+    /**
+     * Define the "tenant" routes for the application.
+     *
+     * @return void
+     */
+    protected function mapTenantRoutes()
+    {
+        Route::group([
+            'middleware' => 'web',
+            'namespace' => $this->namespace,
+        ], function ($router) {
+            require base_path('routes/tenant.php');
+        });
+    }
+
+    /**
+     * Define the "landlord" routes for the application.
+     *
+     * @return void
+     */
+    protected function mapLandlordRoutes()
+    {
+        Route::group([
+            'middleware' => 'web',
+            'namespace' => $this->namespace,
+        ], function ($router) {
+            require base_path('routes/landlord.php');
         });
     }
 }

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('inspections', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('property_id');
-            $table->dateTime('date');
-            $table->string('result')->nullable();
+            $table->foreignId('property_id')->constrained()->onDelete('cascade');
+            $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
+            $table->timestamp('scheduled_at');
+            $table->string('status')->default('pending');
             $table->timestamps();
-            $table->foreign('property_id')->references('id')->on('properties')->onDelete('cascade');
         });
     }
 
