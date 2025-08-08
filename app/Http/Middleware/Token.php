@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Company;
 use App\Models\Expert;
-use App\Models\TokenVerfier;
+ use App\Models\TokenVerifier;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as Auth;
 
