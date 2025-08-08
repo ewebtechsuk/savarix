@@ -6,6 +6,7 @@
 /public/storage
 /storage/*.key
 .env.*
+setup_codex_env.sh
 Homestead.json
 Homestead.yaml
 npm-debug.log

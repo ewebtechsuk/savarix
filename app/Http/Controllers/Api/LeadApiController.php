@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Http\Resources\LeadResource;
+use App\Services\LeadScoringService;
 use Illuminate\Http\Request;
 
 class LeadApiController extends Controller
@@ -22,7 +23,7 @@ class LeadApiController extends Controller
         return LeadResource::collection($leads);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, LeadScoringService $scoring)
     {
         $validated = $request->validate([
             'type' => 'required|string',
@@ -32,6 +33,8 @@ class LeadApiController extends Controller
             'notes' => 'nullable|string',
         ]);
         $lead = Lead::create($validated);
+        $lead->score = $scoring->score($lead);
+        $lead->save();
         return new LeadResource($lead);
     }
 

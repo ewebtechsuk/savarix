@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Property;
 use App\Models\PropertyFeature;
 use App\Models\PropertyMedia;
+use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Facades\Tenancy;
+use Illuminate\Support\Facades\Http;
 
 class PropertyController extends Controller
 {
@@ -30,6 +32,19 @@ class PropertyController extends Controller
                   ->orWhere('status', 'like', "%$search%") ;
             });
         }
+
+        if ($request->filled('origin') && $request->filled('radius')) {
+            $coords = $this->geocodeAddress($request->input('origin'));
+            if ($coords) {
+                $lat = $coords['lat'];
+                $lng = $coords['lng'];
+                $radius = $request->input('radius');
+                $query->selectRaw("properties.*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance", [$lat, $lng, $lat])
+                      ->having('distance', '<=', $radius)
+                      ->orderBy('distance');
+            }
+        }
+
         $properties = $query->get();
         // Always return the view, even if $properties is empty
         return view('properties.index', compact('properties'));
@@ -70,6 +85,9 @@ class PropertyController extends Controller
             'type' => 'nullable|string',
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'publish_to_portal' => 'boolean',
+            'send_marketing_campaign' => 'boolean',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -83,11 +101,35 @@ class PropertyController extends Controller
                 $validated['document'] = $request->file('document')->store('property_docs', 'public');
             }
         }
+        $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
+        $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
         $tenant = tenant(); // Stancl Tenancy v3+ helper
         if ($tenant) {
             $validated['tenant_id'] = $tenant->id;
         }
+        $coords = null;
+        if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
+            $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
+            if ($coords) {
+                $validated['latitude'] = $coords['lat'];
+                $validated['longitude'] = $coords['lng'];
+            }
+        }
         $property = Property::create($validated);
+
+        if ($request->hasFile('media')) {
+            $order = $property->media()->max('order') ?? 0;
+            foreach ($request->file('media') as $file) {
+                $order++;
+                $path = Storage::disk('public')->putFile('property_media', $file);
+                $property->media()->create([
+                    'file_path' => $path,
+                    'type' => $file->getClientMimeType(),
+                    'order' => $order,
+                ]);
+            }
+        }
+
         // Save features
         $features = $request->input('features', []);
         foreach ($features as $feature) {
@@ -109,7 +151,7 @@ class PropertyController extends Controller
         if (!$tenant || $property->tenant_id !== $tenant->id) {
             abort(404, 'Property not found for this tenant.');
         }
-        $property->load(['media', 'features', 'landlord']);
+        $property->load(['media', 'features', 'landlord', 'documents']);
         $features = $property->features()->pluck('name')->toArray();
         return view('properties.show', compact('property', 'features'));
     }
@@ -148,6 +190,9 @@ class PropertyController extends Controller
             'type' => 'nullable|string',
             'status' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'publish_to_portal' => 'boolean',
+            'send_marketing_campaign' => 'boolean',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -161,7 +206,30 @@ class PropertyController extends Controller
                 $validated['document'] = $request->file('document')->store('property_docs', 'public');
             }
         }
+        $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
+        $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
+        if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
+            $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
+            if ($coords) {
+                $validated['latitude'] = $coords['lat'];
+                $validated['longitude'] = $coords['lng'];
+            }
+        }
         $property->update($validated);
+
+        if ($request->hasFile('media')) {
+            $order = $property->media()->max('order') ?? 0;
+            foreach ($request->file('media') as $file) {
+                $order++;
+                $path = Storage::disk('public')->putFile('property_media', $file);
+                $property->media()->create([
+                    'file_path' => $path,
+                    'type' => $file->getClientMimeType(),
+                    'order' => $order,
+                ]);
+            }
+        }
+
         // Update features
         $property->features()->delete();
         $features = $request->input('features', []);
@@ -196,5 +264,28 @@ class PropertyController extends Controller
         $property->landlord_id = $request->landlord_id;
         $property->save();
         return redirect()->route('properties.show', $property)->with('success', 'Landlord assigned successfully.');
+    }
+
+    /**
+     * Geocode an address to coordinates.
+     */
+    protected function geocodeAddress(string $address): ?array
+    {
+        $response = Http::withHeaders([
+            'User-Agent' => 'Ressapp'
+        ])->get('https://nominatim.openstreetmap.org/search', [
+            'q' => $address,
+            'format' => 'json',
+            'limit' => 1,
+        ]);
+
+        if ($response->successful() && isset($response[0])) {
+            return [
+                'lat' => $response[0]['lat'],
+                'lng' => $response[0]['lon'],
+            ];
+        }
+
+        return null;
     }
 }

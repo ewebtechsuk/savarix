@@ -23,9 +23,9 @@ return new class extends Migration
             $table->integer('bathrooms')->nullable();
             $table->string('type')->nullable();
             $table->string('status')->default('available');
-            $table->unsignedBigInteger('vendor_id')->nullable();
-            $table->unsignedBigInteger('landlord_id')->nullable();
-            $table->unsignedBigInteger('applicant_id')->nullable();
+            $table->foreignId('vendor_id')->nullable()->constrained('contacts');
+            $table->foreignId('landlord_id')->nullable()->constrained('contacts');
+            $table->foreignId('applicant_id')->nullable()->constrained('contacts');
             $table->text('notes')->nullable();
             $table->json('activity_log')->nullable();
             $table->string('document')->nullable(); // for file upload

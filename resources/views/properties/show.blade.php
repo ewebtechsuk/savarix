@@ -63,28 +63,45 @@
                                 <div class="col"><strong>Type:</strong> {{ config('property.property_types')[$property->type] ?? ucfirst($property->type) }}</div>
                                 <div class="col"><strong>Status:</strong> <span class="badge bg-{{ $property->status == 'available' ? 'success' : 'secondary' }}">{{ ucfirst($property->status) }}</span></div>
                             </div>
+                            @if($property->valuation_estimate)
+                                <div class="row mb-2">
+                                    <div class="col"><strong>Valuation Range:</strong> £{{ number_format($property->valuation_estimate * 0.9, 2) }} - £{{ number_format($property->valuation_estimate * 1.1, 2) }}</div>
+                                </div>
+                            @endif
                             <div class="row mb-2">
                                 <div class="col"><strong>Bedrooms:</strong> {{ $property->bedrooms }}</div>
                                 <div class="col"><strong>Bathrooms:</strong> {{ $property->bathrooms }}</div>
                             </div>
                             <div class="mb-2"><strong>Address:</strong> {{ $property->address }}, {{ $property->city }}, {{ $property->postcode }}</div>
+                            @if($property->latitude && $property->longitude)
+                                <div id="property-map" style="height: 300px;" class="mb-3"></div>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="media" role="tabpanel">
                             <h5>Media Gallery</h5>
-                            <div class="row g-2 mb-3">
-                                @foreach($property->media as $media)
-                                    <div class="col-4 col-md-3">
-                                        <div class="card">
-                                            <img src="{{ asset('storage/' . $media->file_path) }}" class="card-img-top" alt="Media" style="height:120px;object-fit:cover;">
-                                            <form action="{{ route('properties.media.destroy', [$property, $media]) }}" method="POST" onsubmit="return confirm('Delete this image?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger w-100">Delete</button>
-                                            </form>
-                                        </div>
+                            @if($property->media->isNotEmpty())
+                                <div id="mediaCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+                                    <div class="carousel-inner">
+                                        @foreach($property->media as $index => $media)
+                                            <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
+                                                <img src="{{ asset('storage/' . $media->file_path) }}" class="d-block w-100" alt="Media">
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
+                                    @if($property->media->count() > 1)
+                                        <button class="carousel-control-prev" type="button" data-bs-target="#mediaCarousel" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Previous</span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button" data-bs-target="#mediaCarousel" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Next</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                <p class="text-muted">No media uploaded.</p>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="features" role="tabpanel">
                             <h5>Property Features</h5>
@@ -146,7 +163,34 @@
                         </div>
                         <div class="tab-pane fade" id="documents" role="tabpanel">
                             <h5>Documents</h5>
-                            <p class="text-muted">No documents uploaded.</p>
+                            <form action="{{ route('documents.upload') }}" method="POST" enctype="multipart/form-data" class="mb-3">
+                                @csrf
+                                <input type="hidden" name="documentable_type" value="App\\Models\\Property">
+                                <input type="hidden" name="documentable_id" value="{{ $property->id }}">
+                                <div class="input-group">
+                                    <input type="file" name="file" class="form-control" required>
+                                    <button class="btn btn-primary">Upload</button>
+                                </div>
+                            </form>
+                            <ul class="list-group">
+                                @forelse($property->documents as $document)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ $document->name }}
+                                        <span>
+                                            <a href="{{ route('documents.download', $document) }}" class="btn btn-sm btn-outline-secondary">Download</a>
+                                            <form action="{{ route('documents.sign', $document) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-sm btn-outline-primary">Sign</button>
+                                            </form>
+                                            @if($document->signed_at)
+                                                <span class="badge bg-success ms-1">Signed</span>
+                                            @endif
+                                        </span>
+                                    </li>
+                                @empty
+                                    <li class="list-group-item text-muted">No documents uploaded.</li>
+                                @endforelse
+                            </ul>
                         </div>
                         <div class="tab-pane fade" id="tasks" role="tabpanel">
                             <h5>Tasks</h5>
@@ -181,7 +225,15 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('property-map')) {
+        const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        L.marker([{{ $property->latitude }}, {{ $property->longitude }}]).addTo(map);
+    }
     $('#landlord-select').select2({
         placeholder: 'Search for a landlord...',
         ajax: {

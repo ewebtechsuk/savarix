@@ -14,7 +14,7 @@ class CreateSuperAdminSeeder extends Seeder
             ['email' => 'admin@ressapp.com'],
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('SuperSecurePassword123!'),
+                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'changeme')),
                 'is_admin' => 1,
             ]
         );

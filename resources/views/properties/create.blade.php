@@ -91,6 +91,10 @@
                             <input type="file" name="photo" class="form-control" accept="image/*">
                         </div>
                         <div class="mb-3">
+                            <label for="media" class="form-label">Media Gallery</label>
+                            <input type="file" name="media[]" multiple class="form-control" accept="image/*">
+                        </div>
+                        <div class="mb-3">
                             <label for="features" class="form-label">Property Features</label>
                             <div class="row">
                                 @foreach($featuresList as $feature)

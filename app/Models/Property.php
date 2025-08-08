@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Jobs\SendWebhook;
+use App\Models\Webhook;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Jobs\SyncPropertyToPortals;
+use App\Jobs\TriggerMarketingCampaign;
 
 class Property extends Model
 {
@@ -14,8 +19,46 @@ class Property extends Model
     protected $guarded = ['id'];
 
     protected $fillable = [
-        'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id'
+        'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id',
+        'latitude', 'longitude', 'valuation_estimate', 'publish_to_portal', 'send_marketing_campaign'
+
     ];
+
+    protected static function booted()
+    {
+        static::created(function (Property $property) {
+            $payload = [
+                'event' => 'property.created',
+                'data' => $property->toArray(),
+            ];
+            foreach (Webhook::where('event', 'property.created')->get() as $webhook) {
+                SendWebhook::dispatch($webhook->url, $payload);
+
+    protected $casts = [
+        'publish_to_portal' => 'boolean',
+        'send_marketing_campaign' => 'boolean',
+    ];
+
+    protected static function booted()
+    {
+        static::created(function (Property $property) {
+            if ($property->publish_to_portal) {
+                SyncPropertyToPortals::dispatch($property);
+            }
+            if ($property->send_marketing_campaign) {
+                TriggerMarketingCampaign::dispatch($property);
+            }
+        });
+
+        static::updated(function (Property $property) {
+            if ($property->publish_to_portal) {
+                SyncPropertyToPortals::dispatch($property);
+            }
+            if ($property->send_marketing_campaign) {
+                TriggerMarketingCampaign::dispatch($property);
+            }
+        });
+    }
 
     // Relationships
     public function vendor()
@@ -32,11 +75,15 @@ class Property extends Model
     }
     public function media()
     {
-        return $this->hasMany(PropertyMedia::class);
+        return $this->hasMany(PropertyMedia::class)->orderBy('order');
     }
     public function features()
     {
         return $this->hasMany(PropertyFeature::class);
     }
-}
 
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
+}

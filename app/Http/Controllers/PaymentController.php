@@ -3,85 +3,59 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
-use App\Models\Invoice;
+use App\Models\Tenancy;
 use Illuminate\Http\Request;
+use Stripe\StripeClient;
+use Stripe\Webhook;
 
 class PaymentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function create(Tenancy $tenancy)
     {
-        $payments = Payment::with('invoice')->orderByDesc('date')->paginate(20);
-        return view('payments.index', compact('payments'));
+        return view('payments.create', compact('tenancy'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $invoices = Invoice::orderByDesc('date')->get();
-        return view('payments.create', compact('invoices'));
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request, Tenancy $tenancy)
     {
         $validated = $request->validate([
-            'invoice_id' => 'required|exists:invoices,id',
-            'date' => 'required|date',
-            'amount' => 'required|numeric|min:0',
-            'method' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
+            'amount' => 'required|numeric|min:0.5',
         ]);
-        $payment = Payment::create($validated);
-        return redirect()->route('payments.show', $payment)->with('success', 'Payment created successfully.');
-    }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Payment $payment)
-    {
-        $payment->load('invoice');
-        return view('payments.show', compact('payment'));
-    }
+        $stripe = new StripeClient(config('services.stripe.secret'));
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Payment $payment)
-    {
-        $invoices = Invoice::orderByDesc('date')->get();
-        return view('payments.edit', compact('payment', 'invoices'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Payment $payment)
-    {
-        $validated = $request->validate([
-            'invoice_id' => 'required|exists:invoices,id',
-            'date' => 'required|date',
-            'amount' => 'required|numeric|min:0',
-            'method' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
+        $intent = $stripe->paymentIntents->create([
+            'amount' => (int) ($validated['amount'] * 100),
+            'currency' => 'gbp',
+            'metadata' => ['tenancy_id' => $tenancy->id],
         ]);
-        $payment->update($validated);
-        return redirect()->route('payments.show', $payment)->with('success', 'Payment updated successfully.');
+
+        Payment::create([
+            'tenancy_id' => $tenancy->id,
+            'amount' => $validated['amount'],
+            'status' => 'pending',
+            'stripe_reference' => $intent->id,
+        ]);
+
+        return response()->json(['client_secret' => $intent->client_secret]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Payment $payment)
+    public function webhook(Request $request)
     {
-        $payment->delete();
-        return redirect()->route('payments.index')->with('success', 'Payment deleted successfully.');
+        $secret = config('services.stripe.webhook_secret');
+        $signature = $request->header('Stripe-Signature');
+
+        try {
+            $event = Webhook::constructEvent($request->getContent(), $signature, $secret);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        if ($event->type === 'payment_intent.succeeded') {
+            $intent = $event->data->object;
+            Payment::where('stripe_reference', $intent->id)
+                ->update(['status' => 'succeeded']);
+        }
+
+        return response()->json(['status' => 'ok']);
     }
 }

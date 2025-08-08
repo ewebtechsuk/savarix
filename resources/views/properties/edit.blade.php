@@ -161,13 +161,10 @@
                                 </div>
                             @endforeach
                         </div>
-                        <form action="{{ route('properties.media.store', $property) }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <div class="mb-2">
-                                <input type="file" name="media[]" multiple class="form-control" accept="image/*">
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary">Upload Images</button>
-                        </form>
+                        <div class="mb-3">
+                            <label for="media" class="form-label">Add Images</label>
+                            <input type="file" name="media[]" multiple class="form-control" accept="image/*">
+                        </div>
                         <div class="mb-3">
                             <label for="features" class="form-label">Property Features</label>
                             <div class="row">
@@ -183,6 +180,14 @@
                         </div>
                         <div class="mb-3">
                             <h5>Marketing</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="publish_to_portal" id="publish_to_portal" value="1" @checked(old('publish_to_portal', $property->publish_to_portal))>
+                                <label class="form-check-label" for="publish_to_portal">Publish to portal X</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="send_marketing_campaign" id="send_marketing_campaign" value="1" @checked(old('send_marketing_campaign', $property->send_marketing_campaign))>
+                                <label class="form-check-label" for="send_marketing_campaign">Send marketing campaign</label>
+                            </div>
                             <label for="marketing_notes" class="form-label">Marketing Notes</label>
                             <textarea name="marketing_notes" class="form-control">{{ $property->marketing_notes ?? '' }}</textarea>
                         </div>

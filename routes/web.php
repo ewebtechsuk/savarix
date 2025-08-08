@@ -4,6 +4,13 @@ use App\Http\Controllers\Auth\MagicLoginController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DiaryController;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\InspectionController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\MaintenanceRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -11,7 +18,7 @@ Route::get('/', function () {
 });
 
 // Single dashboard route for route('dashboard')
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'is_admin'])->name('dashboard');
 
 // Central app routes (localhost:8888/)
 Route::middleware('auth')->group(function () {
@@ -23,7 +30,7 @@ Route::middleware('auth')->group(function () {
 // Central dashboard routes (should NOT use tenancy middleware)
 Route::middleware(['auth', 'verified', 'role:Admin|Landlord'])->group(function () {
     // Remove duplicate dashboard route
-    Route::post('/dashboard', [DashboardController::class, 'create'])->name('dashboard.create');
+    Route::post('/dashboard', [DashboardController::class, 'store'])->name('dashboard.store');
     Route::delete('/dashboard/{id}', [DashboardController::class, 'destroy'])->name('dashboard.destroy');
     Route::get('/dashboard/impersonate/{id}', [DashboardController::class, 'impersonate'])->name('dashboard.impersonate');
 
@@ -37,6 +44,11 @@ Route::middleware(['auth', 'verified', 'role:Admin|Landlord'])->group(function (
     Route::delete('/tenants/{tenant}', [TenantController::class, 'destroy'])->name('tenants.destroy');
     Route::get('/tenants/{tenant}/delete', [TenantController::class, 'delete'])->name('tenants.delete');
     Route::post('/tenants/{tenant}/add-user', [TenantController::class, 'addUser'])->name('tenants.addUser');
+
+    // Maintenance request admin routes
+    Route::get('/maintenance', [MaintenanceRequestController::class, 'index'])->name('maintenance.index');
+    Route::get('/maintenance/{maintenanceRequest}', [MaintenanceRequestController::class, 'show'])->name('maintenance.show');
+    Route::put('/maintenance/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance.update');
 });
 
 // Tenant routes (aktonz.ressapp.com, etc.)
@@ -45,6 +57,13 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
     Route::resource('contacts', ContactController::class);
     Route::resource('diary', DiaryController::class);
     Route::resource('accounts', AccountController::class);
+    Route::resource('inspections', InspectionController::class);
+    Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
+    Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+    Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('maintenance/create', [MaintenanceRequestController::class, 'create'])->name('maintenance.create');
+    Route::post('maintenance', [MaintenanceRequestController::class, 'store'])->name('maintenance.store');
 });
 
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');
