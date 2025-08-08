@@ -10,6 +10,7 @@ use App\Models\Property;
 use App\Jobs\SyncPropertyToPortals;
 use App\Notifications\RentDueNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Services\WorkflowEngine;
 
 class Kernel extends ConsoleKernel
 {
@@ -45,6 +46,10 @@ class Kernel extends ConsoleKernel
                     }
                 });
         })->daily();
+
+        $schedule->call(function () {
+            app(WorkflowEngine::class)->runScheduled();
+        })->everyMinute();
     }
 
     protected function commands()

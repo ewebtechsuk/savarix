@@ -56,6 +56,7 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
     Route::resource('contacts', ContactController::class);
     Route::resource('diary', DiaryController::class);
     Route::resource('accounts', AccountController::class);
+    Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
     Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
     Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
