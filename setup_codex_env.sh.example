@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Load environment variables from .env if it exists
+if [ -f ".env" ]; then
+  set -a
+  source .env
+  set +a
+fi
+
+# Ensure required environment variables are set
+: "${OPENAI_API_KEY:?OPENAI_API_KEY is not set}"
+: "${OTHER_REQUIRED_KEY:?OTHER_REQUIRED_KEY is not set}"
+
+# Install Codex CLI if not already installed
+if ! command -v codex-cli >/dev/null 2>&1; then
+  if command -v npm >/dev/null 2>&1; then
+    npm install -g @openai/codex-cli
+  else
+    echo "npm is required to install codex-cli but was not found." >&2
+  fi
+fi
+
+# Export variables for this session
+export OPENAI_API_KEY OTHER_REQUIRED_KEY
+
+echo "Codex environment setup complete. Ensure .env contains your real keys."
+
