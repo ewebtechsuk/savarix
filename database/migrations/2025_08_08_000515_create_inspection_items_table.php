@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inspections', function (Blueprint $table) {
+        Schema::create('inspection_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('property_id')->constrained()->onDelete('cascade');
-            $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
-            $table->timestamp('scheduled_at');
+            $table->foreignId('inspection_id')->constrained()->onDelete('cascade');
+            $table->string('description');
             $table->string('status')->default('pending');
+            $table->string('photo_path')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inspections');
+        Schema::dropIfExists('inspection_items');
     }
 };
