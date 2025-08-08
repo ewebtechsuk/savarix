@@ -151,7 +151,7 @@ class PropertyController extends Controller
         if (!$tenant || $property->tenant_id !== $tenant->id) {
             abort(404, 'Property not found for this tenant.');
         }
-        $property->load(['media', 'features', 'landlord']);
+        $property->load(['media', 'features', 'landlord', 'documents']);
         $features = $property->features()->pluck('name')->toArray();
         return view('properties.show', compact('property', 'features'));
     }

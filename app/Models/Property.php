@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Jobs\SyncPropertyToPortals;
 use App\Jobs\TriggerMarketingCampaign;
 
@@ -66,5 +67,10 @@ class Property extends Model
     public function features()
     {
         return $this->hasMany(PropertyFeature::class);
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 }

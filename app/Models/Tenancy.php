@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Tenancy extends Model
 {
@@ -19,6 +20,11 @@ class Tenancy extends Model
     public function contact()
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 
     public function getTenantContactDetailsAttribute(): array
