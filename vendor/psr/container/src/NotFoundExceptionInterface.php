@@ -1,3 +1,10 @@
 <?php
+
 namespace Psr\Container;
-interface NotFoundExceptionInterface extends ContainerExceptionInterface {}
+
+/**
+ * No entry was found in the container.
+ */
+interface NotFoundExceptionInterface extends ContainerExceptionInterface
+{
+}

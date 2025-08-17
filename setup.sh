@@ -1,203 +1,147 @@
-#!/usr/bin/env bash
-#
-# Laravel project setup script
-#
-# Usage:
-#   ./setup.sh [options]
-#
-# Options:
-#   --production           Run in production mode (composer --no-dev, build assets, optimize caches).
-#   --no-dev               Omit Composer dev dependencies (implies prod dependency set only).
-#   --skip-migrate         Do not run database migrations.
-#   --seed                 Seed the database after migrations.
-#   --skip-npm             Skip JS package install/build steps.
-#   --optimize             Run artisan optimize + cache builds (also implied by --production).
-#   --force-recreate-env   Replace existing .env with example (existing backed up).
-#   --env-example=FILE     Alternate env example (default: .env.example).
-#   --pm=<npm|yarn|pnpm>   Force JS package manager.
-#   --db-wait              Wait for DB host:port to be reachable before migrations.
-#   --db-attempts=N        Attempts for DB wait (default: 20).
-#   --db-sleep=SECONDS     Sleep between attempts (default: 3).
-#   --quiet                Minimal output (disables colored logs).
-#   --help                 Show this help header.
-#
-set -Eeuo pipefail
-IFS=$'\n\t'
+#!/bin/bash
+set -euo pipefail
 
-COLOR_SUPPORT=true
-if [[ ! -t 1 ]]; then COLOR_SUPPORT=false; fi
-if command -v tput &>/dev/null; then
-  if [[ "$(tput colors 2>/dev/null || echo 0)" -lt 8 ]]; then COLOR_SUPPORT=false; fi
-fi
-[[ -n "${NO_COLOR:-}" ]] && COLOR_SUPPORT=false
+# Enhanced setup script with flags:
+#  --db-wait       Wait for database connectivity before migrations
+#  --seed          Run database seeders after migrations (or after refresh)
+#  --refresh-db    Run migrate:fresh (drops all tables) then (optionally) seed
+#  --skip-migrate  Skip running migrations entirely
+#  --skip-npm      Skip installing Node dependencies
+#  --optimize      Run Laravel optimize (config/route/view caches)
+#  -h|--help       Show help
+#
+# Examples:
+#   ./setup.sh --db-wait --seed
+#   ./setup.sh --refresh-db --seed
+#   ./setup.sh --skip-npm --skip-migrate
+#
+# This script is idempotent; safe to re-run.
 
-if $COLOR_SUPPORT; then
-  C_RESET="\033[0m"; C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_BLUE="\033[34m"; C_RED="\033[31m"
-else
-  C_RESET=""; C_GREEN=""; C_YELLOW=""; C_BLUE=""; C_RED=""
-fi
-
-log() { [[ "${QUIET}" == "true" ]] && return 0; echo -e "${C_BLUE}[setup]${C_RESET} $*"; }
-warn() { [[ "${QUIET}" == "true" ]] && return 0; echo -e "${C_YELLOW}[warn]${C_RESET} $*" >&2; }
-success() { [[ "${QUIET}" == "true" ]] && return 0; echo -e "${C_GREEN}[ok]${C_RESET} $*"; }
-error() { echo -e "${C_RED}[error]${C_RESET} $*" >&2; exit 1; }
-
-PRODUCTION=false
-NO_DEV=false
+SEED=false
+DB_WAIT=false
+REFRESH_DB=false
 SKIP_MIGRATE=false
-DO_SEED=false
 SKIP_NPM=false
 OPTIMIZE=false
-FORCE_RECREATE_ENV=false
-ENV_EXAMPLE=".env.example"
-FORCED_PM=""
-DB_WAIT=false
-DB_ATTEMPTS=20
-DB_SLEEP=3
-QUIET=false
 
-for arg in "$@"; do
-  case "$arg" in
-    --production) PRODUCTION=true; NO_DEV=true ;; 
-    --no-dev) NO_DEV=true ;; 
-    --skip-migrate) SKIP_MIGRATE=true ;; 
-    --seed) DO_SEED=true ;; 
-    --skip-npm) SKIP_NPM=true ;; 
-    --optimize) OPTIMIZE=true ;; 
-    --force-recreate-env) FORCE_RECREATE_ENV=true ;; 
-    --env-example=*) ENV_EXAMPLE="${arg#*=}" ;; 
-    --pm=*) FORCED_PM="${arg#*=}" ;; 
-    --db-wait) DB_WAIT=true ;; 
-    --db-attempts=*) DB_ATTEMPTS="${arg#*=}" ;; 
-    --db-sleep=*) DB_SLEEP="${arg#*=}" ;; 
-    --quiet) QUIET=true ;; 
-    --help) grep '^# ' "$0" | sed 's/^# //'; exit 0 ;; 
-    *) error "Unknown argument: $arg (use --help)";;
+print_help() {
+  sed -n '1,60p' "$0" | grep -E '^#' | sed 's/^# *//'
+}
+
+log() { echo -e "[setup] $*"; }
+warn() { echo -e "[setup][warn] $*" >&2; }
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --seed) SEED=true ;;
+    --db-wait) DB_WAIT=true ;;
+    --refresh-db) REFRESH_DB=true ;;
+    --skip-migrate) SKIP_MIGRATE=true ;;
+    --skip-npm) SKIP_NPM=true ;;
+    --optimize) OPTIMIZE=true ;;
+    -h|--help) print_help; exit 0 ;;
+    *) warn "Unknown argument: $1"; print_help; exit 1 ;;
   esac
+  shift
 done
 
-command -v php >/dev/null || error "php not found in PATH"
-command -v composer >/dev/null || error "composer not found in PATH"
-[[ -f "$ENV_EXAMPLE" ]] || error "Env example file '$ENV_EXAMPLE' not found"
-[[ -f artisan ]] || error "artisan not found (run from project root)"
-
-if [[ -f .env && "$FORCE_RECREATE_ENV" == "true" ]]; then
-  ts=$(date +%s)
-  warn ".env exists; backing up to .env.bak.$ts"
-  cp .env ".env.bak.$ts"
-  rm .env
-fi
-
+# 1. Ensure .env exists
 if [[ ! -f .env ]]; then
-  log "Creating .env from $ENV_EXAMPLE"
-  cp "$ENV_EXAMPLE" .env
-else
-  log ".env present (not replaced)"
+  log "Creating .env from example"
+  cp .env.example .env
 fi
 
-COMPOSER_FLAGS=(install --no-interaction --prefer-dist --no-progress)
-[[ "$NO_DEV" == "true" ]] && COMPOSER_FLAGS+=(--no-dev)
-log "Composer ${COMPOSER_FLAGS[*]}"
-composer "${COMPOSER_FLAGS[@]}"
-
-detect_pm() {
-  [[ -n "$FORCED_PM" ]] && { echo "$FORCED_PM"; return; }
-  [[ ! -f package.json ]] && { echo ""; return; }
-  if command -v pnpm &>/dev/null && [[ -f pnpm-lock.yaml ]]; then echo pnpm; return; fi
-  if command -v yarn &>/dev/null && [[ -f yarn.lock ]]; then echo yarn; return; fi
-  if command -v npm &>/dev/null; then echo npm; return; fi
-  echo ""
-}
-
-if [[ -f package.json && "$SKIP_NPM" == "false" ]]; then
-  PM=$(detect_pm)
-  if [[ -z "$PM" ]]; then
-    warn "No JS package manager detected; skipping frontend."
+# 2. Composer install
+if [[ -f composer.json ]]; then
+  if [[ -d vendor ]]; then
+    log "Composer dependencies (vendor/) already present"
   else
-    log "Installing JS deps via $PM"
-    if [[ "$PM" == "npm" ]]; then npm install; else $PM install; fi
-    if [[ "$PRODUCTION" == "true" ]] && grep -q '"build"' package.json; then
-      log "Building production assets"
-      if [[ "$PM" == "npm" ]]; then npm run build; else $PM run build; fi
-    fi
+    log "Installing Composer dependencies"
   fi
-else
-  log "Skipping JS dependency installation"
+  composer install --no-interaction --prefer-dist --no-progress
 fi
 
-need_key() {
-  if ! grep -q '^APP_KEY=' .env; then return 0; fi
-  local line
-  line=$(grep '^APP_KEY=' .env)
-  [[ -z "
-${line#APP_KEY=}" ]] && return 0
-  php artisan tinker --execute='echo empty(config("app.key")) ? 1 : 0;' 2>/dev/null | grep -q '^1$'
-}
+# 3. Node dependencies (optional)
+if [[ "$SKIP_NPM" == "false" && -f package.json ]]; then
+  if command -v npm >/dev/null 2>&1; then
+    if [[ -f package-lock.json ]]; then
+      log "Installing Node dependencies (npm ci)"
+      npm ci --no-audit --no-fund
+    else
+      log "Installing Node dependencies (npm install)"
+      npm install --no-audit --no-fund
+    fi
+    if jq -e '.scripts.build' package.json >/dev/null 2>&1; then
+      log "Building frontend assets"
+      npm run build
+    else
+      log "No build script; skipping asset build"
+    fi
+  else
+    warn "npm not available; skipping Node dependency installation"
+  fi
+fi
 
-if need_key; then
+# 4. Generate app key if missing
+if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=\s*$' .env; then
   log "Generating APP_KEY"
-  php artisan key:generate --force
-else
-  log "APP_KEY already set"
+  php artisan key:generate || warn "key:generate failed (app may already have key)"
 fi
+
+# 5. Optionally wait for DB
+wait_for_db() {
+  local host="${DB_HOST:-localhost}" user="${DB_USERNAME:-root}" pass="${DB_PASSWORD:-}" db="${DB_DATABASE:-}" port="${DB_PORT:-3306}" timeout=60
+  log "Waiting for MySQL at ${host}:${port} (db='${db}') up to ${timeout}s"
+  for i in $(seq 1 $timeout); do
+    if mysql -h "$host" -P "$port" -u"$user" -p"$pass" -e "SELECT 1" "$db" >/dev/null 2>&1; then
+      log "MySQL is available (after ${i}s)"
+      return 0
+    fi
+    sleep 1
+  done
+  warn "MySQL not reachable after ${timeout}s; continuing (migrations may fail)"
+}
 
 if [[ "$DB_WAIT" == "true" ]]; then
-  export $(grep -E '^(DB_HOST|DB_PORT|DB_DATABASE|DB_USERNAME|DB_PASSWORD)=' .env | sed 's/\r//' || true)
-  DB_HOST="${DB_HOST:-localhost}"
-  DB_PORT="${DB_PORT:-3306}"
-  log "Waiting for DB ${DB_HOST}:${DB_PORT} (attempts=$DB_ATTEMPTS sleep=$DB_SLEEP)"
-  attempt=1
-  while (( attempt <= DB_ATTEMPTS )); do
-    if php -r '\n      $h=getenv("DB_HOST")?: "localhost";\n      $p=(int)(getenv("DB_PORT")?:3306);\n      $t=@fsockopen($h,$p,$e,$s,1.5);\n      if($t){fclose($t);echo "OK";}' | grep -q OK; then
-      success "Database reachable"
-      break
-    fi
-    warn "DB not reachable (attempt $attempt/$DB_ATTEMPTS)"
-    sleep "$DB_SLEEP"
-    ((attempt++))
-  done
-  (( attempt > DB_ATTEMPTS )) && error "Database unreachable after $DB_ATTEMPTS attempts"
+  if command -v mysql >/dev/null 2>&1; then
+    wait_for_db
+  else
+    warn "mysql client missing; cannot --db-wait"
+  fi
+fi
+
+# 6. Database migrations / refresh
+if [[ "$REFRESH_DB" == "true" ]]; then
+  log "Refreshing database (migrate:fresh)"
+  php artisan migrate:fresh --force
+  if [[ "$SEED" == "true" ]]; then
+    log "Seeding database"
+    php artisan db:seed --force
+  fi
+  SKIP_MIGRATE=true
 fi
 
 if [[ "$SKIP_MIGRATE" == "false" ]]; then
   log "Running migrations"
-  php artisan migrate --force
-  if [[ "$DO_SEED" == "true" ]]; then
+  php artisan migrate --force || warn "Migrations failed"
+  if [[ "$SEED" == "true" ]]; then
     log "Seeding database"
-    php artisan db:seed --force
+    php artisan db:seed --force || warn "Seeding failed"
   fi
-else
-  log "Skipping migrations"
 fi
 
-if [[ ! -L public/storage ]]; then
-  log "Creating storage symlink"
-  php artisan storage:link || warn "storage:link failed"
-fi
-
-log "Clearing caches"
+# 7. Cache / optimization
+log "Clearing Laravel caches"
 php artisan config:clear || true
 php artisan cache:clear || true
-php artisan route:clear || true
 php artisan view:clear || true
+php artisan route:clear || true
 
-if [[ "$OPTIMIZE" == "true" || "$PRODUCTION" == "true" ]]; then
-  log "Building caches (config, route, view)"
-  php artisan config:cache || warn "config:cache failed"
-  php artisan route:cache || warn "route:cache failed"
-  php artisan view:cache || warn "view:cache failed"
-  if php artisan list --raw 2>/dev/null | grep -q '^optimize$'; then
-    php artisan optimize || warn "optimize failed"
-  fi
+if [[ "$OPTIMIZE" == "true" ]]; then
+  log "Optimizing (config/route/view caches)"
+  php artisan config:cache || true
+  php artisan route:cache || true
+  php artisan view:cache || true
 fi
 
-if [[ -d storage && -d bootstrap/cache ]]; then
-  if ! touch storage/framework/.perm_test 2>/dev/null; then
-    warn "Permissions may need adjustment: chmod -R ug+rw storage bootstrap/cache"
-  else
-    rm -f storage/framework/.perm_test
-  fi
-fi
-
-success "Setup complete"
-[[ "$PRODUCTION" == "true" ]] && log "Production mode completed"
+log "Setup complete!"

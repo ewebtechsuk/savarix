@@ -1,6 +1,18 @@
 <?php
-if (!\function_exists('event')) {
-    function event(...$args) {
-        return null;
+
+namespace Illuminate\Events;
+
+use Closure;
+
+if (! function_exists('Illuminate\Events\queueable')) {
+    /**
+     * Create a new queued Closure event listener.
+     *
+     * @param  \Closure  $closure
+     * @return \Illuminate\Events\QueuedClosure
+     */
+    function queueable(Closure $closure)
+    {
+        return new QueuedClosure($closure);
     }
 }
