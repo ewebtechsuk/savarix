@@ -1,0 +1,38 @@
+{
+  "name": "RessApp",
+  "image": "mcr.microsoft.com/devcontainers/php:8.3",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/mysql:1": {
+      "version": "8.0",
+      "mysqlDatabase": "ressapp",
+      "mysqlUser": "ressuser",
+      "mysqlPassword": "secret"
+    }
+  },
+  "updateContentCommand": "./setup.sh --db-wait --seed",
+  "postStartCommand": "php artisan serve --host=0.0.0.0 --port=8000 &",
+  "forwardPorts": [8000],
+  "remoteEnv": {
+    "APP_ENV": "local",
+    "APP_URL": "http://localhost:8000",
+    "DB_CONNECTION": "mysql",
+    "DB_HOST": "localhost",
+    "DB_PORT": "3306",
+    "DB_DATABASE": "ressapp",
+    "DB_USERNAME": "ressuser",
+    "DB_PASSWORD": "secret",
+    "CACHE_DRIVER": "file",
+    "SESSION_DRIVER": "file",
+    "QUEUE_CONNECTION": "sync"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "postAttachCommand": "echo 'Commands: make init | make test | make fresh | make optimize | make test-parallel'"
+}
