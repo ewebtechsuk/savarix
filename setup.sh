@@ -14,8 +14,8 @@ fi
 # Generate Laravel app key
 php artisan key:generate
 
-# Run migrations
-php artisan migrate
+# Run migrations non-interactively (skip confirmation)
+php artisan migrate --force
 
 # Clear caches
 php artisan config:clear
