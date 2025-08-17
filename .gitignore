@@ -25,4 +25,5 @@ Thumbs.db
 *.tmp
 *.tar.gz
 /public/build/
+/build/phpstan/
 

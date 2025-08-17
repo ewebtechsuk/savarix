@@ -7,9 +7,14 @@ use App\Http\Controllers\Api\TenancyApiController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\WebhookApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\DocumentController;
 
 Route::post('login', [AuthApiController::class, 'login']);
+
+Route::prefix('v1')->group(function () {
+    Route::get('health', HealthCheckController::class);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('properties', PropertyApiController::class);
