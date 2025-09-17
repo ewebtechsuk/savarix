@@ -22,7 +22,7 @@ return [
     'display_permission_in_exception' => false,
 
     'cache' => [
-        'expiration_time' => \DateTimeInterface::SECONDS_PER_HOUR,
+        'expiration_time' => 3600,
         'key' => 'spatie.permission.cache',
         'store' => 'default',
     ],
