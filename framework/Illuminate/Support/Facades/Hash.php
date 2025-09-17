@@ -2,10 +2,12 @@
 
 namespace Illuminate\Support\Facades;
 
-class Hash
-{
-    public static function make(string $value): string
+if (!class_exists(Hash::class, false)) {
+    class Hash
     {
-        return password_hash($value, PASSWORD_BCRYPT);
+        public static function make(string $value): string
+        {
+            return password_hash($value, PASSWORD_BCRYPT);
+        }
     }
 }

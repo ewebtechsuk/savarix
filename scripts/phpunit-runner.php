@@ -1,17 +1,9 @@
 #!/usr/bin/env php
 <?php
-$possible = [
-    __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/../autoload.php',
-    __DIR__ . '/../../vendor/autoload.php',
-    __DIR__ . '/../../autoload.php',
-];
-foreach ($possible as $autoload) {
-    if (file_exists($autoload)) {
-        require $autoload;
-        break;
-    }
-}
+require __DIR__ . '/../framework/PHPUnit/Framework/AssertionFailedError.php';
+require __DIR__ . '/../framework/PHPUnit/Framework/TestCase.php';
+require __DIR__ . '/../framework/PHPUnit/TextUI/TestRunner.php';
+require __DIR__ . '/../bootstrap/autoload.php';
 
 use PHPUnit\TextUI\TestRunner;
 

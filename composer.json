@@ -30,7 +30,9 @@
       "database"
     ],
     "psr-4": {
-      "App\\": "app/"
+      "App\\": "app/",
+      "Framework\\": "framework/",
+      "PHPUnit\\": "framework/PHPUnit/"
     }
   },
   "autoload-dev": {
@@ -49,12 +51,10 @@
       "php artisan key:generate"
     ],
     "post-install-cmd": [
-      "Illuminate\\Foundation\\ComposerScripts::postInstall",
-      "php artisan optimize"
+      "php scripts/offline-optimize.php"
     ],
     "post-update-cmd": [
-      "Illuminate\\Foundation\\ComposerScripts::postUpdate",
-      "php artisan optimize"
+      "php scripts/offline-optimize.php"
     ],
     "pre-install-cmd": [
       "php scripts/composer-token.php"
@@ -69,3 +69,4 @@
       "kylekatarnls/update-helper": true
     }
   }
+}
