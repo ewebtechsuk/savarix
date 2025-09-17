@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->string('tenant_id', 255)->nullable()->change();
-        });
+        if (Schema::hasColumn('properties', 'tenant_id')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->string('tenant_id', 255)->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->unsignedBigInteger('tenant_id')->nullable()->change();
-        });
+        if (Schema::hasColumn('properties', 'tenant_id')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->unsignedBigInteger('tenant_id')->nullable()->change();
+            });
+        }
     }
 };
