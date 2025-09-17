@@ -12,6 +12,7 @@ class DiaryEventResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'date' => $this->date,
             'start' => $this->start,
             'end' => $this->end,
             'type' => $this->type,
