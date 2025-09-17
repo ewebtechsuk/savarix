@@ -14,51 +14,48 @@ define('LARAVEL_START', microtime(true));
 |
 */
 
-$vendorDirectory = __DIR__.'/../vendor';
+$projectRoot = realpath(__DIR__.'/..');
+$vendorDirectory = $projectRoot.'/vendor';
 $vendorAutoload = $vendorDirectory.'/autoload.php';
-$cachedVendorDirectory = __DIR__.'/../deps/vendor';
+$cachedVendorDirectory = $projectRoot.'/deps/vendor';
+$cachedAutoload = $cachedVendorDirectory.'/autoload.php';
+$composerAlreadyLoaded = class_exists(\Composer\Autoload\ClassLoader::class, false);
 
-if (!function_exists('laravelCopyDirectory')) {
-    function laravelCopyDirectory($source, $destination)
-    {
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
+// Provide compatibility polyfills for legacy vendor dependencies that may rely
+// on functions removed from modern PHP runtimes (e.g. each()). This allows the
+// cached vendor tree to continue working in environments where Composer cannot
+// install fresh dependencies, such as the CI sandbox used for kata exercises.
+$polyfills = __DIR__.'/polyfills.php';
 
-        foreach ($iterator as $item) {
-            $targetPath = $destination.DIRECTORY_SEPARATOR.$iterator->getSubPathName();
-
-            if ($item->isDir()) {
-                if (!is_dir($targetPath) && !@mkdir($targetPath, 0775, true) && !is_dir($targetPath)) {
-                    throw new RuntimeException('Unable to create directory: '.$targetPath);
-                }
-            } else {
-                if (!@copy($item->getPathname(), $targetPath)) {
-                    throw new RuntimeException('Unable to copy file: '.$targetPath);
-                }
-            }
-        }
-    }
+if (file_exists($polyfills)) {
+    require $polyfills;
 }
 
-if (!file_exists($vendorAutoload) && is_dir($cachedVendorDirectory)) {
-    if (is_link($vendorDirectory)) {
-        @unlink($vendorDirectory);
-    }
-
-    if (!is_dir($vendorDirectory) && !@mkdir($vendorDirectory, 0775, true) && !is_dir($vendorDirectory)) {
-        throw new RuntimeException('Unable to create vendor directory.');
-    }
-
-    laravelCopyDirectory($cachedVendorDirectory, $vendorDirectory);
+if (!file_exists($vendorAutoload) && file_exists($cachedAutoload)) {
+    $vendorAutoload = $cachedAutoload;
 }
 
 if (file_exists($vendorAutoload)) {
-    require $vendorAutoload;
+    if (! $composerAlreadyLoaded) {
+        require_once $vendorAutoload;
+    }
 } else {
     fwrite(STDERR, "Composer dependencies are missing. Run 'composer install' or ensure deps/vendor is available.\n");
     exit(1);
+}
+
+if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
+    foreach (\Composer\Autoload\ClassLoader::getRegisteredLoaders() as $loader) {
+        if (! $loader instanceof \Composer\Autoload\ClassLoader) {
+            continue;
+        }
+
+        $loader->setPsr4('App\\', [$projectRoot.'/app']);
+        $loader->setPsr4('Tests\\', [$projectRoot.'/tests']);
+        $loader->addClassMap([
+            'Tests\\TestCase' => $projectRoot.'/tests/TestCase.php',
+        ]);
+    }
 }
 
 /*
@@ -75,5 +72,5 @@ if (file_exists($vendorAutoload)) {
 $compiledPath = __DIR__.'/cache/compiled.php';
 
 if (file_exists($compiledPath)) {
-    require $compiledPath;
+    require_once $compiledPath;
 }

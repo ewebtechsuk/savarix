@@ -1,5 +1,7 @@
 .DS_Store
-/vendor/
+/vendor/*
+!/vendor/bin/
+!/vendor/bin/phpunit
 /node_modules/
 .env
 .phpunit.result.cache
