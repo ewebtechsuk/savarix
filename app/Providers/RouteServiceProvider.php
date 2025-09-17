@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -14,7 +14,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    protected $namespace = 'App\Http\Controllers';
+    protected $namespace = 'App\\Http\\Controllers';
 
     /**
      * Define your route model bindings, pattern filters, etc.
@@ -23,9 +23,27 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        if (is_callable([parent::class, 'boot'])) {
+            parent::boot();
+        }
 
-        parent::boot();
+        if (method_exists($this, 'routes')) {
+            $this->routes(function () {
+                Route::middleware('web')->group(base_path('routes/web.php'));
+
+                foreach (['landlord', 'tenant', 'agent'] as $context) {
+                    $path = base_path("routes/{$context}.php");
+
+                    if (file_exists($path)) {
+                        Route::middleware('web')->group($path);
+                    }
+                }
+
+                Route::middleware('api')
+                    ->prefix('api')
+                    ->group(base_path('routes/api.php'));
+            });
+        }
     }
 
     /**
@@ -43,7 +61,7 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapLandlordRoutes();
 
-        //
+        $this->mapAgentRoutes();
     }
 
     /**
@@ -58,7 +76,7 @@ class RouteServiceProvider extends ServiceProvider
         Route::group([
             'middleware' => 'web',
             'namespace' => $this->namespace,
-        ], function ($router) {
+        ], function () {
             require base_path('routes/web.php');
         });
     }
@@ -76,7 +94,7 @@ class RouteServiceProvider extends ServiceProvider
             'middleware' => 'api',
             'namespace' => $this->namespace,
             'prefix' => 'api',
-        ], function ($router) {
+        ], function () {
             require base_path('routes/api.php');
         });
     }
@@ -88,12 +106,16 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapTenantRoutes()
     {
-        Route::group([
-            'middleware' => 'web',
-            'namespace' => $this->namespace,
-        ], function ($router) {
-            require base_path('routes/tenant.php');
-        });
+        $path = base_path('routes/tenant.php');
+
+        if (file_exists($path)) {
+            Route::group([
+                'middleware' => 'web',
+                'namespace' => $this->namespace,
+            ], function () use ($path) {
+                require $path;
+            });
+        }
     }
 
     /**
@@ -103,11 +125,34 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapLandlordRoutes()
     {
-        Route::group([
-            'middleware' => 'web',
-            'namespace' => $this->namespace,
-        ], function ($router) {
-            require base_path('routes/landlord.php');
-        });
+        $path = base_path('routes/landlord.php');
+
+        if (file_exists($path)) {
+            Route::group([
+                'middleware' => 'web',
+                'namespace' => $this->namespace,
+            ], function () use ($path) {
+                require $path;
+            });
+        }
+    }
+
+    /**
+     * Define the "agent" routes for the application.
+     *
+     * @return void
+     */
+    protected function mapAgentRoutes()
+    {
+        $path = base_path('routes/agent.php');
+
+        if (file_exists($path)) {
+            Route::group([
+                'middleware' => 'web',
+                'namespace' => $this->namespace,
+            ], function () use ($path) {
+                require $path;
+            });
+        }
     }
 }

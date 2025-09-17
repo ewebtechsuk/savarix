@@ -42,7 +42,9 @@ Push changes to `main` and visit the repository's Pages environment to view the 
 
 To initialize the project when working in Codex or any fresh development container:
 
-1. Ensure the container has internet access to install dependencies.
+1. Ensure the container has internet access to install dependencies. When GitHub rate limits unauthenticated requests, set a
+   personal access token in the `GITHUB_TOKEN` environment variable (or add it to `.env`). The setup script and Composer hooks
+   will automatically read the token and configure Composer authentication before downloading packages.
 2. From the project root make the setup script executable (if it isn't already) and run it:
    ```bash
    chmod +x setup.sh
