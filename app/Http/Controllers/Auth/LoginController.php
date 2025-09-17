@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use App\Core\Application;
+use Framework\Http\Request;
+use Framework\Http\Response;
 
-class LoginController extends Controller
+class LoginController
 {
-    use AuthenticatesUsers;
-
-    protected $redirectTo = '/properties';
-
-    public function __construct()
+    public function show(Request $request, array $context): Response
     {
-        $this->middleware('guest')->except('logout');
+        /** @var Application $app */
+        $app = $context['app'];
+        $content = $app->view('auth.login');
+        return Response::view($content);
     }
 }

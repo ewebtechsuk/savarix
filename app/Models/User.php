@@ -2,31 +2,36 @@
 
 namespace App\Models;
 
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Permission\Traits\HasRoles;
-use Laravel\Sanctum\HasApiTokens;
-
-class User extends Authenticatable
+class User
 {
-    use HasApiTokens, Notifiable, HasFactory, HasRoles;
+    private static int $nextId = 1;
+    /** @var array<int, User> */
+    private static array $store = [];
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'name', 'email', 'password', 'is_admin',
-    ];
+    public int $id;
+    public string $name;
+    public string $email;
+    public string $password;
 
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var array
-     */
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
+    private function __construct(array $attributes)
+    {
+        $this->id = $attributes['id'];
+        $this->name = $attributes['name'];
+        $this->email = $attributes['email'];
+        $this->password = $attributes['password'];
+    }
+
+    public static function create(array $attributes): self
+    {
+        $record = [
+            'id' => self::$nextId++,
+            'name' => $attributes['name'] ?? 'User',
+            'email' => $attributes['email'] ?? 'user@example.com',
+            'password' => $attributes['password'] ?? '',
+        ];
+
+        $user = new self($record);
+        self::$store[$user->id] = $user;
+        return $user;
+    }
 }

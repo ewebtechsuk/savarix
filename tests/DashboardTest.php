@@ -4,23 +4,23 @@ namespace Tests;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
-    public function testLoginPageLoads()
+    public function testLoginPageLoads(): void
     {
         $response = $this->get('/login');
-        $response->assertStatus(200);
+        $this->assertStatus($response, 200);
+        $this->assertSee($response, 'Login');
     }
 
-    public function testDashboardRequiresAuthentication()
+    public function testDashboardRequiresAuthentication(): void
     {
         $response = $this->get('/dashboard');
-        $response->assertRedirect('/login');
+        $this->assertRedirect($response, '/login');
     }
 
-    public function testAuthenticatedUserCanSeeDashboard()
+    public function testAuthenticatedUserCanSeeDashboard(): void
     {
         $user = User::create([
             'name' => 'Test User',
@@ -29,7 +29,7 @@ class DashboardTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get('/dashboard');
-        $response->assertStatus(200);
-        $response->assertSee('Dashboard');
+        $this->assertStatus($response, 200);
+        $this->assertSee($response, 'Dashboard');
     }
 }
