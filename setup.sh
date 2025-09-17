@@ -31,6 +31,27 @@ print_help() {
 log() { echo -e "[setup] $*"; }
 warn() { echo -e "[setup][warn] $*" >&2; }
 
+restore_vendor_cache() {
+  # Attempt to hydrate vendor/ from repository snapshots when network access is
+  # unavailable.
+  if [[ -d deps/vendor ]]; then
+    log "Restoring Composer dependencies from deps/vendor cache"
+    rm -rf vendor
+    mkdir -p vendor
+    cp -a deps/vendor/. vendor/
+    return 0
+  fi
+
+  if [[ -f deps.tar.gz ]]; then
+    log "Extracting Composer dependencies from deps.tar.gz cache"
+    rm -rf vendor
+    tar -xzf deps.tar.gz vendor
+    return 0
+  fi
+
+  return 1
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --seed) SEED=true ;;
@@ -57,8 +78,15 @@ if [[ -f composer.json ]]; then
     log "Composer dependencies (vendor/) already present"
   else
     log "Installing Composer dependencies"
+    if composer install --no-interaction --prefer-dist --no-progress; then
+      :
+    elif restore_vendor_cache; then
+      warn "Composer install failed; restored dependencies from local cache"
+    else
+      warn "Composer install failed and no cached dependencies were available"
+      exit 1
+    fi
   fi
-  composer install --no-interaction --prefer-dist --no-progress
 fi
 
 # 3. Node dependencies (optional)
