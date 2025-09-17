@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        /*
-        Schema::table('properties', function (Blueprint $table) {
-            $table->unsignedBigInteger('tenant_id')->nullable()->after('id');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('set null');
-        });
-        */
+        if (! Schema::hasColumn('properties', 'tenant_id')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->unsignedBigInteger('tenant_id')->nullable()->after('id');
+            });
+        }
     }
 
     /**
@@ -24,9 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->dropForeign(['tenant_id']);
-            $table->dropColumn('tenant_id');
-        });
+        if (Schema::hasColumn('properties', 'tenant_id')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->dropColumn('tenant_id');
+            });
+        }
     }
 };

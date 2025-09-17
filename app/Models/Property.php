@@ -2,86 +2,99 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Jobs\SendWebhook;
-use App\Models\Webhook;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use App\Jobs\SyncPropertyToPortals;
-use App\Jobs\TriggerMarketingCampaign;
 
 class Property extends Model
 {
     use HasFactory;
 
-    protected $table = 'properties';
-
-    protected $guarded = ['id'];
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'type', 'status', 'owner_id', 'price', 'address', 'title', 'landlord_id', 'vendor_id', 'applicant_id',
-        'latitude', 'longitude', 'valuation_estimate', 'publish_to_portal', 'send_marketing_campaign'
-
+        'title',
+        'description',
+        'price',
+        'address',
+        'city',
+        'postcode',
+        'bedrooms',
+        'bathrooms',
+        'type',
+        'status',
+        'vendor_id',
+        'landlord_id',
+        'applicant_id',
+        'notes',
+        'activity_log',
+        'document',
+        'latitude',
+        'longitude',
+        'valuation_estimate',
+        'publish_to_portal',
+        'send_marketing_campaign',
     ];
 
-    protected static function booted()
-    {
-        static::created(function (Property $property) {
-            $payload = [
-                'event' => 'property.created',
-                'data' => $property->toArray(),
-            ];
-            foreach (Webhook::where('event', 'property.created')->get() as $webhook) {
-                SendWebhook::dispatch($webhook->url, $payload);
-
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
+        'activity_log' => 'array',
         'publish_to_portal' => 'boolean',
         'send_marketing_campaign' => 'boolean',
     ];
 
-    protected static function booted()
+    /**
+     * Vendor contact relationship.
+     */
+    public function vendor(): BelongsTo
     {
-        static::created(function (Property $property) {
-            if ($property->publish_to_portal) {
-                SyncPropertyToPortals::dispatch($property);
-            }
-            if ($property->send_marketing_campaign) {
-                TriggerMarketingCampaign::dispatch($property);
-            }
-        });
-
-        static::updated(function (Property $property) {
-            if ($property->publish_to_portal) {
-                SyncPropertyToPortals::dispatch($property);
-            }
-            if ($property->send_marketing_campaign) {
-                TriggerMarketingCampaign::dispatch($property);
-            }
-        });
+        return $this->belongsTo(Contact::class, 'vendor_id');
     }
 
-    // Relationships
-    public function vendor()
-    {
-        return $this->belongsTo(User::class, 'vendor_id');
-    }
-    public function landlord()
+    /**
+     * Landlord contact relationship.
+     */
+    public function landlord(): BelongsTo
     {
         return $this->belongsTo(Contact::class, 'landlord_id');
     }
-    public function applicant()
+
+    /**
+     * Applicant contact relationship.
+     */
+    public function applicant(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'applicant_id');
+        return $this->belongsTo(Contact::class, 'applicant_id');
     }
-    public function media()
+
+    /**
+     * Property media relationship.
+     */
+    public function media(): HasMany
     {
         return $this->hasMany(PropertyMedia::class)->orderBy('order');
     }
-    public function features()
+
+    /**
+     * Property feature relationship.
+     */
+    public function features(): HasMany
     {
         return $this->hasMany(PropertyFeature::class);
     }
 
+    /**
+     * Documents attached to the property.
+     */
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');

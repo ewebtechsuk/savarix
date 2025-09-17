@@ -9,6 +9,11 @@ use Framework\Http\Response;
 class LoginController
 {
     public function show(Request $request, array $context): Response
+    use AuthenticatesUsers;
+
+    protected $redirectTo = '/dashboard';
+
+    public function __construct()
     {
         /** @var Application $app */
         $app = $context['app'];

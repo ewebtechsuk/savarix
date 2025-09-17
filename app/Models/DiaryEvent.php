@@ -10,7 +10,7 @@ class DiaryEvent extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'description', 'start', 'end', 'type', 'user_id', 'property_id', 'contact_id', 'color'
+        'title', 'description', 'date', 'start', 'end', 'type', 'user_id', 'property_id', 'contact_id', 'color'
     ];
 
     public function user()

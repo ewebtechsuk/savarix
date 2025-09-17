@@ -20,6 +20,7 @@ Route::get('/', function () {
 // Single dashboard route for route('dashboard')
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
+
 // Central app routes (localhost:8888/)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -69,3 +70,5 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');
 
 require __DIR__.'/auth.php';
+
+

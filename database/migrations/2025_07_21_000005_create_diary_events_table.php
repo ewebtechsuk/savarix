@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->dateTime('date')->nullable();
             $table->dateTime('start');
             $table->dateTime('end')->nullable();
             $table->string('type'); // appointment, viewing, inspection, etc
