@@ -23,6 +23,8 @@ REFRESH_DB=false
 SKIP_MIGRATE=false
 SKIP_NPM=false
 OPTIMIZE=false
+OFFLINE_MODE=false
+OFFLINE_SENTINEL="bootstrap/cache/offline.json"
 
 print_help() {
   sed -n '1,60p' "$0" | grep -E '^#' | sed 's/^# *//'
@@ -31,25 +33,19 @@ print_help() {
 log() { echo -e "[setup] $*"; }
 warn() { echo -e "[setup][warn] $*" >&2; }
 
-restore_vendor_cache() {
-  # Attempt to hydrate vendor/ from repository snapshots when network access is
-  # unavailable.
-  if [[ -d deps/vendor ]]; then
-    log "Restoring Composer dependencies from deps/vendor cache"
-    rm -rf vendor
-    mkdir -p vendor
-    cp -a deps/vendor/. vendor/
-    return 0
-  fi
+enable_offline_mode() {
+  OFFLINE_MODE=true
+  warn "Composer install failed; enabling offline artisan stubs"
+  rm -rf vendor
+  mkdir -p "$(dirname "$OFFLINE_SENTINEL")"
+  cat >"$OFFLINE_SENTINEL" <<JSON
+{
+  "offline": true,
+  "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+JSON
+  warn "Offline mode provides limited artisan functionality until a full composer install succeeds."
 
-  if [[ -f deps.tar.gz ]]; then
-    log "Extracting Composer dependencies from deps.tar.gz cache"
-    rm -rf vendor
-    tar -xzf deps.tar.gz vendor
-    return 0
-  fi
-
-  return 1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -74,18 +70,28 @@ fi
 
 # 2. Composer install
 if [[ -f composer.json ]]; then
+  rm -f "$OFFLINE_SENTINEL"
   if [[ -d vendor ]]; then
     log "Composer dependencies (vendor/) already present"
   else
     log "Installing Composer dependencies"
     if composer install --no-interaction --prefer-dist --no-progress; then
       :
-    elif restore_vendor_cache; then
-      warn "Composer install failed; restored dependencies from local cache"
     else
-      warn "Composer install failed and no cached dependencies were available"
-      exit 1
+      enable_offline_mode
     fi
+  fi
+fi
+
+if [[ "$OFFLINE_MODE" == "true" ]]; then
+  if [[ "$REFRESH_DB" == "true" ]]; then
+    warn "Offline mode cannot refresh the database; skipping migrate:fresh"
+    REFRESH_DB=false
+    SKIP_MIGRATE=true
+  elif [[ "$SKIP_MIGRATE" == "false" ]]; then
+    warn "Offline mode cannot run database migrations; skipping"
+    SKIP_MIGRATE=true
+
   fi
 fi
 

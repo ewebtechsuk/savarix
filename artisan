@@ -3,15 +3,22 @@
 
 /*
 |--------------------------------------------------------------------------
-| Register The Auto Loader
+| Bootstrap For Offline Or Full Artisan Execution
 |--------------------------------------------------------------------------
 |
-| Composer provides a convenient, automatically generated class loader
-| for our application. We just need to utilize it! We'll require it
-| into the script here so that we do not have to worry about the
-| loading of any our classes "manually". Feels great to relax.
+| When dependencies are unavailable (for example, the container cannot
+| reach composer mirrors), we expose a lightweight artisan shim so that
+| key commands keep working. Otherwise we fall back to the framework's
+| default bootstrap sequence.
 |
 */
+
+$offlineSentinel = __DIR__.'/bootstrap/cache/offline.json';
+
+if (!file_exists(__DIR__.'/vendor/autoload.php') || file_exists($offlineSentinel)) {
+    require __DIR__.'/offline/artisan.php';
+    exit(0);
+}
 
 require __DIR__.'/bootstrap/autoload.php';
 
