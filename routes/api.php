@@ -11,12 +11,14 @@ use App\Http\Controllers\DocumentController;
 
 Route::post('login', [AuthApiController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('properties', PropertyApiController::class);
-    Route::apiResource('tenancies', TenancyApiController::class);
-    Route::apiResource('payments', PaymentApiController::class);
-    Route::apiResource('webhooks', WebhookApiController::class)->only(['index', 'store', 'destroy']);
-});
+Route::middleware('auth:sanctum')
+    ->name('api.')
+    ->group(function () {
+        Route::apiResource('properties', PropertyApiController::class);
+        Route::apiResource('tenancies', TenancyApiController::class);
+        Route::apiResource('payments', PaymentApiController::class);
+        Route::apiResource('webhooks', WebhookApiController::class)->only(['index', 'store', 'destroy']);
+    });
 
 /*(Route::get('/user', function (Request $request) {
     return $request->user();
