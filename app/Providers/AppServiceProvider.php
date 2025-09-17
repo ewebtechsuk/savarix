@@ -27,6 +27,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        if ($this->app->environment('testing')) {
+            $databasePath = database_path('testing.sqlite');
+
+            if (! file_exists($databasePath)) {
+                touch($databasePath);
+            }
+
+            config([
+                'database.default' => 'sqlite',
+                'database.connections.sqlite.database' => $databasePath,
+            ]);
+        }
     }
 }
