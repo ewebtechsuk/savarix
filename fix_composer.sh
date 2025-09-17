@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# Remove the vendor directory to ensure a clean state while keeping the lockfile
-rm -rf vendor
+set -euo pipefail
+
+# Remove only the vendor directory to ensure a clean state while keeping composer.lock
+rm -rf vendor/
 
 # Clear Composer cache
 composer clear-cache
 
-# Run the existing setup script to reinstall dependencies via the lockfile
-./setup.sh
+# Reinstall dependencies from the existing lockfile
+composer install --no-interaction --prefer-dist --no-progress
