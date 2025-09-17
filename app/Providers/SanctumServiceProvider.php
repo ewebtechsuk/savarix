@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Laravel\Sanctum\Sanctum;
 
 class SanctumServiceProvider extends ServiceProvider
 {
@@ -20,6 +19,6 @@ class SanctumServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Sanctum::ignoreMigrations();
+        // Intentionally left blank until additional Sanctum boot logic is required.
     }
 }
