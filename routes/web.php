@@ -18,7 +18,7 @@ Route::get('/', function () {
 });
 
 // Single dashboard route for route('dashboard')
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'is_admin'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
 // Central app routes (localhost:8888/)
 Route::middleware('auth')->group(function () {

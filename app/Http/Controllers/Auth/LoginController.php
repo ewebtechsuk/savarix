@@ -9,7 +9,7 @@ class LoginController extends Controller
 {
     use AuthenticatesUsers;
 
-    protected $redirectTo = '/properties';
+    protected $redirectTo = '/dashboard';
 
     public function __construct()
     {
