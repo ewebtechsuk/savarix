@@ -18,6 +18,16 @@ $vendorDirectory = __DIR__.'/../vendor';
 $vendorAutoload = $vendorDirectory.'/autoload.php';
 $cachedVendorDirectory = __DIR__.'/../deps/vendor';
 
+// Provide compatibility polyfills for legacy vendor dependencies that may rely
+// on functions removed from modern PHP runtimes (e.g. each()). This allows the
+// cached vendor tree to continue working in environments where Composer cannot
+// install fresh dependencies, such as the CI sandbox used for kata exercises.
+$polyfills = __DIR__.'/polyfills.php';
+
+if (file_exists($polyfills)) {
+    require $polyfills;
+}
+
 if (!function_exists('laravelCopyDirectory')) {
     function laravelCopyDirectory($source, $destination)
     {
