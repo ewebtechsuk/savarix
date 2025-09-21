@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\FixAktonzTenantEmail::class,
         \App\Console\Commands\CreateAktonzTenant::class,
         \App\Console\Commands\FixAktonzTenantData::class,
+        \App\Console\Commands\ListTenants::class,
     ];
 
     protected function schedule(Schedule $schedule)
