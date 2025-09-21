@@ -6,6 +6,7 @@ public REST API.  Contacts are created first, followed by properties,
 tenancies and payments so that all cross-record references are resolved
 automatically.
 
+
 ## Prerequisites
 
 1. Python 3.9+ installed locally.
@@ -31,6 +32,7 @@ automatically.
 When supplying raw Apex27 exports use the `raw` format so the script can map
 Apex fields to Ressapp payloads automatically:
 
+
 ```bash
 python scripts/apex27_import.py \
     https://your-tenant.example.com \
@@ -52,6 +54,7 @@ values wherever a later record needs to reference a previously created one
 
 * `--dry-run` – Validate input files, resolve relationships and log the
   payloads without performing any API calls.
+
 * `--continue-on-error` – Log HTTP errors and continue processing the remaining
   records.
 * `--timeout` – Override the default request timeout (30 seconds).
@@ -83,3 +86,4 @@ It is converted into a Ressapp contact payload with `external_id: "CNT-001"`,
 `type: "landlord"` and `name: "Alex Young"`.  Properties, tenancies and
 payments follow similar conventions, matching Apex27 identifiers to Ressapp
 IDs automatically.
+

@@ -23,6 +23,7 @@ The exporter expects the directory to contain ``contacts``,
 ``properties``, ``tenancies`` and ``payments`` files in either CSV or
 JSON format (case-insensitive).  Individual paths can be overridden
 through dedicated ``--*-file`` arguments.
+
 """
 from __future__ import annotations
 
@@ -34,11 +35,13 @@ import re
 import sys
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import requests
 from dateutil import parser as date_parser
+
 
 LOGGER = logging.getLogger("apex27_import")
 
@@ -92,6 +95,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help=(
             "How to interpret the Apex27 files: 'raw' understands Apex27's native "
             "exports while 'prepared' expects Ressapp-ready payloads (default: prepared)."
+
         ),
     )
     parser.add_argument(
@@ -468,6 +472,7 @@ def normalize_apex_payments(records: List[dict]) -> List[dict]:
     return normalized
 
 
+
 def authenticate(base_url: str, email: str, password: str, timeout: float) -> str:
     url = base_url.rstrip("/") + "/api/login"
     LOGGER.debug("Authenticating at %s", url)
@@ -643,6 +648,7 @@ def enrich_payment_payload(
     return payload
 
 
+
 def process_import(args: argparse.Namespace) -> None:
     configure_logging(args.log_level)
     data_dir = args.data_dir
@@ -669,8 +675,10 @@ def process_import(args: argparse.Namespace) -> None:
         tenancies = raw_tenancies
         payments = raw_payments
 
+
     session = requests.Session()
     session.headers.update({"Accept": "application/json"})
+
 
     if not args.dry_run:
         token = authenticate(args.base_url, args.email, args.password, args.timeout)
@@ -702,11 +710,13 @@ def process_import(args: argparse.Namespace) -> None:
         enrich_property_payload(record, contact_ids, allow_missing_ids=args.dry_run)
         for record in properties
     ]
+
     property_results = post_records(
         session,
         args.base_url,
         "/api/properties",
         property_payloads,
+
         args.timeout,
         args.dry_run,
         args.continue_on_error,
@@ -727,11 +737,13 @@ def process_import(args: argparse.Namespace) -> None:
         )
         for record in tenancies
     ]
+
     tenancy_results = post_records(
         session,
         args.base_url,
         "/api/tenancies",
         tenancy_payloads,
+
         args.timeout,
         args.dry_run,
         args.continue_on_error,
@@ -751,11 +763,13 @@ def process_import(args: argparse.Namespace) -> None:
         )
         for record in payments
     ]
+
     post_records(
         session,
         args.base_url,
         "/api/payments",
         payment_payloads,
+
         args.timeout,
         args.dry_run,
         args.continue_on_error,
