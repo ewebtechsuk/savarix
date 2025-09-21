@@ -33,9 +33,9 @@ import json
 import logging
 import re
 import sys
+
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
@@ -674,7 +674,6 @@ def process_import(args: argparse.Namespace) -> None:
         properties = raw_properties
         tenancies = raw_tenancies
         payments = raw_payments
-
 
     session = requests.Session()
     session.headers.update({"Accept": "application/json"})

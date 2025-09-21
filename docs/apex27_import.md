@@ -86,4 +86,3 @@ It is converted into a Ressapp contact payload with `external_id: "CNT-001"`,
 `type: "landlord"` and `name: "Alex Young"`.  Properties, tenancies and
 payments follow similar conventions, matching Apex27 identifiers to Ressapp
 IDs automatically.
-

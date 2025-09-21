@@ -56,6 +56,35 @@ switch ($command) {
         echo "[offline] {$command} skipped (Composer dependencies unavailable).\n";
         exit(0);
 
+    case 'test':
+        $binaryCandidates = [
+            $basePath . '/vendor/bin/phpunit',
+            $basePath . '/deps/vendor/bin/phpunit',
+        ];
+
+        $phpunit = null;
+        foreach ($binaryCandidates as $candidate) {
+            if (is_file($candidate)) {
+                $phpunit = $candidate;
+                break;
+            }
+        }
+
+        if ($phpunit === null) {
+            fwrite(STDERR, "[offline] phpunit binary not found. Ensure composer dependencies are installed.\n");
+            exit(1);
+        }
+
+        $phpBinary = PHP_BINARY ?: 'php';
+        $processArgs = array_merge([$phpBinary, $phpunit], $arguments);
+        $escaped = array_map(static function ($arg) {
+            return escapeshellarg($arg);
+        }, $processArgs);
+        $commandLine = implode(' ', $escaped);
+
+        passthru($commandLine, $status);
+        exit($status);
+
     default:
         fwrite(STDERR, "[offline] Command '{$command}' is not available without Composer dependencies.\n");
         exit(1);
