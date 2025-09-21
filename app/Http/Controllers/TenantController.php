@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
@@ -61,7 +62,10 @@ class TenantController extends Controller
             'id' => $request->subdomain,
             'data' => $data,
         ]);
-        $tenant->domains()->create(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+
+        $tenant->domains()->create([
+            'domain' => $this->buildTenantDomain((string) $request->input('subdomain', '')),
+        ]);
         // Create initial user if provided
         if ($request->has('user.name') && $request->has('user.email') && $request->has('user.password')) {
             try {
@@ -120,10 +124,12 @@ class TenantController extends Controller
         $tenant->save();
         $tenant->refresh(); // Ensure latest data is loaded
         if ($request->filled('subdomain')) {
+            $domain = $this->buildTenantDomain((string) $request->input('subdomain', ''));
+
             if ($tenant->domains()->exists()) {
-                $tenant->domains()->update(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+                $tenant->domains()->update(['domain' => $domain]);
             } else {
-                $tenant->domains()->create(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+                $tenant->domains()->create(['domain' => $domain]);
             }
         }
         return redirect()->route('tenants.show', $tenant->id)->with('success', 'Tenant updated successfully.');
@@ -158,5 +164,46 @@ class TenantController extends Controller
             'password' => bcrypt($request->password),
         ]);
         return back()->with('success', 'User added successfully.');
+}
+
+    private function buildTenantDomain(string $subdomain): string
+    {
+        $subdomain = trim($subdomain);
+
+        if ($subdomain === '') {
+            return $this->centralHost();
+        }
+
+        $host = $this->centralHost();
+
+        return Str::of($subdomain)->trim('.')->append('.' . $host);
+    }
+
+    private function centralHost(): string
+    {
+        $appUrl = config('app.url');
+        $host = parse_url($appUrl ?: '', PHP_URL_HOST);
+
+        if (is_string($host) && $host !== '') {
+            return $host;
+        }
+
+        $centralDomains = collect(config('tenancy.central_domains', []));
+
+        $nonIpDomain = $centralDomains->first(function ($domain) {
+            return is_string($domain) && !filter_var($domain, FILTER_VALIDATE_IP);
+        });
+
+        if (is_string($nonIpDomain) && $nonIpDomain !== '') {
+            return $nonIpDomain;
+        }
+
+        $first = $centralDomains->first();
+
+        if (is_string($first) && $first !== '') {
+            return $first;
+        }
+
+        return 'localhost';
     }
 }

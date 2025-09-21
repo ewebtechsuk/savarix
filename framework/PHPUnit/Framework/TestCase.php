@@ -12,13 +12,19 @@ abstract class TestCase
     {
     }
 
-    public function run(): array
+    public function run(?string $filter = null): array
     {
         $results = [];
         foreach (get_class_methods($this) as $method) {
-            if (str_starts_with($method, 'test')) {
-                $results[] = $this->runTestMethod($method);
+            if (! str_starts_with($method, 'test')) {
+                continue;
             }
+
+            if (! $this->shouldRun($method, $filter)) {
+                continue;
+            }
+
+            $results[] = $this->runTestMethod($method);
         }
         return $results;
     }
@@ -44,6 +50,17 @@ abstract class TestCase
             'status' => $status,
             'message' => $message,
         ];
+    }
+
+    private function shouldRun(string $method, ?string $filter): bool
+    {
+        if ($filter === null || $filter === '') {
+            return true;
+        }
+
+        $target = get_class($this) . '::' . $method;
+
+        return stripos($target, $filter) !== false;
     }
 
     protected static function fail(string $message): void

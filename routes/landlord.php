@@ -10,5 +10,6 @@ Route::middleware(['web', 'auth:landlord'])
     ->group(function () {
         Route::get('/dashboard', [LandlordDashboardController::class, 'index'])
             ->name('dashboard');
+
+        Route::resource('tenants', TenantController::class);
     });
-    Route::resource('tenants', TenantController::class);

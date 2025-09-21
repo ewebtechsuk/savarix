@@ -7,7 +7,7 @@ use ReflectionClass;
 
 class TestRunner
 {
-    public function run(string $testsPath): int
+    public function run(string $testsPath, ?string $filter = null): int
     {
         $results = [];
 
@@ -18,7 +18,7 @@ class TestRunner
         foreach (get_declared_classes() as $class) {
             if (is_subclass_of($class, TestCase::class) && !$this->isAbstract($class)) {
                 $instance = new $class();
-                $results = array_merge($results, $instance->run());
+                $results = array_merge($results, $instance->run($filter));
             }
         }
 

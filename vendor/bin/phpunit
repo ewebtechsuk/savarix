@@ -2,18 +2,47 @@
 <?php
 $binDir = __DIR__;
 $projectRoot = dirname($binDir, 2);
-$cachedVendorDir = $projectRoot.'/deps/vendor';
-$autoloadPath = $cachedVendorDir.'/autoload.php';
-$phpunitBinary = $cachedVendorDir.'/phpunit/phpunit/phpunit';
-
-if (!is_file($autoloadPath) || !is_file($phpunitBinary)) {
-    fwrite(STDERR, "Cached Composer dependencies are missing. Run 'fix_composer.sh' or ensure deps/vendor is available.\n");
-    exit(1);
-}
-
 $polyfills = $projectRoot.'/bootstrap/polyfills.php';
 if (is_file($polyfills)) {
     require_once $polyfills;
+}
+
+// Mirror the environment variables from phpunit.xml so the application boots in
+// the expected testing context even without parsing the XML configuration.
+$environment = [
+    'APP_ENV'        => 'testing',
+    'CACHE_DRIVER'   => 'array',
+    'SESSION_DRIVER' => 'array',
+    'QUEUE_DRIVER'   => 'sync',
+];
+
+foreach ($environment as $name => $value) {
+    putenv($name.'='.$value);
+    $_ENV[$name] = $value;
+    $_SERVER[$name] = $value;
+}
+
+$runnerScript = $projectRoot.'/scripts/phpunit-runner.php';
+
+if (is_file($runnerScript)) {
+    require $runnerScript;
+    return;
+}
+
+$composerVendorDir = $projectRoot.'/vendor';
+$cachedVendorDir = $projectRoot.'/deps/vendor';
+
+if (is_file($composerVendorDir.'/autoload.php') && is_file($composerVendorDir.'/phpunit/phpunit/phpunit')) {
+    $autoloadPath = $composerVendorDir.'/autoload.php';
+    $phpunitBinary = $composerVendorDir.'/phpunit/phpunit/phpunit';
+} else {
+    $autoloadPath = $cachedVendorDir.'/autoload.php';
+    $phpunitBinary = $cachedVendorDir.'/phpunit/phpunit/phpunit';
+}
+
+if (!is_file($autoloadPath) || !is_file($phpunitBinary)) {
+    fwrite(STDERR, "Composer dependencies are missing. Run 'composer install' or ensure deps/vendor is available.\n");
+    exit(1);
 }
 
 // Ensure PHPUnit runs without relying on the legacy XML configuration that is
@@ -63,20 +92,5 @@ $_SERVER['argv'] = $argv;
 $_SERVER['argc'] = count($argv);
 $GLOBALS['argv'] = $argv;
 $GLOBALS['argc'] = count($argv);
-
-// Mirror the environment variables from phpunit.xml so the application boots in
-// the expected testing context even without parsing the XML configuration.
-$environment = [
-    'APP_ENV'        => 'testing',
-    'CACHE_DRIVER'   => 'array',
-    'SESSION_DRIVER' => 'array',
-    'QUEUE_DRIVER'   => 'sync',
-];
-
-foreach ($environment as $name => $value) {
-    putenv($name.'='.$value);
-    $_ENV[$name] = $value;
-    $_SERVER[$name] = $value;
-}
 
 require $phpunitBinary;
