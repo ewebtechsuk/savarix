@@ -53,3 +53,10 @@ To initialize the project when working in Codex or any fresh development contain
 
 The script installs Composer and Node dependencies, copies `.env.example` to `.env` if necessary, generates an application key, runs database migrations and clears caches.
 After it finishes you can run tests or start the application with `php artisan serve`.
+
+## Apex27 Import Helper
+
+See `docs/apex27_import.md` for instructions on using the bundled Python script
+that can ingest raw Apex27 exports (CSV or JSON) and post them to your Ressapp
+tenant via the REST API, including automatic creation of contacts, properties,
+tenancies and payments.

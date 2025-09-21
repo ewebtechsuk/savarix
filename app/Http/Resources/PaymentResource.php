@@ -14,11 +14,10 @@ class PaymentResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'date' => $this->date ? $this->date->toDateString() : null,
-            'invoice_id' => $this->invoice_id,
+            'tenancy_id' => $this->tenancy_id,
             'amount' => $this->amount,
-            'method' => $this->method,
-            'notes' => $this->notes,
+            'status' => $this->status,
+            'stripe_reference' => $this->stripe_reference,
             'created_at' => $this->created_at ? $this->created_at->toISOString() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toISOString() : null,
         ];
