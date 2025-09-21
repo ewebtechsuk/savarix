@@ -64,7 +64,10 @@
             }
         </style>
 
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @php($viteManifest = public_path('build/manifest.json'))
+        @if (file_exists($viteManifest))
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @endif
     </head>
     <body>
         <div class="flex-center position-ref full-height">
