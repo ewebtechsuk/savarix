@@ -57,4 +57,7 @@ After it finishes you can run tests or start the application with `php artisan s
 ## Apex27 Import Helper
 
 See `docs/apex27_import.md` for instructions on using the bundled Python script
-that can post Apex27 export data to your Ressapp tenant via the REST API.
+that can ingest raw Apex27 exports (CSV or JSON) and post them to your Ressapp
+tenant via the REST API, including automatic creation of contacts, properties,
+tenancies and payments.
+

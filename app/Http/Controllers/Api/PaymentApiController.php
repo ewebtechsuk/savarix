@@ -18,11 +18,10 @@ class PaymentApiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date' => 'required|date',
-            'invoice_id' => 'nullable|exists:invoices,id',
+            'tenancy_id' => 'required|exists:tenancies,id',
             'amount' => 'required|numeric',
-            'method' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'status' => 'nullable|string',
+            'stripe_reference' => 'nullable|string',
         ]);
         $payment = Payment::create($validated);
         return new PaymentResource($payment);
@@ -36,11 +35,10 @@ class PaymentApiController extends Controller
     public function update(Request $request, Payment $payment)
     {
         $validated = $request->validate([
-            'date' => 'sometimes|required|date',
-            'invoice_id' => 'nullable|exists:invoices,id',
+            'tenancy_id' => 'sometimes|required|exists:tenancies,id',
             'amount' => 'sometimes|required|numeric',
-            'method' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'status' => 'nullable|string',
+            'stripe_reference' => 'nullable|string',
         ]);
         $payment->update($validated);
         return new PaymentResource($payment);

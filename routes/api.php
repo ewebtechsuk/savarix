@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\WebhookApiController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Api\ContactApiController;
 
 Route::post('login', [AuthApiController::class, 'login']);
 
@@ -17,6 +18,7 @@ Route::middleware('auth:sanctum')
         Route::apiResource('properties', PropertyApiController::class);
         Route::apiResource('tenancies', TenancyApiController::class);
         Route::apiResource('payments', PaymentApiController::class);
+        Route::apiResource('contacts', ContactApiController::class);
         Route::apiResource('webhooks', WebhookApiController::class)->only(['index', 'store', 'destroy']);
     });
 
