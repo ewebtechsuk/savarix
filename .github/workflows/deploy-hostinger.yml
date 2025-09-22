@@ -1,0 +1,214 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FTP_SYNC_STATE: .ftp-deploy-sync-state.json
+  SFTP_PAYLOAD_DIR: .deploy-sftp
+
+jobs:
+  deploy:
+    name: Upload application to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve deployment configuration
+        id: deploy_config
+        run: |
+          host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
+          user="${HOSTINGER_FTP_USERNAME:-${FTP_USERNAME:-}}"
+          pass="${HOSTINGER_FTP_PASSWORD:-${FTP_PASSWORD:-}}"
+          target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
+          protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
+          port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
+
+          host="$(printf '%s' "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+          missing=()
+
+          if [ -z "$host" ]; then
+            missing+=("HOSTINGER_FTP_HOST or FTP_SERVER")
+          elif printf '%s' "$host" | grep -q '\*'; then
+            printf '::error::The resolved HOSTINGER_FTP_HOST/FTP_SERVER value "%s" still contains placeholder characters (*). Update your repository secrets with the real Hostinger hostname.\n' "$host"
+            exit 1
+          fi
+
+          if [ -z "$user" ]; then
+            missing+=("HOSTINGER_FTP_USERNAME or FTP_USERNAME")
+          fi
+
+          if [ -z "$pass" ]; then
+            missing+=("HOSTINGER_FTP_PASSWORD or FTP_PASSWORD")
+          fi
+
+          if [ -z "$target" ]; then
+            missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
+          fi
+
+          if [ "${#missing[@]}" -ne 0 ]; then
+            printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+          protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
+          protocol="$(printf '%s' "$protocol" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          protocol="${protocol%%://*}"
+          protocol="${protocol%%:*}"
+
+          if [ -z "$protocol" ]; then
+            protocol="ftps"
+          fi
+
+          case "$protocol" in
+            ftp|ftps)
+              default_port=21
+              ;;
+            sftp)
+              default_port=22
+              ;;
+            *)
+              printf '::error::Unsupported protocol "%s". Set HOSTINGER_FTP_PROTOCOL/FTP_PROTOCOL to ftp, ftps, or sftp.\n' "$protocol"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$port" ]; then
+            port="$default_port"
+          fi
+
+          if [ "${target%/}" = "$target" ]; then
+            target="$target/"
+          fi
+
+          echo "::add-mask::$host"
+          echo "::add-mask::$user"
+          echo "::add-mask::$target"
+          echo "::add-mask::$protocol"
+          echo "::add-mask::$port"
+          echo "::add-mask::$pass"
+
+          {
+            echo "host=$host"
+            echo "username=$user"
+            echo "password=$pass"
+            echo "server_dir=$target"
+            echo "protocol=$protocol"
+            echo "port=$port"
+          } >>"$GITHUB_OUTPUT"
+        env:
+          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST }}
+          HOSTINGER_FTP_SERVER: ${{ secrets.HOSTINGER_FTP_SERVER || vars.HOSTINGER_FTP_SERVER }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
+          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
+          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
+          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
+          FTP_HOST: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+          FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
+          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
+          FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, pdo_mysql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend assets
+        run: npm run build -- --emptyOutDir
+
+      - name: Remove development-only files before deploy
+        run: |
+          rm -rf node_modules
+          find storage -type f -name '*.log' -delete || true
+
+      - name: Stage upload payload for SFTP deployments
+        if: ${{ steps.deploy_config.outputs.protocol == 'sftp' }}
+        run: |
+          rm -rf "$SFTP_PAYLOAD_DIR"
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.gitignore' \
+            --exclude='.github/' \
+            --exclude='.devcontainer/' \
+            --exclude='node_modules/' \
+            --exclude='storage/logs/' \
+            --exclude='storage/framework/cache/data/' \
+            --exclude='storage/framework/sessions/' \
+            --exclude='storage/framework/testing/' \
+            --exclude='tests/' \
+            --exclude='docs/' \
+            --exclude='offline/' \
+            --exclude='framework/' \
+            --exclude='vendor/bin/' \
+            --exclude='deps/' \
+            --exclude='deps.tar.gz' \
+            --exclude="$FTP_SYNC_STATE" \
+            ./ "$SFTP_PAYLOAD_DIR/"
+
+      - name: Deploy to Hostinger (FTP/FTPS)
+        if: ${{ steps.deploy_config.outputs.protocol != 'sftp' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
+        with:
+          server: ${{ steps.deploy_config.outputs.host }}
+          username: ${{ steps.deploy_config.outputs.username }}
+          password: ${{ steps.deploy_config.outputs.password }}
+          protocol: ${{ steps.deploy_config.outputs.protocol }}
+          port: ${{ steps.deploy_config.outputs.port }}
+          server-dir: ${{ steps.deploy_config.outputs.server_dir }}
+          local-dir: ./
+          exclude: |
+            **/.git*/**
+            **/.gitignore
+            **/.github/**
+            **/.devcontainer/**
+            **/node_modules/**
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/testing/**
+            **/tests/**
+            **/docs/**
+            **/offline/**
+            **/framework/**
+            **/vendor/bin/**
+            **/deps/**
+            **/deps.tar.gz
+          state-name: ${{ env.FTP_SYNC_STATE }}
+          log-level: minimal
+
+      - name: Deploy to Hostinger (SFTP)
+        if: ${{ steps.deploy_config.outputs.protocol == 'sftp' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ steps.deploy_config.outputs.host }}
+          username: ${{ steps.deploy_config.outputs.username }}
+          password: ${{ steps.deploy_config.outputs.password }}
+          port: ${{ steps.deploy_config.outputs.port }}
+          source: ${{ format('{0}/', env.SFTP_PAYLOAD_DIR) }}
+          target: ${{ steps.deploy_config.outputs.server_dir }}
+          overwrite: true
