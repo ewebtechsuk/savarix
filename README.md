@@ -47,6 +47,7 @@ column may be used):
 | Secret (choose one name per row) | Required | Description |
 | --- | --- | --- |
 | `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
+
 | `HOSTINGER_FTP_USERNAME` **or** `FTP_USERNAME` | ✅ | Username that has write access to the deployment directory. |
 | `HOSTINGER_FTP_PASSWORD` **or** `FTP_PASSWORD` | ✅ | Password or app token for the account above. |
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
@@ -58,6 +59,7 @@ before an upload attempt. Double-check that the resolved server host points to t
 placeholder hostname (for example values containing `*`) triggers an explicit failure before any connection attempt, helping
 you catch typos like `***` immediately.
 
+
 - **FTP/FTPS** deployments run through [`SamKirkland/FTP-Deploy-Action`](https://github.com/SamKirkland/FTP-Deploy-Action), which
   keeps a `.ftp-deploy-sync-state.json` file on the server to synchronise only changed files between runs.
 - **SFTP** deployments automatically stage a scrubbed copy of the repository (matching the FTP exclude rules) and upload it with
@@ -68,6 +70,7 @@ you catch typos like `***` immediately.
 > as secrets—the workflow checks both contexts. Keep credentials (username/password) in secrets for security. Regardless of
 > where you store the values, trim whitespace and use `ftp`, `ftps`, or `sftp` for the protocol. The deploy step normalises
 > inputs like `SFTP://` automatically.
+
 
 After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
 syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
