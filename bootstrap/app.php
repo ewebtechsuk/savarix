@@ -39,8 +39,20 @@ $router->get('/tenant/list', function ($request, array $context) {
     return $controller->list($request, $context);
 });
 
-$router->get('/', function () {
-    return Response::redirect('/dashboard', 302);
+$router->get('/', function ($request, array $context) {
+    $app = $context['app'] ?? null;
+
+    if (!$app instanceof Application) {
+        return new Response('Application not available', 500);
+    }
+
+    if ($app->auth()->check()) {
+        return Response::redirect('/dashboard', 302);
+    }
+
+    $content = $app->view('landing.home');
+
+    return Response::view($content);
 });
 
 return $app;

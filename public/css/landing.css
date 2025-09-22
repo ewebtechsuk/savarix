@@ -1,0 +1,38 @@
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #0f172a;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+.hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+}
+
+.hero .lead {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.features .card {
+    border-radius: 1rem;
+}
+
+.features .card-title {
+    font-size: 1.25rem;
+}
+
+#about .about-copy {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.cta {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+footer {
+    font-size: 0.95rem;
+}

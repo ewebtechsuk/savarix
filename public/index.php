@@ -1,57 +1,25 @@
 <?php
-/**
- * Laravel - A PHP Framework For Web Artisans
- *
- * @package  Laravel
- * @author   Taylor Otwell <taylor@laravel.com>
- */
 
-/*
-|--------------------------------------------------------------------------
-| Register The Auto Loader
-|--------------------------------------------------------------------------
-|
-| Composer provides a convenient, automatically generated class loader for
-| our application. We just need to utilize it! We'll simply require it
-| into the script here so that we don't have to worry about manual
-| loading any of our classes later on. It feels nice to relax.
-|
-*/
+// Buffer bootstrap output so notices from legacy dependencies don't break HTTP headers.
+ob_start();
 
-require __DIR__.'/../bootstrap/autoload.php';
+require __DIR__ . '/../bootstrap/autoload.php';
 
-/*
-|--------------------------------------------------------------------------
-| Turn On The Lights
-|--------------------------------------------------------------------------
-|
-| We need to illuminate PHP development, so let us turn on the lights.
-| This bootstraps the framework and gets it ready for use, then it
-| will load up this application so that we can run it and send
-| the responses back to the browser and delight our users.
-|
-*/
+$app = require __DIR__ . '/../bootstrap/app.php';
 
-$app = require_once __DIR__.'/../bootstrap/app.php';
+ob_end_clean();
 
-/*
-|--------------------------------------------------------------------------
-| Run The Application
-|--------------------------------------------------------------------------
-|
-| Once we have the application, we can handle the incoming request
-| through the kernel, and send the associated response back to
-| the client's browser allowing them to enjoy the creative
-| and wonderful application we have prepared for them.
-|
-*/
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$uri = $_SERVER['REQUEST_URI'] ?? '/';
+$path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$response = $app->handle($method, $path);
 
-$response = $kernel->handle(
-    $request = Illuminate\Http\Request::capture()
-);
+http_response_code($response->status());
 
-$response->send();
+foreach ($response->headers() as $name => $value) {
+    $normalized = implode('-', array_map('ucfirst', explode('-', $name)));
+    header($normalized . ': ' . $value, true);
+}
 
-$kernel->terminate($request, $response);
+echo $response->body();
