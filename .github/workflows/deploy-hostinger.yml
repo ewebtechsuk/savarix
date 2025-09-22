@@ -1,0 +1,120 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FTP_SYNC_STATE: .ftp-deploy-sync-state.json
+
+jobs:
+  deploy:
+    name: Upload application to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate deployment secrets
+        id: validate
+        run: |
+          missing=()
+          for name in HOSTINGER_FTP_HOST HOSTINGER_FTP_USERNAME HOSTINGER_FTP_PASSWORD HOSTINGER_FTP_TARGET_DIR; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -ne 0 ]; then
+            printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+        env:
+          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, pdo_mysql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend assets
+        run: npm run build -- --emptyOutDir
+
+      - name: Remove development-only files before deploy
+        run: |
+          rm -rf node_modules
+          find storage -type f -name '*.log' -delete || true
+
+      - name: Choose transfer protocol
+        id: protocol
+        run: |
+          if [ -z "${HOSTINGER_FTP_PROTOCOL:-}" ]; then
+            echo "value=ftps" >>"$GITHUB_OUTPUT"
+          else
+            echo "value=${HOSTINGER_FTP_PROTOCOL}" >>"$GITHUB_OUTPUT"
+          fi
+        env:
+          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL }}
+
+      - name: Choose transfer port
+        id: port
+        run: |
+          if [ -z "${HOSTINGER_FTP_PORT:-}" ]; then
+            echo "value=21" >>"$GITHUB_OUTPUT"
+          else
+            echo "value=${HOSTINGER_FTP_PORT}" >>"$GITHUB_OUTPUT"
+          fi
+        env:
+          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT }}
+
+      - name: Deploy to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_HOST }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ${{ steps.protocol.outputs.value }}
+          port: ${{ steps.port.outputs.value }}
+          server-dir: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+          local-dir: .
+          exclude: |
+            **/.git*/**
+            **/.gitignore
+            **/.github/**
+            **/.devcontainer/**
+            **/node_modules/**
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/testing/**
+            **/tests/**
+            **/docs/**
+            **/offline/**
+            **/framework/**
+            **/vendor/bin/**
+            **/deps/**
+            **/deps.tar.gz
+          state-name: ${{ env.FTP_SYNC_STATE }}
+          log-level: minimal
+root@542378e9b218:/workspace/ressapp#
