@@ -24,17 +24,25 @@ jobs:
       - name: Resolve deployment configuration
         id: deploy_config
         run: |
-          host="${HOSTINGER_FTP_HOST:-${FTP_SERVER:-}}"
+          host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
+
           user="${HOSTINGER_FTP_USERNAME:-${FTP_USERNAME:-}}"
           pass="${HOSTINGER_FTP_PASSWORD:-${FTP_PASSWORD:-}}"
           target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
           protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
           port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
 
+          host="$(printf '%s' "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+
           missing=()
 
           if [ -z "$host" ]; then
             missing+=("HOSTINGER_FTP_HOST or FTP_SERVER")
+          elif printf '%s' "$host" | grep -q '\*'; then
+            printf '::error::The resolved HOSTINGER_FTP_HOST/FTP_SERVER value "%s" still contains placeholder characters (*). Update your repository secrets with the real Hostinger hostname.\n' "$host"
+            exit 1
+
           fi
 
           if [ -z "$user" ]; then
@@ -103,18 +111,21 @@ jobs:
           } >>"$GITHUB_OUTPUT"
         env:
           HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST }}
+          HOSTINGER_FTP_SERVER: ${{ secrets.HOSTINGER_FTP_SERVER || vars.HOSTINGER_FTP_SERVER }}
+
           HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME }}
           HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
           HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
           HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
           HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
           FTP_SERVER: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
+          FTP_HOST: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
+
           FTP_USERNAME: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
           FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
           FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
           FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
-
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -211,4 +222,3 @@ jobs:
           source: ${{ format('{0}/', env.SFTP_PAYLOAD_DIR) }}
           target: ${{ steps.deploy_config.outputs.server_dir }}
           overwrite: true
-

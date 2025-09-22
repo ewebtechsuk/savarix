@@ -46,17 +46,19 @@ column may be used):
 
 | Secret (choose one name per row) | Required | Description |
 | --- | --- | --- |
-| `HOSTINGER_FTP_HOST` **or** `FTP_SERVER` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
+| `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
+
 | `HOSTINGER_FTP_USERNAME` **or** `FTP_USERNAME` | ✅ | Username that has write access to the deployment directory. |
 | `HOSTINGER_FTP_PASSWORD` **or** `FTP_PASSWORD` | ✅ | Password or app token for the account above. |
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
 | `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
 | `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). |
 
-
 The workflow fails fast with a clear error message when any required secret is missing so you can correct the configuration
 before an upload attempt. Double-check that the resolved server host points to the correct Hostinger instance; an empty or
-placeholder hostname causes the FTP action to abort with `getaddrinfo ENOTFOUND`.
+placeholder hostname (for example values containing `*`) triggers an explicit failure before any connection attempt, helping
+you catch typos like `***` immediately.
+
 
 - **FTP/FTPS** deployments run through [`SamKirkland/FTP-Deploy-Action`](https://github.com/SamKirkland/FTP-Deploy-Action), which
   keeps a `.ftp-deploy-sync-state.json` file on the server to synchronise only changed files between runs.
