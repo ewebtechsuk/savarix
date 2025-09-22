@@ -1,0 +1,171 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FTP_SYNC_STATE: .ftp-deploy-sync-state.json
+
+jobs:
+  deploy:
+    name: Upload application to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve deployment configuration
+        id: deploy_config
+        run: |
+          host="${HOSTINGER_FTP_HOST:-${FTP_SERVER:-}}"
+          user="${HOSTINGER_FTP_USERNAME:-${FTP_USERNAME:-}}"
+          pass="${HOSTINGER_FTP_PASSWORD:-${FTP_PASSWORD:-}}"
+          target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
+          protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
+          port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
+
+          missing=()
+
+          if [ -z "$host" ]; then
+            missing+=("HOSTINGER_FTP_HOST or FTP_SERVER")
+          fi
+
+          if [ -z "$user" ]; then
+            missing+=("HOSTINGER_FTP_USERNAME or FTP_USERNAME")
+          fi
+
+          if [ -z "$pass" ]; then
+            missing+=("HOSTINGER_FTP_PASSWORD or FTP_PASSWORD")
+          fi
+
+          if [ -z "$target" ]; then
+            missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
+          fi
+
+          if [ "${#missing[@]}" -ne 0 ]; then
+            printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+          if [ -z "$protocol" ]; then
+            protocol="ftps"
+          fi
+
+          case "$protocol" in
+            ftp|ftps)
+              default_port=21
+              ;;
+            sftp)
+              default_port=22
+              ;;
+            *)
+              printf '::error::Unsupported protocol "%s". Set HOSTINGER_FTP_PROTOCOL/FTP_PROTOCOL to ftp, ftps, or sftp.\n' "$protocol"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$port" ]; then
+            port="$default_port"
+          fi
+
+          if [ "${target%/}" = "$target" ]; then
+            target="$target/"
+          fi
+
+          echo "::add-mask::$host"
+          echo "::add-mask::$user"
+          echo "::add-mask::$target"
+          echo "::add-mask::$protocol"
+          echo "::add-mask::$port"
+          echo "::add-mask::$pass"
+
+          {
+            echo "host=$host"
+            echo "username=$user"
+            echo "password=$pass"
+            echo "server_dir=$target"
+            echo "protocol=$protocol"
+            echo "port=$port"
+          } >>"$GITHUB_OUTPUT"
+        env:
+          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL }}
+          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR }}
+          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, pdo_mysql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend assets
+        run: npm run build -- --emptyOutDir
+
+      - name: Remove development-only files before deploy
+        run: |
+          rm -rf node_modules
+          find storage -type f -name '*.log' -delete || true
+
+      - name: Abort unsupported SFTP deployment
+        if: steps.deploy_config.outputs.protocol == 'sftp'
+        run: |
+          echo "::error::The current workflow only supports FTP or FTPS uploads. Set HOSTINGER_FTP_PROTOCOL/FTP_PROTOCOL to ftp or ftps, or replace this step with an SFTP-compatible action such as appleboy/scp-action."
+          exit 1
+
+      - name: Deploy to Hostinger
+        if: steps.deploy_config.outputs.protocol != 'sftp'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
+        with:
+          server: ${{ steps.deploy_config.outputs.host }}
+          username: ${{ steps.deploy_config.outputs.username }}
+          password: ${{ steps.deploy_config.outputs.password }}
+          protocol: ${{ steps.deploy_config.outputs.protocol }}
+          port: ${{ steps.deploy_config.outputs.port }}
+          server-dir: ${{ steps.deploy_config.outputs.server_dir }}
+          local-dir: ./
+          exclude: |
+            **/.git*/**
+            **/.gitignore
+            **/.github/**
+            **/.devcontainer/**
+            **/node_modules/**
+            **/storage/logs/**
+            **/storage/framework/cache/data/**
+            **/storage/framework/sessions/**
+            **/storage/framework/testing/**
+            **/tests/**
+            **/docs/**
+            **/offline/**
+            **/framework/**
+            **/vendor/bin/**
+            **/deps/**
+            **/deps.tar.gz
+          state-name: ${{ env.FTP_SYNC_STATE }}
+          log-level: minimal

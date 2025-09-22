@@ -35,6 +35,17 @@ $app = require_once __DIR__.'/bootstrap/app.php';
 |
 */
 
+if (!is_object($app) || !method_exists($app, 'make')) {
+    fwrite(
+        STDERR,
+        "[artisan] Application container does not support dependency resolution; " .
+        "falling back to offline console shim.\n"
+    );
+
+    require __DIR__.'/offline/artisan.php';
+    exit(0);
+}
+
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 
 $status = $kernel->handle(
