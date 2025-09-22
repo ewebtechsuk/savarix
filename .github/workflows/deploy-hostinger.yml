@@ -117,4 +117,4 @@ jobs:
             **/deps.tar.gz
           state-name: ${{ env.FTP_SYNC_STATE }}
           log-level: minimal
-root@542378e9b218:/workspace/ressapp#
+
