@@ -47,6 +47,7 @@ jobs:
             missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
           fi
 
+
           if [ "${#missing[@]}" -ne 0 ]; then
             printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
             exit 1
@@ -92,6 +93,7 @@ jobs:
             echo "protocol=$protocol"
             echo "port=$port"
           } >>"$GITHUB_OUTPUT"
+
         env:
           HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST }}
           HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
@@ -105,6 +107,7 @@ jobs:
           FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR }}
           FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
+
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -150,6 +153,7 @@ jobs:
           port: ${{ steps.deploy_config.outputs.port }}
           server-dir: ${{ steps.deploy_config.outputs.server_dir }}
           local-dir: ./
+
           exclude: |
             **/.git*/**
             **/.gitignore

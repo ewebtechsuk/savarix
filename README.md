@@ -61,6 +61,7 @@ placeholder hostname causes the FTP action to abort with `getaddrinfo ENOTFOUND`
 > Hostinger plan only exposes SFTP, replace the deploy step with an SFTP-capable action (for example `appleboy/scp-action`) or
 > extend the workflow accordingly.
 
+
 After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
 syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
 omits them from uploads.
