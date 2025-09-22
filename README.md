@@ -38,6 +38,24 @@ A GitHub Actions workflow runs the PHPUnit suite on every push and pull request.
 The static frontend located in `frontend/` is automatically published to GitHub Pages using the workflow in `.github/workflows/pages.yml`.
 Push changes to `main` and visit the repository's Pages environment to view the site.
 
+## Deploying to Hostinger
+
+Pushes to `main` automatically trigger `.github/workflows/deploy-hostinger.yml`, which builds production assets and uploads the
+application to your Hostinger account via FTP/SFTP. Configure the following repository secrets before enabling the workflow:
+
+| Secret | Required | Description |
+| --- | --- | --- |
+| `HOSTINGER_FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
+| `HOSTINGER_FTP_USERNAME` | ✅ | Username that has write access to the deployment directory. |
+| `HOSTINGER_FTP_PASSWORD` | ✅ | Password or app token for the account above. |
+| `HOSTINGER_FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
+| `HOSTINGER_FTP_PORT` | ❌ | Override the default port (`21`). Set to `22` when using SFTP. |
+| `HOSTINGER_FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Use `sftp` if Hostinger requires it. |
+
+After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
+syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
+omits them from uploads.
+
 ## Setting up in the Codex environment
 
 To initialize the project when working in Codex or any fresh development container:
