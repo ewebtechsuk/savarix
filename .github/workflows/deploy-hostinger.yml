@@ -53,6 +53,12 @@ jobs:
             exit 1
           fi
 
+          protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
+          protocol="$(printf '%s' "$protocol" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          protocol="${protocol%%://*}"
+          protocol="${protocol%%:*}"
+
+
           if [ -z "$protocol" ]; then
             protocol="ftps"
           fi
@@ -93,20 +99,19 @@ jobs:
             echo "protocol=$protocol"
             echo "port=$port"
           } >>"$GITHUB_OUTPUT"
-
         env:
-          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST }}
-          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
-          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL }}
-          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT }}
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR }}
-          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL }}
-          FTP_PORT: ${{ secrets.FTP_PORT }}
+          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
+          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
+          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
+          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+          FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
+          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
+          FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
 
 
       - name: Set up PHP 8.3
@@ -136,14 +141,8 @@ jobs:
           rm -rf node_modules
           find storage -type f -name '*.log' -delete || true
 
-      - name: Abort unsupported SFTP deployment
-        if: steps.deploy_config.outputs.protocol == 'sftp'
-        run: |
-          echo "::error::The current workflow only supports FTP or FTPS uploads. Set HOSTINGER_FTP_PROTOCOL/FTP_PROTOCOL to ftp or ftps, or replace this step with an SFTP-compatible action such as appleboy/scp-action."
-          exit 1
-
       - name: Deploy to Hostinger
-        if: steps.deploy_config.outputs.protocol != 'sftp'
+
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
           server: ${{ steps.deploy_config.outputs.host }}

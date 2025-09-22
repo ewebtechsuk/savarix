@@ -51,15 +51,17 @@ column may be used):
 | `HOSTINGER_FTP_PASSWORD` **or** `FTP_PASSWORD` | ✅ | Password or app token for the account above. |
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
 | `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
-| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Only `ftp` and `ftps` are currently supported by the workflow. |
+| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). |
+
 
 The workflow fails fast with a clear error message when any required secret is missing so you can correct the configuration
 before an upload attempt. Double-check that the resolved server host points to the correct Hostinger instance; an empty or
 placeholder hostname causes the FTP action to abort with `getaddrinfo ENOTFOUND`.
 
-> **SFTP deployments:** the stock workflow only supports FTP/FTPS transfers with `SamKirkland/FTP-Deploy-Action`. If your
-> Hostinger plan only exposes SFTP, replace the deploy step with an SFTP-capable action (for example `appleboy/scp-action`) or
-> extend the workflow accordingly.
+> **Tip:** Non-sensitive settings such as host, protocol, or target directory may be stored in GitHub Actions _variables_ as well
+> as secrets—the workflow checks both contexts. Keep credentials (username/password) in secrets for security. Regardless of
+> where you store the values, trim whitespace and use `ftp`, `ftps`, or `sftp` for the protocol. The deploy step normalises
+> inputs like `SFTP://` automatically.
 
 
 After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
