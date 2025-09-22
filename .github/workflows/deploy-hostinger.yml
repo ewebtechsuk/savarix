@@ -9,6 +9,7 @@ env:
   FTP_SYNC_STATE: .ftp-deploy-sync-state.json
   SFTP_PAYLOAD_DIR: .deploy-sftp
 
+
 jobs:
   deploy:
     name: Upload application to Hostinger
@@ -26,11 +27,13 @@ jobs:
           host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
           user="${HOSTINGER_FTP_USERNAME:-${HOSTINGER_FTP_USER:-${FTP_USERNAME:-${FTP_USER:-}}}}"
           pass="${HOSTINGER_FTP_PASSWORD:-${HOSTINGER_FTP_PASS:-${FTP_PASSWORD:-${FTP_PASS:-}}}}"
+
           target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
           protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
           port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
 
           host="$(printf '%s' "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
 
           missing=()
 
@@ -47,11 +50,13 @@ jobs:
 
           if [ -z "$pass" ]; then
             missing+=("HOSTINGER_FTP_PASSWORD/HOSTINGER_FTP_PASS or FTP_PASSWORD/FTP_PASS")
+
           fi
 
           if [ -z "$target" ]; then
             missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
           fi
+
 
           if [ "${#missing[@]}" -ne 0 ]; then
             printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
@@ -62,6 +67,7 @@ jobs:
           protocol="$(printf '%s' "$protocol" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           protocol="${protocol%%://*}"
           protocol="${protocol%%:*}"
+
 
           if [ -z "$protocol" ]; then
             protocol="ftps"
@@ -110,6 +116,7 @@ jobs:
           HOSTINGER_FTP_USER: ${{ secrets.HOSTINGER_FTP_USER || vars.HOSTINGER_FTP_USER }}
           HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
           HOSTINGER_FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASS || vars.HOSTINGER_FTP_PASS }}
+
           HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
           HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
           HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
@@ -119,6 +126,7 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USER || vars.FTP_USER }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
           FTP_PASS: ${{ secrets.FTP_PASS || vars.FTP_PASS }}
+
           FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
           FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
           FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
@@ -176,6 +184,7 @@ jobs:
 
       - name: Deploy to Hostinger (FTP/FTPS)
         if: ${{ steps.deploy_config.outputs.protocol != 'sftp' }}
+
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
           server: ${{ steps.deploy_config.outputs.host }}
@@ -185,6 +194,7 @@ jobs:
           port: ${{ steps.deploy_config.outputs.port }}
           server-dir: ${{ steps.deploy_config.outputs.server_dir }}
           local-dir: ./
+
           exclude: |
             **/.git*/**
             **/.gitignore

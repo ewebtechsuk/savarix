@@ -49,6 +49,7 @@ column may be used):
 | `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
 | `HOSTINGER_FTP_USERNAME` **or** `HOSTINGER_FTP_USER` **or** `FTP_USERNAME` **or** `FTP_USER` | ✅ | Username that has write access to the deployment directory. |
 | `HOSTINGER_FTP_PASSWORD` **or** `HOSTINGER_FTP_PASS` **or** `FTP_PASSWORD` **or** `FTP_PASS` | ✅ | Password or app token for the account above. |
+
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
 | `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
 | `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). |
@@ -61,6 +62,7 @@ clear error message when any required secret is missing so you can correct the c
 > `GITHUB_TOKEN` repository secret (or set it as an Actions variable). The workflow automatically picks it up so private
 > packages can be installed during the build.
 
+
 - **FTP/FTPS** deployments run through [`SamKirkland/FTP-Deploy-Action`](https://github.com/SamKirkland/FTP-Deploy-Action), which
   keeps a `.ftp-deploy-sync-state.json` file on the server to synchronise only changed files between runs.
 - **SFTP** deployments automatically stage a scrubbed copy of the repository (matching the FTP exclude rules) and upload it with
@@ -71,6 +73,7 @@ clear error message when any required secret is missing so you can correct the c
 > as secrets—the workflow checks both contexts. Keep credentials (username/password) in secrets for security. Regardless of
 > where you store the values, trim whitespace and use `ftp`, `ftps`, or `sftp` for the protocol. The deploy step normalises
 > inputs like `SFTP://` automatically.
+
 
 After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
 syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
