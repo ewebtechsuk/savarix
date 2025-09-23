@@ -11,6 +11,7 @@ composer_warn() { echo "[deploy][warn] $*" >&2; }
 
 source "${SCRIPT_DIR}/scripts/lib/composer.sh"
 
+
 # 1. SSH into your Hostinger account and navigate to your web root before running this script
 # Example: ssh username@your-hostinger-server.com
 # cd ~/public_html
@@ -55,6 +56,7 @@ if [ "${COMPOSER_BIN[0]}" = "composer" ]; then
 fi
 
 "${COMPOSER_BIN[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
 
 # 5. Copy .env if it does not exist
 if [ ! -f .env ]; then

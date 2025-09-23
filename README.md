@@ -31,6 +31,7 @@ If you have PHPUnit installed globally you can simply run `phpunit` instead.
 > **Note:** `./setup.sh` and `deploy_hostinger.sh` download a project-local `composer.phar` automatically when Composer isn't available on your PATH, so you can bootstrap the dependencies even in minimal environments (including shared hosting accounts).
 
 
+
 ### Continuous Integration
 
 A GitHub Actions workflow runs the PHPUnit suite on every push and pull request. The workflow is defined in `.github/workflows/ci.yml`.
