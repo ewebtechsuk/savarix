@@ -11,11 +11,48 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceRequestController;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $landingPage = base_path('frontend/index.html');
+
+    if (! File::exists($landingPage)) {
+        abort(404);
+    }
+
+    return response(File::get($landingPage), 200)
+        ->header('Content-Type', 'text/html; charset=UTF-8');
 });
+
+Route::get('/assets/{path}', function (string $path) {
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
+
+    $asset = base_path('frontend/assets/' . $path);
+
+    if (! File::exists($asset)) {
+        abort(404);
+    }
+
+    return response()->file($asset);
+})->where('path', '.*');
+
+Route::get('/{page}.html', function (string $page) {
+    if (str_contains($page, '/')) {
+        abort(404);
+    }
+
+    $staticPage = base_path('frontend/' . $page . '.html');
+
+    if (! File::exists($staticPage)) {
+        abort(404);
+    }
+
+    return response(File::get($staticPage), 200)
+        ->header('Content-Type', 'text/html; charset=UTF-8');
+})->where('page', '[A-Za-z0-9\-]+');
 
 // Single dashboard route for route('dashboard')
 Route::get('/dashboard', [DashboardController::class, 'index'])
