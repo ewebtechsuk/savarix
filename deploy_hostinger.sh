@@ -2,7 +2,15 @@
 # Laravel deployment script for Hostinger (master branch)
 
 # Exit on error
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+composer_log() { echo "[deploy] $*"; }
+composer_warn() { echo "[deploy][warn] $*" >&2; }
+
+source "${SCRIPT_DIR}/scripts/lib/composer.sh"
+
 
 # 1. SSH into your Hostinger account and navigate to your web root before running this script
 # Example: ssh username@your-hostinger-server.com
@@ -34,17 +42,21 @@ fi
 # 3. (Skip pull if just cloned)
 
 # 4. Install Composer dependencies
-if command -v composer >/dev/null 2>&1; then
-    composer_version=$(composer --version | awk '{print $3}' | cut -d. -f1)
-    if [ "$composer_version" -lt 2 ]; then
-        echo "Composer 2 is required for Laravel 11. Please upgrade Composer using 'composer self-update --2' or Hostinger's control panel."
-        exit 1
-    fi
-    composer install --no-dev --optimize-autoloader
-else
-    echo "Composer is not installed. Please install Composer or use Hostinger's Composer feature in the control panel."
+COMPOSER_BIN=()
+if ! ensure_composer; then
     exit 1
 fi
+
+if [ "${COMPOSER_BIN[0]}" = "composer" ]; then
+    composer_version=$("${COMPOSER_BIN[@]}" --version | awk '{print $3}' | cut -d. -f1)
+    if [ "$composer_version" -lt 2 ]; then
+        composer_warn "Composer 2 is required for Laravel 11. Please upgrade Composer using 'composer self-update --2' or Hostinger's control panel."
+        exit 1
+    fi
+fi
+
+"${COMPOSER_BIN[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
 
 # 5. Copy .env if it does not exist
 if [ ! -f .env ]; then

@@ -28,7 +28,8 @@ Tests are written with PHPUnit. After installing dependencies with Composer run 
 
 If you have PHPUnit installed globally you can simply run `phpunit` instead.
 
-> **Note:** `./setup.sh` now downloads a project-local `composer.phar` automatically when Composer isn't available on your PATH, so you can bootstrap the dependencies even in minimal environments.
+> **Note:** `./setup.sh` and `deploy_hostinger.sh` download a project-local `composer.phar` automatically when Composer isn't available on your PATH, so you can bootstrap the dependencies even in minimal environments (including shared hosting accounts).
+
 
 
 ### Continuous Integration
@@ -80,6 +81,8 @@ clear error message when any required secret is missing so you can correct the c
 After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
 syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
 omits them from uploads.
+
+> **Hostinger tip:** If your shared plan does not expose a global `composer` command, SSH into the server and run `./deploy_hostinger.sh` from the project root after each pull. The script now bootstraps a local `composer.phar`, installs dependencies, and clears the caches so the public site won't fall back to a generic HTTP 500 error.
 
 ## Setting up in the Codex environment
 
