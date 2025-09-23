@@ -530,14 +530,35 @@ def post_records(
     return results
 
 
+def _coerce_int(value: object) -> Optional[int]:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
 def extract_created_id(created: dict) -> Optional[int]:
     if not isinstance(created, dict):
         return None
-    if "id" in created and isinstance(created.get("id"), int):
-        return created.get("id")
+    direct = _coerce_int(created.get("id")) if "id" in created else None
+    if direct is not None:
+        return direct
     data = created.get("data") if isinstance(created.get("data"), dict) else None
-    if isinstance(data, dict) and isinstance(data.get("id"), int):
-        return data.get("id")
+    if isinstance(data, dict):
+        nested = _coerce_int(data.get("id"))
+        if nested is not None:
+            return nested
     return None
 
 
