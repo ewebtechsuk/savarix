@@ -708,6 +708,13 @@ def process_import(args: argparse.Namespace) -> None:
     property_ids: Dict[str, Optional[int]] = {}
     tenancy_ids: Dict[str, Optional[int]] = {}
 
+    success_counts = {
+        "contacts": 0,
+        "properties": 0,
+        "tenancies": 0,
+        "payments": 0,
+    }
+
     if contacts:
         contact_payloads = [
             {k: v for k, v in record.items() if k != "external_id"}
@@ -723,6 +730,7 @@ def process_import(args: argparse.Namespace) -> None:
             args.continue_on_error,
         )
         map_external_ids(contacts, contact_results, contact_ids, allow_missing=args.dry_run)
+        success_counts["contacts"] = len(contact_results)
     else:
         LOGGER.info("No contacts supplied; tenancy/contact relationships may fail if required")
 
@@ -747,6 +755,7 @@ def process_import(args: argparse.Namespace) -> None:
         property_ids,
         allow_missing=args.dry_run,
     )
+    success_counts["properties"] = len(property_results)
 
     tenancy_payloads = [
         enrich_tenancy_payload(
@@ -774,6 +783,7 @@ def process_import(args: argparse.Namespace) -> None:
         tenancy_ids,
         allow_missing=args.dry_run,
     )
+    success_counts["tenancies"] = len(tenancy_results)
 
     payment_payloads = [
         enrich_payment_payload(
@@ -784,7 +794,7 @@ def process_import(args: argparse.Namespace) -> None:
         for record in payments
     ]
 
-    post_records(
+    payment_results = post_records(
         session,
         args.base_url,
         "/api/payments",
@@ -795,7 +805,26 @@ def process_import(args: argparse.Namespace) -> None:
         args.continue_on_error,
     )
 
+    success_counts["payments"] = len(payment_results)
+
+    totals = {
+        "contacts": len(contacts),
+        "properties": len(properties),
+        "tenancies": len(tenancies),
+        "payments": len(payments),
+    }
+
+    summary_parts = [
+        f"{name}: {success_counts[name]}/{totals[name]}"
+        for name in ("contacts", "properties", "tenancies", "payments")
+    ]
+
+    processed_total = sum(success_counts.values())
+    expected_total = sum(totals.values())
+
     LOGGER.info("Import completed successfully")
+    LOGGER.info("Summary -> %s", ", ".join(summary_parts))
+    LOGGER.info("Total records processed: %s/%s", processed_total, expected_total)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
