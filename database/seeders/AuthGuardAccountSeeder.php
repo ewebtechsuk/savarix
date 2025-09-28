@@ -7,30 +7,39 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class AuthGuardAccountSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'staff@ressapp.com'],
-            [
-                'name' => 'Staff User',
-                'password' => Hash::make(env('STAFF_USER_PASSWORD', 'password')),
-                'is_admin' => true,
-            ]
-        );
+        if ($this->tableExists((new User())->getTable())) {
+            User::updateOrCreate(
+                ['email' => 'staff@ressapp.com'],
+                [
+                    'name' => 'Staff User',
+                    'password' => Hash::make(env('STAFF_USER_PASSWORD', 'password')),
+                    'is_admin' => true,
+                ]
+            );
+        }
 
-        Landlord::updateOrCreate(
-            ['contact_email' => 'landlord@ressapp.com'],
-            [
-                'person_firstname' => 'Lana',
-                'person_lastname' => 'Lord',
-                'person_landlord' => 1,
-                'person_type' => 'individual',
-                'password' => Hash::make(env('LANDLORD_PASSWORD', 'password')),
-            ]
-        );
+        if ($this->tableExists((new Landlord())->getTable())) {
+            Landlord::updateOrCreate(
+                ['contact_email' => 'landlord@ressapp.com'],
+                [
+                    'person_firstname' => 'Lana',
+                    'person_lastname' => 'Lord',
+                    'person_landlord' => 1,
+                    'person_type' => 'individual',
+                    'password' => Hash::make(env('LANDLORD_PASSWORD', 'password')),
+                ]
+            );
+        }
+
+        if (! $this->tableExists((new Tenant())->getTable())) {
+            return;
+        }
 
         $tenant = Tenant::firstOrNew(['id' => 'aktonz']);
         $tenant->email = 'tenant@aktonz.com';
@@ -44,15 +53,10 @@ class AuthGuardAccountSeeder extends Seeder
         $tenant->data = $tenantData;
         $tenant->save();
 
-        $tenant->domains()->updateOrCreate(
-            ['domain' => 'aktonz.ressapp.localhost:8888'],
-            []
-        );
-
-        $tenant->domains()->updateOrCreate(
-            ['domain' => 'aktonz.darkorange-chinchilla-918430.hostingersite.com'],
-            []
-        );
+        $this->syncTenantDomains($tenant, [
+            'aktonz.ressapp.localhost:8888',
+            'aktonz.darkorange-chinchilla-918430.hostingersite.com',
+        ]);
 
         $haringey = Tenant::firstOrNew(['id' => 'haringeyestates']);
         $haringey->email = 'tenant@haringeyestates.com';
@@ -65,9 +69,27 @@ class AuthGuardAccountSeeder extends Seeder
         $haringey->data = $haringeyData;
         $haringey->save();
 
-        $haringey->domains()->updateOrCreate(
-            ['domain' => 'haringey.ressapp.localhost:8888'],
-            []
-        );
+        $this->syncTenantDomains($haringey, [
+            'haringey.ressapp.localhost:8888',
+        ]);
+    }
+
+    private function tableExists(string $table): bool
+    {
+        return Schema::hasTable($table);
+    }
+
+    /**
+     * @param array<int, string> $domains
+     */
+    private function syncTenantDomains(Tenant $tenant, array $domains): void
+    {
+        if (! $this->tableExists('domains')) {
+            return;
+        }
+
+        foreach ($domains as $domain) {
+            $tenant->domains()->updateOrCreate(['domain' => $domain], []);
+        }
     }
 }
