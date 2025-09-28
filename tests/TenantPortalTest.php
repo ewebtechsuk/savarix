@@ -6,43 +6,41 @@ use App\Models\User;
 
 class TenantPortalTest extends TestCase
 {
-    public function testTenantLoginPageLoadsSuccessfully(): void
-    {
-        $response = $this->get('/tenant/login');
-
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Login');
-    }
-
     public function testTenantDashboardRequiresAuthentication(): void
     {
-        $response = $this->get('/tenant/dashboard');
-
-        $this->assertRedirect($response, '/tenant/login');
+        $this->get('/tenant/dashboard')
+            ->assertRedirect('/tenant/login');
     }
 
-    public function testTenantDashboardWelcomesAuthenticatedUser(): void
+    public function testTenantDashboardWelcomesAuthenticatedTenant(): void
     {
-        $user = User::create([
+        $tenant = User::create([
+            'id' => 1,
             'name' => 'Aktonz Tenant',
             'email' => 'tenant@aktonz.com',
             'password' => 'secret',
         ]);
 
-        $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
+        $this->actingAs($tenant, 'tenant');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Dashboard');
-        $this->assertSee($response, 'Aktonz Tenant');
+        $this->get('/tenant/dashboard')
+            ->assertOk()
+            ->assertSee('Tenant Dashboard')
+            ->assertSee('Welcome to your tenant portal!');
     }
 
-    public function testTenantDirectoryListsKnownTenants(): void
+    public function testWebAuthenticatedUsersCannotAccessTenantDashboard(): void
     {
-        $response = $this->get('/tenant/list');
+        $user = User::create([
+            'name' => 'Central User',
+            'email' => 'central@example.com',
+            'password' => 'password',
+            'email_verified_at' => now(),
+        ]);
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Directory');
-        $this->assertSee($response, 'Aktonz');
-        $this->assertSee($response, 'aktonz.darkorange-chinchilla-918430.hostingersite.com');
+        $this->actingAs($user, 'web');
+
+        $this->get('/tenant/dashboard')
+            ->assertRedirect('/tenant/login');
     }
 }

@@ -1,8 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $stats = $stats ?? [
+        'property_count' => 0,
+        'tenancy_count' => 0,
+        'lead_count' => 0,
+        'payment_count' => 0,
+    ];
+@endphp
+
 <div class="container py-4">
-    <h1 class="fw-bold mb-4">Dashboard</h1>
+    <h1 class="fw-bold mb-2">Dashboard</h1>
+    <p class="text-muted mb-4">{{ __("You're logged in!") }}</p>
 
     <div class="row mb-4">
         <div class="col-md-3 mb-3">

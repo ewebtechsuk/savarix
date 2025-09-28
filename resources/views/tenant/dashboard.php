@@ -7,6 +7,7 @@
 <body>
     <h1>Tenant Dashboard</h1>
     <?php if (isset($user) && $user !== null): ?>
+        <p>Welcome to your tenant portal!</p>
         <p>Welcome back, <?php echo htmlspecialchars($user->name, ENT_QUOTES, 'UTF-8'); ?>.</p>
     <?php else: ?>
         <p>You are viewing the dashboard as a guest.</p>

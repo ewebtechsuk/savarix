@@ -22,13 +22,6 @@ foreach ($environment as $name => $value) {
     $_SERVER[$name] = $value;
 }
 
-$runnerScript = $projectRoot.'/scripts/phpunit-runner.php';
-
-if (is_file($runnerScript)) {
-    require $runnerScript;
-    return;
-}
-
 $composerVendorDir = $projectRoot.'/vendor';
 $cachedVendorDir = $projectRoot.'/deps/vendor';
 
@@ -36,6 +29,13 @@ if (is_file($composerVendorDir.'/autoload.php') && is_file($composerVendorDir.'/
     $autoloadPath = $composerVendorDir.'/autoload.php';
     $phpunitBinary = $composerVendorDir.'/phpunit/phpunit/phpunit';
 } else {
+    $runnerScript = $projectRoot.'/scripts/phpunit-runner.php';
+
+    if (is_file($runnerScript)) {
+        require $runnerScript;
+        return;
+    }
+
     $autoloadPath = $cachedVendorDir.'/autoload.php';
     $phpunitBinary = $cachedVendorDir.'/phpunit/phpunit/phpunit';
 }
@@ -79,12 +79,19 @@ for ($i = 1; $i < $argc; $i++) {
 }
 
 if (! $hasConfigurationOption) {
-    $argv[] = '--no-configuration';
-    $argv[] = '--bootstrap';
-    $argv[] = $projectRoot.'/bootstrap/autoload.php';
+    $configurationFile = $projectRoot.'/phpunit.xml';
 
-    if (! $hasExplicitTestTarget) {
-        $argv[] = $projectRoot.'/tests';
+    if (is_file($configurationFile)) {
+        $argv[] = '--configuration';
+        $argv[] = $configurationFile;
+    } else {
+        $argv[] = '--no-configuration';
+        $argv[] = '--bootstrap';
+        $argv[] = $projectRoot.'/bootstrap/autoload.php';
+
+        if (! $hasExplicitTestTarget) {
+            $argv[] = $projectRoot.'/tests';
+        }
     }
 }
 

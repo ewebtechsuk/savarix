@@ -32,20 +32,11 @@ if (file_exists($polyfills)) {
     require $polyfills;
 }
 
-$offlineStubs = [
-    $projectRoot.'/framework/Illuminate/Support/Facades/Hash.php',
-    $projectRoot.'/framework/Illuminate/Support/Facades/Auth.php',
-    $projectRoot.'/framework/helpers.php',
-];
-
-foreach ($offlineStubs as $stub) {
-    if (file_exists($stub)) {
-        require_once $stub;
-    }
-}
+$usingCachedDependencies = false;
 
 if (!file_exists($vendorAutoload) && file_exists($cachedAutoload)) {
     $vendorAutoload = $cachedAutoload;
+    $usingCachedDependencies = true;
 }
 
 if (file_exists($vendorAutoload)) {
@@ -55,6 +46,20 @@ if (file_exists($vendorAutoload)) {
 } else {
     fwrite(STDERR, "Composer dependencies are missing. Run 'composer install' or ensure deps/vendor is available.\n");
     exit(1);
+}
+
+if ($usingCachedDependencies) {
+    $offlineStubs = [
+        $projectRoot.'/framework/Illuminate/Support/Facades/Hash.php',
+        $projectRoot.'/framework/Illuminate/Support/Facades/Auth.php',
+        $projectRoot.'/framework/helpers.php',
+    ];
+
+    foreach ($offlineStubs as $stub) {
+        if (file_exists($stub)) {
+            require_once $stub;
+        }
+    }
 }
 
 if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {

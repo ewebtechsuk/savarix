@@ -20,7 +20,7 @@ $router->get('/login', function ($request, array $context) {
 
 $router->get('/dashboard', function ($request, array $context) {
     $controller = new DashboardController();
-    return $controller->index($request, $context);
+    return $controller->legacyIndex($request, $context);
 }, ['auth:web']);
 
 $router->get('/tenant/login', function ($request, array $context) {

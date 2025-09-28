@@ -4,11 +4,11 @@ namespace PHPUnit\Framework;
 
 abstract class TestCase
 {
-    protected function setUp(): void
+    protected function setUp()
     {
     }
 
-    protected function tearDown(): void
+    protected function tearDown()
     {
     }
 
@@ -100,3 +100,5 @@ abstract class TestCase
         return gettype($value);
     }
 }
+
+\class_alias(TestCase::class, 'PHPUnit_Framework_TestCase');

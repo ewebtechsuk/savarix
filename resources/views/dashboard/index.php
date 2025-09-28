@@ -7,6 +7,7 @@
 <body>
     <h1>Dashboard</h1>
     <?php if (isset($user)): ?>
+        <p>You're logged in!</p>
         <p>Welcome back, <?php echo htmlspecialchars($user->name, ENT_QUOTES, 'UTF-8'); ?>.</p>
     <?php endif; ?>
 </body>
