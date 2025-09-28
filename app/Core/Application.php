@@ -6,12 +6,14 @@ use App\Auth\AuthManager;
 use Framework\Http\Request;
 use Framework\Http\Response;
 use Framework\Routing\Router;
+use Illuminate\Database\ConnectionInterface;
 
 class Application
 {
     private Router $router;
     private AuthManager $auth;
     private string $viewPath;
+    private ?ConnectionInterface $database = null;
 
     public function __construct(string $basePath)
     {
@@ -41,6 +43,16 @@ class Application
         ob_start();
         include $path;
         return (string) ob_get_clean();
+    }
+
+    public function setDatabaseConnection(ConnectionInterface $connection): void
+    {
+        $this->database = $connection;
+    }
+
+    public function database(): ?ConnectionInterface
+    {
+        return $this->database;
     }
 
     public function handle(string $method, string $uri): Response

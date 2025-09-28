@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             ContactTagGroupSeeder::class,
             DemoDataSeeder::class, // Add demo data seeder
+            TenantSeeder::class,
             CreateSuperAdminSeeder::class,
         ]);
     }

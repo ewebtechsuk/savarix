@@ -2,16 +2,13 @@
 
 namespace App\Tenancy;
 
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\QueryException;
+
 class TenantDirectory
 {
-    /**
-     * @var array<int, array{slug: string, name: string, domains: string[]}>
-     */
-    private array $tenants;
-
-    public function __construct(?array $tenants = null)
+    public function __construct(private ?ConnectionInterface $connection = null)
     {
-        $this->tenants = $tenants ?? self::defaultTenants();
     }
 
     /**
@@ -19,27 +16,57 @@ class TenantDirectory
      */
     public function all(): array
     {
-        return $this->tenants;
+        if ($this->connection === null) {
+            return [];
+        }
+
+        try {
+            $tenants = $this->connection
+                ->table('tenants')
+                ->orderBy('id')
+                ->get();
+        } catch (QueryException $exception) {
+            return [];
+        }
+
+        return $tenants
+            ->map(function ($tenant) {
+                $data = $this->decodeData($tenant->data ?? null);
+                $slug = $data['slug'] ?? (string) ($tenant->id ?? '');
+                $name = $data['name'] ?? ($slug !== '' ? $slug : 'Unknown Tenant');
+
+                try {
+                    $domains = $this->connection
+                        ->table('domains')
+                        ->where('tenant_id', $tenant->id)
+                        ->orderBy('domain')
+                        ->pluck('domain')
+                        ->all();
+                } catch (QueryException $exception) {
+                    $domains = [];
+                }
+
+                return [
+                    'slug' => $slug,
+                    'name' => $name,
+                    'domains' => array_values($domains),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
-    private static function defaultTenants(): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeData(?string $json): array
     {
-        return [
-            [
-                'slug' => 'aktonz',
-                'name' => 'Aktonz',
-                'domains' => [
-                    'aktonz.ressapp.localhost:8888',
-                    'aktonz.darkorange-chinchilla-918430.hostingersite.com',
-                ],
-            ],
-            [
-                'slug' => 'haringeyestates',
-                'name' => 'Haringey Estates',
-                'domains' => [
-                    'haringey.ressapp.localhost:8888',
-                ],
-            ],
-        ];
+        if ($json === null || $json === '') {
+            return [];
+        }
+
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

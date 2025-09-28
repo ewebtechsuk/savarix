@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TenantPortalController;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\TenantAuthenticate;
+use App\Tenancy\TenantDirectory;
 use Framework\Http\Response;
 
 $app = new Application(__DIR__ . '/..');
@@ -36,7 +37,12 @@ $router->get('/tenant/dashboard', function ($request, array $context) {
 
 $router->get('/tenant/list', function ($request, array $context) {
     $controller = new TenantPortalController();
-    return $controller->list($request, $context);
+
+    $app = $context['app'] ?? null;
+    $connection = $app instanceof Application ? $app->database() : null;
+    $directory = new TenantDirectory($connection);
+
+    return $controller->list($request, $context, $directory);
 });
 
 $router->get('/', function ($request, array $context) {

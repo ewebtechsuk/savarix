@@ -2,17 +2,40 @@
 
 namespace App\Models;
 
-use Stancl\Tenancy\Database\Models\Tenant as StanclTenant;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Tenant extends StanclTenant
+if (class_exists(\Stancl\Tenancy\Database\Models\Tenant::class)) {
+    abstract class BaseTenant extends \Stancl\Tenancy\Database\Models\Tenant
+    {
+    }
+} else {
+    abstract class BaseTenant extends Model
+    {
+    }
+}
+
+class Tenant extends BaseTenant
 {
+    protected $table = 'tenants';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'id',
+        'data',
+    ];
+
     protected $casts = [
         'data' => 'array',
     ];
 
-    // Add any future custom logic or relationships here
-    public function domains()
+    public function domains(): HasMany
     {
-        return $this->hasMany(\Stancl\Tenancy\Database\Models\Domain::class);
+        return $this->hasMany(TenantDomain::class, 'tenant_id');
     }
 }

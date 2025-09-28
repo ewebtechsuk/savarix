@@ -32,9 +32,8 @@ class TenantPortalController
         return Response::view($content);
     }
 
-    public function list(Request $request, array $context): Response
+    public function list(Request $request, array $context, TenantDirectory $directory): Response
     {
-        $directory = new TenantDirectory();
         $tenants = $directory->all();
 
         /** @var Application $app */

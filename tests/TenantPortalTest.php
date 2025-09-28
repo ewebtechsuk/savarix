@@ -44,5 +44,9 @@ class TenantPortalTest extends TestCase
         $this->assertSee($response, 'Tenant Directory');
         $this->assertSee($response, 'Aktonz');
         $this->assertSee($response, 'aktonz.darkorange-chinchilla-918430.hostingersite.com');
+        $this->assertSee($response, 'Haringey Estates');
+        $this->assertSee($response, 'haringey.example.com');
+        $this->assertSee($response, 'Demo Estate');
+        $this->assertSee($response, 'demo.ressapp.localhost:8888');
     }
 }
