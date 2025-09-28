@@ -9,6 +9,12 @@ class User extends Authenticatable
 {
     use Notifiable;
 
+    /**
+     * Disable timestamp management to avoid relying on Carbon helpers that
+     * are not available in this lightweight testing environment.
+     */
+    public $timestamps = false;
+
     protected $fillable = [
         'name',
         'email',
