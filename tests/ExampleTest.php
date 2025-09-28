@@ -8,8 +8,9 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertOk();
-        $response->assertSee('Modern Estate Agency Software');
-        $response->assertSee('Get Started Free');
+        $response->assertStatus(200)
+            ->assertSee('Modern Estate Agency Software')
+            ->assertSee('Get Started Free');
+
     }
 }

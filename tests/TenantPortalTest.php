@@ -11,15 +11,17 @@ class TenantPortalTest extends TestCase
     {
         $response = $this->get('/tenant/login');
 
-        $response->assertOk();
-        $response->assertSee('Company Login');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Login');
+
     }
 
     public function testTenantDashboardRequiresAuthentication(): void
     {
         $response = $this->get('/tenant/dashboard');
 
-        $response->assertRedirect(route('tenant.login'));
+        $response->assertRedirect('/tenant/login');
+
     }
 
     public function testTenantDashboardWelcomesAuthenticatedUser(): void
@@ -32,16 +34,19 @@ class TenantPortalTest extends TestCase
 
         $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
 
-        $response->assertOk();
-        $response->assertSee('Tenant Dashboard');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Dashboard')
+            ->assertSee('Aktonz Tenant');
+
     }
 
     public function testTenantDirectoryListsKnownTenants(): void
     {
         $response = $this->get('/tenant/list');
 
-        $response->assertOk();
-        $response->assertSee('Tenant Directory');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Directory');
+
 
         foreach (['Aktonz', 'Haringey Estates', 'Oakwood Homes'] as $tenantName) {
             $response->assertSee($tenantName);
