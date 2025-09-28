@@ -66,6 +66,7 @@ if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
         $loader->setPsr4('App\\', [$projectRoot.'/app']);
         $loader->setPsr4('Tests\\', [$projectRoot.'/tests']);
         $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
+        $loader->setPsr4('Stancl\\', [$projectRoot.'/framework/Stancl']);
         $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
         $loader->addClassMap([
             'Tests\\TestCase' => $projectRoot.'/tests/TestCase.php',

@@ -10,7 +10,7 @@ class DashboardController extends Controller
     public function index()
     {
         // Only allow admin
-        if (!Auth::check() || !Auth::user()->is_admin) {
+        if (!Auth::guard('web')->check() || !Auth::guard('web')->user()->is_admin) {
             abort(403);
         }
         return view('admin.dashboard');

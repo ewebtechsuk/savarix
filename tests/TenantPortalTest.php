@@ -2,7 +2,8 @@
 
 namespace Tests;
 
-use App\Models\User;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\Hash;
 
 class TenantPortalTest extends TestCase
 {
@@ -23,13 +24,16 @@ class TenantPortalTest extends TestCase
 
     public function testTenantDashboardWelcomesAuthenticatedUser(): void
     {
-        $user = User::create([
-            'name' => 'Aktonz Tenant',
+        $tenant = Tenant::create([
+            'id' => 'test-tenant',
             'email' => 'tenant@aktonz.com',
-            'password' => 'secret',
+            'password' => Hash::make('secret'),
+            'data' => [
+                'name' => 'Aktonz Tenant',
+            ],
         ]);
 
-        $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
+        $response = $this->actingAs($tenant, 'tenant')->get('/tenant/dashboard');
 
         $this->assertStatus($response, 200);
         $this->assertSee($response, 'Tenant Dashboard');

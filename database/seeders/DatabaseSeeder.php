@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesSeeder::class,
             AdminUserSeeder::class,
+            AuthGuardAccountSeeder::class,
             ContactTagGroupSeeder::class,
             DemoDataSeeder::class, // Add demo data seeder
             CreateSuperAdminSeeder::class,

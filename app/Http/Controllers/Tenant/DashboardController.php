@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Stancl\Tenancy\Facades\Tenancy;
 
 class DashboardController extends Controller
 {
@@ -13,8 +12,8 @@ class DashboardController extends Controller
         if (!tenant()) {
             abort(404, 'Company not found.');
         }
-        if (!Auth::check()) {
-            return redirect('/login');
+        if (!Auth::guard('tenant')->check()) {
+            return redirect('/tenant/login');
         }
         return view('tenant.dashboard');
     }

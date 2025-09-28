@@ -18,7 +18,7 @@ class LoginController extends Controller
         $credentials = $request->only('email', 'password');
         $credentials['is_admin'] = 1;
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::guard('web')->attempt($credentials)) {
             return redirect()->intended('/admin/dashboard');
         }
 
@@ -27,7 +27,7 @@ class LoginController extends Controller
 
     public function logout()
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
         return redirect('/admin/login');
     }
 }

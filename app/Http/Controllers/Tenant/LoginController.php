@@ -24,7 +24,8 @@ class LoginController extends Controller
             abort(404, 'Company not found.');
         }
         $credentials = $request->only('email', 'password');
-        if (Auth::attempt($credentials)) {
+
+        if (Auth::guard('tenant')->attempt($credentials)) {
             return redirect()->intended('/dashboard');
         }
         return back()->withErrors(['email' => 'Invalid credentials.']);
@@ -32,7 +33,8 @@ class LoginController extends Controller
 
     public function logout()
     {
-        Auth::logout();
-        return redirect('/login');
+        Auth::guard('tenant')->logout();
+
+        return redirect('/tenant/login');
     }
 }
