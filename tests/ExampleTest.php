@@ -11,5 +11,6 @@ class ExampleTest extends TestCase
         $this->assertStatus($response, 200);
         $this->assertSee($response, 'Ressapp | Property Management Automation');
         $this->assertSee($response, 'marketing-app');
+
     }
 }

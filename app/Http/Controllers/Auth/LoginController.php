@@ -2,19 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Core\Application;
-use Framework\Http\Request;
-use Framework\Http\Response;
+use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
 
-class LoginController
+class LoginController extends Controller
 {
-    public function show(Request $request, array $context): Response
+    public function show(): View
     {
-        /** @var Application $app */
-        $app = $context['app'];
-
-        $content = $app->view('auth.login');
-
-        return Response::view($content);
+        return view('auth.login');
     }
 }

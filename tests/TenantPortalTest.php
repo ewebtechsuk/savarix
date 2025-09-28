@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class TenantPortalTest extends TestCase
 {
@@ -10,15 +11,17 @@ class TenantPortalTest extends TestCase
     {
         $response = $this->get('/tenant/login');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Login');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Login');
+
     }
 
     public function testTenantDashboardRequiresAuthentication(): void
     {
         $response = $this->get('/tenant/dashboard');
 
-        $this->assertRedirect($response, '/tenant/login');
+        $response->assertRedirect('/tenant/login');
+
     }
 
     public function testTenantDashboardWelcomesAuthenticatedUser(): void
@@ -26,25 +29,27 @@ class TenantPortalTest extends TestCase
         $user = User::create([
             'name' => 'Aktonz Tenant',
             'email' => 'tenant@aktonz.com',
-            'password' => 'secret',
+            'password' => Hash::make('secret'),
         ]);
 
         $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Dashboard');
-        $this->assertSee($response, 'Aktonz Tenant');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Dashboard')
+            ->assertSee('Aktonz Tenant');
+
     }
 
     public function testTenantDirectoryListsKnownTenants(): void
     {
         $response = $this->get('/tenant/list');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Directory');
+        $response->assertStatus(200)
+            ->assertSee('Tenant Directory');
+
 
         foreach (['Aktonz', 'Haringey Estates', 'Oakwood Homes'] as $tenantName) {
-            $this->assertSee($response, $tenantName);
+            $response->assertSee($tenantName);
         }
 
         foreach ([
@@ -52,7 +57,7 @@ class TenantPortalTest extends TestCase
             'haringey.ressapp.localhost:8888',
             'oakwoodhomes.example.com',
         ] as $domain) {
-            $this->assertSee($response, $domain);
+            $response->assertSee($domain);
         }
     }
 }

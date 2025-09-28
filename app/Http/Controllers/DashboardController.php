@@ -2,19 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Core\Application;
-use Framework\Http\Request;
-use Framework\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
-class DashboardController
+class DashboardController extends Controller
 {
-    public function index(Request $request, array $context): Response
+    public function index(Request $request): View
     {
-        /** @var Application $app */
-        $app = $context['app'];
-        $user = Auth::user();
-        $content = $app->view('dashboard.index', ['user' => $user]);
-        return Response::view($content);
+        return view('dashboard', [
+            'user' => $request->user(),
+        ]);
     }
 }
