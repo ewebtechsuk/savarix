@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-header">Register Your Company</div>
                 <div class="card-body">
-                    <form method="POST" action="/register">
+                    <form method="POST" action="{{ route('onboarding.register.store') }}">
                         @csrf
                         <div class="mb-3">
                             <label for="company" class="form-label">Company Name</label>
