@@ -52,7 +52,7 @@ $router->get('/', function ($request, array $context) {
         return Response::redirect('/dashboard', 302);
     }
 
-    $content = $app->view('landing.home');
+    $content = $app->view('marketing.app');
 
     return Response::view($content);
 });
