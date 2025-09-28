@@ -4,14 +4,11 @@ namespace App\Tenancy;
 
 class TenantDirectory
 {
-    /**
-     * @var array<int, array{slug: string, name: string, domains: string[]}>
-     */
-    private array $tenants;
+    private TenantRepository $repository;
 
-    public function __construct(?array $tenants = null)
+    public function __construct(?TenantRepository $repository = null)
     {
-        $this->tenants = $tenants ?? self::defaultTenants();
+        $this->repository = $repository ?? TenantRepositoryManager::getRepository();
     }
 
     /**
@@ -19,27 +16,6 @@ class TenantDirectory
      */
     public function all(): array
     {
-        return $this->tenants;
-    }
-
-    private static function defaultTenants(): array
-    {
-        return [
-            [
-                'slug' => 'aktonz',
-                'name' => 'Aktonz',
-                'domains' => [
-                    'aktonz.ressapp.localhost:8888',
-                    'aktonz.darkorange-chinchilla-918430.hostingersite.com',
-                ],
-            ],
-            [
-                'slug' => 'haringeyestates',
-                'name' => 'Haringey Estates',
-                'domains' => [
-                    'haringey.ressapp.localhost:8888',
-                ],
-            ],
-        ];
+        return $this->repository->allTenants();
     }
 }

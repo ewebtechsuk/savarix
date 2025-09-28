@@ -42,5 +42,6 @@ class TenantPortalTest extends TestCase
 
         $this->get('/tenant/dashboard')
             ->assertRedirectedTo('login');
+
     }
 }

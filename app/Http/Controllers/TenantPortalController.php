@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Auth;
 
 class TenantPortalController
 {
+    public function __construct(private ?TenantDirectory $directory = null)
+    {
+    }
+
     public function login(Request $request, array $context): Response
     {
         /** @var Application $app */
@@ -35,7 +39,7 @@ class TenantPortalController
 
     public function list(Request $request, array $context): Response
     {
-        $directory = new TenantDirectory();
+        $directory = $this->directory ?? new TenantDirectory();
         $tenants = $directory->all();
 
         /** @var Application $app */
