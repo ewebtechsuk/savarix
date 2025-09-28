@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\MagicLoginController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\DashboardController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\DiaryController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\TenantPortalController;
 use App\Http\Controllers\MaintenanceRequestController;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +58,17 @@ Route::get('/{page}.html', function (string $page) {
     return response(File::get($staticPage), 200)
         ->header('Content-Type', 'text/html; charset=UTF-8');
 })->where('page', '[A-Za-z0-9\-]+');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::get('/tenant/login', [TenantPortalController::class, 'login'])->name('tenant.login');
+});
+
+Route::middleware('tenant')->group(function () {
+    Route::get('/tenant/dashboard', [TenantPortalController::class, 'dashboard'])->name('tenant.dashboard');
+});
+
+Route::get('/tenant/list', [TenantPortalController::class, 'list'])->name('tenant.list');
 
 // Single dashboard route for route('dashboard')
 Route::get('/dashboard', [DashboardController::class, 'index'])

@@ -7,6 +7,14 @@
             <div class="card">
                 <div class="card-header">Tenant Dashboard</div>
                 <div class="card-body space-y-4">
+                    <h1 class="h4">Tenant Dashboard</h1>
+                    <p class="mb-3">
+                        @if ($user)
+                            Welcome back, {{ $user->name }}.
+                        @else
+                            You are viewing the dashboard as a guest.
+                        @endif
+                    </p>
                     <h3 class="text-xl font-semibold">Welcome to your tenant portal!</h3>
                     <ul class="list-disc pl-5">
                         <li>View financial statements</li>

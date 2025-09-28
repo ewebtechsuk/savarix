@@ -3,46 +3,44 @@
 namespace Tests;
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 class TenantPortalTest extends TestCase
 {
-    public function testTenantLoginPageLoadsSuccessfully(): void
-    {
-        $response = $this->get('/tenant/login');
+    use DatabaseMigrations;
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Login');
+    public function testTenantLoginPageLoadsSuccessfully()
+    {
+        $this->get('/tenant/login')
+            ->assertOk()
+            ->assertSee('Tenant Login');
     }
 
-    public function testTenantDashboardRequiresAuthentication(): void
+    public function testTenantDashboardRequiresAuthentication()
     {
-        $response = $this->get('/tenant/dashboard');
-
-        $this->assertRedirect($response, '/tenant/login');
+        $this->get('/tenant/dashboard')
+            ->assertRedirect('/tenant/login');
     }
 
-    public function testTenantDashboardWelcomesAuthenticatedUser(): void
+    public function testTenantDashboardWelcomesAuthenticatedUser()
     {
-        $user = User::create([
+        $user = User::factory()->create([
             'name' => 'Aktonz Tenant',
-            'email' => 'tenant@aktonz.com',
-            'password' => 'secret',
         ]);
 
-        $response = $this->actingAs($user)->get('/tenant/dashboard');
-
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Dashboard');
-        $this->assertSee($response, 'Aktonz Tenant');
+        $this->actingAs($user)
+            ->get('/tenant/dashboard')
+            ->assertOk()
+            ->assertSee('Tenant Dashboard')
+            ->assertSee('Aktonz Tenant');
     }
 
-    public function testTenantDirectoryListsKnownTenants(): void
+    public function testTenantDirectoryListsKnownTenants()
     {
-        $response = $this->get('/tenant/list');
-
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Directory');
-        $this->assertSee($response, 'Aktonz');
-        $this->assertSee($response, 'aktonz.darkorange-chinchilla-918430.hostingersite.com');
+        $this->get('/tenant/list')
+            ->assertOk()
+            ->assertSee('Tenant Directory')
+            ->assertSee('Aktonz')
+            ->assertSee('aktonz.darkorange-chinchilla-918430.hostingersite.com');
     }
 }

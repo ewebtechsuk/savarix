@@ -2,20 +2,16 @@
 
 namespace App\Http\Middleware;
 
-use Framework\Http\Request;
-use Framework\Http\Response;
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
 
-class Authenticate
+class Authenticate extends Middleware
 {
-    public function __invoke(Request $request, callable $next, array $context): Response
+    protected function redirectTo($request): ?string
     {
-        $app = $context['app'];
-        $auth = $app->auth();
-
-        if (!$auth->check()) {
-            return Response::redirect('/login');
+        if (! $request->expectsJson()) {
+            return route('login');
         }
 
-        return $next($request);
+        return null;
     }
 }

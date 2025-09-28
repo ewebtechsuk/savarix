@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Core\Application;
-use Framework\Http\Request;
-use Framework\Http\Response;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 
-class LoginController
+class LoginController extends Controller
 {
-    public function show(Request $request, array $context): Response
+    public function show(Request $request): View|RedirectResponse
     {
-        /** @var Application $app */
-        $app = $context['app'];
+        if (Auth::check()) {
+            return redirect()->intended('/dashboard');
+        }
 
-        $content = $app->view('auth.login');
-
-        return Response::view($content);
+        return view('auth.login');
     }
 }

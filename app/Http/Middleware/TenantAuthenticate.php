@@ -2,17 +2,20 @@
 
 namespace App\Http\Middleware;
 
-use Framework\Http\Request;
-use Framework\Http\Response;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class TenantAuthenticate
 {
-    public function __invoke(Request $request, callable $next, array $context): Response
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, Closure $next): Response
     {
-        $app = $context['app'];
-
-        if (!$app->auth()->check()) {
-            return Response::redirect('/tenant/login');
+        if (! Auth::check()) {
+            return redirect('/tenant/login');
         }
 
         return $next($request);
