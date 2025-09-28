@@ -3,13 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Landlord extends Model
 {
-    use HasFactory;
+    protected $table = 'landlords';
 
-	protected $table = 'landlords';
+    /**
+     * Keep timestamps disabled so model persistence works without Carbon.
+     */
+    public $timestamps = false;
 
-	protected $guarded = array('id');
+    protected $guarded = ['id'];
+
+    protected $hidden = [
+        'password',
+    ];
 }

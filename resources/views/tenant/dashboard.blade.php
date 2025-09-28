@@ -8,6 +8,9 @@
                 <div class="card-header">Tenant Dashboard</div>
                 <div class="card-body space-y-4">
                     <h3 class="text-xl font-semibold">Welcome to your tenant portal!</h3>
+                    @isset($user)
+                        <p class="mb-3">Hello, {{ $user->data['name'] ?? $user->email ?? $user->id }}.</p>
+                    @endisset
                     <ul class="list-disc pl-5">
                         <li>View financial statements</li>
                         <li>Submit maintenance requests</li>

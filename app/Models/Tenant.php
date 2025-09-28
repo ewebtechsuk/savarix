@@ -6,6 +6,17 @@ use Stancl\Tenancy\Database\Models\Tenant as StanclTenant;
 
 class Tenant extends StanclTenant
 {
+    protected $fillable = [
+        'id',
+        'email',
+        'password',
+        'data',
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
     protected $casts = [
         'data' => 'array',
     ];
