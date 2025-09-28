@@ -4,6 +4,7 @@ use App\Core\Application;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TenantPortalController;
+use App\Tenancy\TenantDirectory;
 use App\Http\Middleware\Authenticate;
 use Framework\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -23,18 +24,20 @@ $router->get('/dashboard', function ($request, array $context) {
     return $controller->index($request, $context);
 }, ['auth:web']);
 
-$router->get('/tenant/login', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$tenantDirectory = new TenantDirectory();
+
+$router->get('/tenant/login', function ($request, array $context) use ($tenantDirectory) {
+    $controller = new TenantPortalController($tenantDirectory);
     return $controller->login($request, $context);
 });
 
-$router->get('/tenant/dashboard', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$router->get('/tenant/dashboard', function ($request, array $context) use ($tenantDirectory) {
+    $controller = new TenantPortalController($tenantDirectory);
     return $controller->dashboard($request, $context);
 }, ['auth:tenant']);
 
-$router->get('/tenant/list', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$router->get('/tenant/list', function ($request, array $context) use ($tenantDirectory) {
+    $controller = new TenantPortalController($tenantDirectory);
     return $controller->list($request, $context);
 });
 

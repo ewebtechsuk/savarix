@@ -42,7 +42,17 @@ class TenantPortalTest extends TestCase
 
         $this->assertStatus($response, 200);
         $this->assertSee($response, 'Tenant Directory');
-        $this->assertSee($response, 'Aktonz');
-        $this->assertSee($response, 'aktonz.darkorange-chinchilla-918430.hostingersite.com');
+
+        foreach (['Aktonz', 'Haringey Estates', 'Oakwood Homes'] as $tenantName) {
+            $this->assertSee($response, $tenantName);
+        }
+
+        foreach ([
+            'aktonz.darkorange-chinchilla-918430.hostingersite.com',
+            'haringey.ressapp.localhost:8888',
+            'oakwoodhomes.example.com',
+        ] as $domain) {
+            $this->assertSee($response, $domain);
+        }
     }
 }

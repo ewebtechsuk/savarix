@@ -4,6 +4,8 @@ namespace Tests;
 
 use App\Core\Application;
 use App\Models\User;
+use App\Tenancy\TenantRepositoryManager;
+use Database\Seeders\TenantFixtures;
 use Framework\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use PHPUnit\Framework\TestCase as BaseTestCase;
@@ -23,6 +25,9 @@ abstract class TestCase extends BaseTestCase
         Auth::shouldUse('web');
         Auth::guard('web')->logout();
         Auth::guard('tenant')->logout();
+
+        TenantRepositoryManager::clear();
+        TenantFixtures::seed();
     }
 
     protected function get(string $uri): Response
