@@ -12,51 +12,19 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceRequestController;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
+use App\Http\Controllers\OnboardingController;
 
 Route::get('/', function () {
-    $landingPage = base_path('frontend/index.html');
+    return view('marketing.app');
+})->name('marketing.home');
 
-    if (! File::exists($landingPage)) {
-        abort(404);
-    }
-
-    return response(File::get($landingPage), 200)
-        ->header('Content-Type', 'text/html; charset=UTF-8');
+Route::middleware('guest')->group(function () {
+    Route::get('/onboarding/register', [OnboardingController::class, 'showRegistrationForm'])
+        ->name('onboarding.register');
+    Route::post('/onboarding/register', [OnboardingController::class, 'register'])
+        ->name('onboarding.register.store');
 });
-
-Route::get('/assets/{path}', function (string $path) {
-    if (Str::contains($path, '..')) {
-
-        abort(404);
-    }
-
-    $asset = base_path('frontend/assets/' . $path);
-
-    if (! File::exists($asset)) {
-        abort(404);
-    }
-
-    return response()->file($asset);
-})->where('path', '.*');
-
-Route::get('/{page}.html', function (string $page) {
-    if (Str::contains($page, '/')) {
-
-        abort(404);
-    }
-
-    $staticPage = base_path('frontend/' . $page . '.html');
-
-    if (! File::exists($staticPage)) {
-        abort(404);
-    }
-
-    return response(File::get($staticPage), 200)
-        ->header('Content-Type', 'text/html; charset=UTF-8');
-})->where('page', '[A-Za-z0-9\-]+');
 
 // Single dashboard route for route('dashboard')
 Route::get('/dashboard', [DashboardController::class, 'index'])
