@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class TenantPortalTest extends TestCase
 {
@@ -12,6 +13,7 @@ class TenantPortalTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('Tenant Login');
+
     }
 
     public function testTenantDashboardRequiresAuthentication(): void
@@ -19,6 +21,7 @@ class TenantPortalTest extends TestCase
         $response = $this->get('/tenant/dashboard');
 
         $response->assertRedirect('/tenant/login');
+
     }
 
     public function testTenantDashboardWelcomesAuthenticatedUser(): void
@@ -26,7 +29,7 @@ class TenantPortalTest extends TestCase
         $user = User::create([
             'name' => 'Aktonz Tenant',
             'email' => 'tenant@aktonz.com',
-            'password' => 'secret',
+            'password' => Hash::make('secret'),
         ]);
 
         $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
@@ -34,6 +37,7 @@ class TenantPortalTest extends TestCase
         $response->assertStatus(200)
             ->assertSee('Tenant Dashboard')
             ->assertSee('Aktonz Tenant');
+
     }
 
     public function testTenantDirectoryListsKnownTenants(): void
@@ -42,6 +46,7 @@ class TenantPortalTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('Tenant Directory');
+
 
         foreach (['Aktonz', 'Haringey Estates', 'Oakwood Homes'] as $tenantName) {
             $response->assertSee($tenantName);

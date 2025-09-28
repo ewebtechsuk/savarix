@@ -2,7 +2,9 @@
 /composer.phar
 /vendor/*
 !/vendor/bin/
+vendor/bin/*
 !/vendor/bin/phpunit
+.phpunit.cache/
 /node_modules/
 .env
 .phpunit.result.cache
@@ -27,5 +29,10 @@ Thumbs.db
 *.bak
 *.tmp
 *.tar.gz
-/public/build/
+/public/build/*
+!public/build/manifest.json
+!public/build/css/
+!public/build/css/app.css
+!public/build/js/
+!public/build/js/app.js
 

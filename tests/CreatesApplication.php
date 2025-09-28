@@ -8,6 +8,7 @@ use App\Tenancy\TenantRepositoryManager;
 use Database\Seeders\TenantFixtures;
 use Illuminate\Support\Facades\Auth;
 
+
 trait CreatesApplication
 {
     public function createApplication(): Application
@@ -22,6 +23,7 @@ trait CreatesApplication
 
         TenantRepositoryManager::clear();
         TenantFixtures::seed();
+
 
         return $app;
     }

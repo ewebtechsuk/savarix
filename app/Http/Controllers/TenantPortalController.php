@@ -2,53 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Core\Application;
 use App\Tenancy\TenantDirectory;
-use Framework\Http\Request;
-use Framework\Http\Response;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class TenantPortalController
+class TenantPortalController extends Controller
 {
     public function __construct(private ?TenantDirectory $directory = null)
     {
+        $this->directory ??= new TenantDirectory();
     }
 
-    public function login(Request $request, array $context): Response
+    public function login(): View
     {
-        /** @var Application $app */
-        $app = $context['app'];
-
-        $content = $app->view('tenant.login');
-
-        return Response::view($content);
+        return view('tenant.login');
     }
 
-    public function dashboard(Request $request, array $context): Response
+    public function dashboard(Request $request): View
     {
-        /** @var Application $app */
-        $app = $context['app'];
-        $user = Auth::guard('tenant')->user();
-
-        $content = $app->view('tenant.dashboard', [
-            'user' => $user,
+        return view('tenant.dashboard', [
+            'user' => Auth::guard('tenant')->user(),
         ]);
-
-        return Response::view($content);
     }
 
-    public function list(Request $request, array $context): Response
+    public function list(): View
     {
-        $directory = $this->directory ?? new TenantDirectory();
-        $tenants = $directory->all();
+        $tenants = $this->directory?->all() ?? [];
 
-        /** @var Application $app */
-        $app = $context['app'];
-
-        $content = $app->view('tenant.list', [
+        return view('tenant.list', [
             'tenants' => $tenants,
         ]);
-
-        return Response::view($content);
     }
 }

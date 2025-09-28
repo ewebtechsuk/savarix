@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\MagicLoginController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantController;
+use App\Http\Controllers\TenantPortalController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\ContactController;
@@ -110,5 +111,15 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
 });
 
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');
+
+Route::prefix('tenant')->group(function () {
+    Route::get('login', [TenantPortalController::class, 'login'])->name('tenant.login');
+    Route::get('list', [TenantPortalController::class, 'list'])->name('tenant.list');
+
+    Route::middleware('auth:tenant')->group(function () {
+        Route::get('dashboard', [TenantPortalController::class, 'dashboard'])
+            ->name('tenant.dashboard');
+    });
+});
 
 require __DIR__.'/auth.php';
