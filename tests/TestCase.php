@@ -2,58 +2,40 @@
 
 namespace Tests;
 
-use App\Core\Application;
-use App\Models\User;
 use App\Tenancy\TenantRepositoryManager;
 use Database\Seeders\TenantFixtures;
-use Framework\Http\Response;
-use Illuminate\Support\Facades\Auth;
-use PHPUnit\Framework\TestCase as BaseTestCase;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
-    protected Application $app;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app = $this->createApplication();
 
-        User::truncate();
-        Auth::shouldUse('web');
-        Auth::guard('web')->logout();
-        Auth::guard('tenant')->logout();
-
+        $this->refreshUserTable();
         TenantRepositoryManager::clear();
         TenantFixtures::seed();
     }
 
-    protected function get(string $uri): Response
+    private function refreshUserTable(): void
     {
-        return $this->app->handle('GET', $uri);
-    }
+        Schema::dropIfExists('users');
 
-    protected function actingAs($user, string $guard = 'web'): self
-    {
-        Auth::guard($guard)->login($user);
-        return $this;
-    }
+        Schema::create('users', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
 
-    protected function assertStatus(Response $response, int $expected): void
-    {
-        self::assertSame($expected, $response->status());
-    }
-
-    protected function assertRedirect(Response $response, string $location): void
-    {
-        $this->assertStatus($response, 302);
-        self::assertSame($location, $response->header('location'));
-    }
-
-    protected function assertSee(Response $response, string $text): void
-    {
-        self::assertStringContainsString($text, $response->body());
+        DB::table('users')->truncate();
     }
 }

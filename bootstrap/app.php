@@ -1,60 +1,24 @@
 <?php
 
-use App\Core\Application;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\TenantPortalController;
-use App\Tenancy\TenantDirectory;
-use App\Http\Middleware\Authenticate;
-use Framework\Http\Response;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Application;
 
-$app = new Application(__DIR__ . '/..');
+$app = new Application(
+    $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
+);
 
-$router = $app->router();
-$router->middleware('auth', [new Authenticate(), '__invoke']);
+$app->singleton(
+    Illuminate\Contracts\Http\Kernel::class,
+    App\Http\Kernel::class
+);
 
-$router->get('/login', function ($request, array $context) {
-    $controller = new LoginController();
-    return $controller->show($request, $context);
-});
+$app->singleton(
+    Illuminate\Contracts\Console\Kernel::class,
+    App\Console\Kernel::class
+);
 
-$router->get('/dashboard', function ($request, array $context) {
-    $controller = new DashboardController();
-    return $controller->index($request, $context);
-}, ['auth:web']);
-
-$tenantDirectory = new TenantDirectory();
-
-$router->get('/tenant/login', function ($request, array $context) use ($tenantDirectory) {
-    $controller = new TenantPortalController($tenantDirectory);
-    return $controller->login($request, $context);
-});
-
-$router->get('/tenant/dashboard', function ($request, array $context) use ($tenantDirectory) {
-    $controller = new TenantPortalController($tenantDirectory);
-    return $controller->dashboard($request, $context);
-}, ['auth:tenant']);
-
-$router->get('/tenant/list', function ($request, array $context) use ($tenantDirectory) {
-    $controller = new TenantPortalController($tenantDirectory);
-    return $controller->list($request, $context);
-});
-
-$router->get('/', function ($request, array $context) {
-    $app = $context['app'] ?? null;
-
-    if (!$app instanceof Application) {
-        return new Response('Application not available', 500);
-    }
-
-    if (Auth::check()) {
-        return Response::redirect('/dashboard', 302);
-    }
-
-    $content = $app->view('landing.home');
-
-    return Response::view($content);
-});
+$app->singleton(
+    Illuminate\Contracts\Debug\ExceptionHandler::class,
+    App\Exceptions\Handler::class
+);
 
 return $app;

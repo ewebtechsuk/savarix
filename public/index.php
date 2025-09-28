@@ -1,25 +1,19 @@
 <?php
 
-// Buffer bootstrap output so notices from legacy dependencies don't break HTTP headers.
-ob_start();
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 
-require __DIR__ . '/../bootstrap/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
-$app = require __DIR__ . '/../bootstrap/app.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-ob_end_clean();
+/** @var Kernel $kernel */
+$kernel = $app->make(Kernel::class);
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$uri = $_SERVER['REQUEST_URI'] ?? '/';
-$path = parse_url($uri, PHP_URL_PATH) ?: '/';
+$response = $kernel->handle(
+    $request = Request::capture()
+);
 
-$response = $app->handle($method, $path);
+$response->send();
 
-http_response_code($response->status());
-
-foreach ($response->headers() as $name => $value) {
-    $normalized = implode('-', array_map('ucfirst', explode('-', $name)));
-    header($normalized . ': ' . $value, true);
-}
-
-echo $response->body();
+$kernel->terminate($request, $response);

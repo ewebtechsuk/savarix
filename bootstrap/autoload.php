@@ -32,18 +32,6 @@ if (file_exists($polyfills)) {
     require $polyfills;
 }
 
-$offlineStubs = [
-    $projectRoot.'/framework/Illuminate/Support/Facades/Hash.php',
-    $projectRoot.'/framework/Illuminate/Support/Facades/Auth.php',
-    $projectRoot.'/framework/helpers.php',
-];
-
-foreach ($offlineStubs as $stub) {
-    if (file_exists($stub)) {
-        require_once $stub;
-    }
-}
-
 if (!file_exists($vendorAutoload) && file_exists($cachedAutoload)) {
     $vendorAutoload = $cachedAutoload;
 }
@@ -65,8 +53,6 @@ if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
 
         $loader->setPsr4('App\\', [$projectRoot.'/app']);
         $loader->setPsr4('Tests\\', [$projectRoot.'/tests']);
-        $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
-        $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
         $loader->setPsr4('Database\\Seeders\\', [$projectRoot.'/database/seeders']);
         $loader->addClassMap([
             'Tests\\TestCase' => $projectRoot.'/tests/TestCase.php',
