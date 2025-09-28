@@ -29,7 +29,7 @@ class TenantPortalTest extends TestCase
             'password' => 'secret',
         ]);
 
-        $response = $this->actingAs($user)->get('/tenant/dashboard');
+        $response = $this->actingAs($user, 'tenant')->get('/tenant/dashboard');
 
         $this->assertStatus($response, 200);
         $this->assertSee($response, 'Tenant Dashboard');

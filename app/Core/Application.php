@@ -2,7 +2,6 @@
 
 namespace App\Core;
 
-use App\Auth\AuthManager;
 use Framework\Http\Request;
 use Framework\Http\Response;
 use Framework\Routing\Router;
@@ -10,24 +9,17 @@ use Framework\Routing\Router;
 class Application
 {
     private Router $router;
-    private AuthManager $auth;
     private string $viewPath;
 
     public function __construct(string $basePath)
     {
         $this->router = new Router();
-        $this->auth = new AuthManager();
         $this->viewPath = rtrim($basePath, '/') . '/resources/views';
     }
 
     public function router(): Router
     {
         return $this->router;
-    }
-
-    public function auth(): AuthManager
-    {
-        return $this->auth;
     }
 
     public function view(string $name, array $data = []): string

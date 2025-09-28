@@ -6,6 +6,7 @@ use App\Core\Application;
 use App\Tenancy\TenantDirectory;
 use Framework\Http\Request;
 use Framework\Http\Response;
+use Illuminate\Support\Facades\Auth;
 
 class TenantPortalController
 {
@@ -23,7 +24,7 @@ class TenantPortalController
     {
         /** @var Application $app */
         $app = $context['app'];
-        $user = $app->auth()->user();
+        $user = Auth::guard('tenant')->user();
 
         $content = $app->view('tenant.dashboard', [
             'user' => $user,

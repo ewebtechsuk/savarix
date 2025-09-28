@@ -34,6 +34,8 @@ if (file_exists($polyfills)) {
 
 $offlineStubs = [
     $projectRoot.'/framework/Illuminate/Support/Facades/Hash.php',
+    $projectRoot.'/framework/Illuminate/Support/Facades/Auth.php',
+    $projectRoot.'/framework/helpers.php',
 ];
 
 foreach ($offlineStubs as $stub) {

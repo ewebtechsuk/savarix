@@ -3,7 +3,9 @@
 namespace Tests;
 
 use App\Core\Application;
+use App\Models\User;
 use Framework\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -16,6 +18,11 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         $this->app = $this->createApplication();
+
+        User::truncate();
+        Auth::shouldUse('web');
+        Auth::guard('web')->logout();
+        Auth::guard('tenant')->logout();
     }
 
     protected function get(string $uri): Response
@@ -23,9 +30,9 @@ abstract class TestCase extends BaseTestCase
         return $this->app->handle('GET', $uri);
     }
 
-    protected function actingAs($user): self
+    protected function actingAs($user, string $guard = 'web'): self
     {
-        $this->app->auth()->login($user);
+        Auth::guard($guard)->login($user);
         return $this;
     }
 

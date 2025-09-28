@@ -26,10 +26,24 @@ class Router
     private function resolveMiddleware(array $names): array
     {
         return array_map(function (string $name) {
+            $parameters = [];
+
+            if (str_contains($name, ':')) {
+                [$name, $paramString] = explode(':', $name, 2);
+                $parameters = $paramString === ''
+                    ? []
+                    : array_map('trim', explode(',', $paramString));
+            }
+
             if (!isset($this->middleware[$name])) {
                 throw new \InvalidArgumentException("Middleware '{$name}' is not registered.");
             }
-            return $this->middleware[$name];
+
+            $middleware = $this->middleware[$name];
+
+            return function (Request $request, callable $next, array $context) use ($middleware, $parameters) {
+                return $middleware($request, $next, $context, ...$parameters);
+            };
         }, $names);
     }
 

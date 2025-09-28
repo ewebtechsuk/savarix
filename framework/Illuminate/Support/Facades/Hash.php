@@ -9,5 +9,10 @@ if (!class_exists(Hash::class, false)) {
         {
             return password_hash($value, PASSWORD_BCRYPT);
         }
+
+        public static function check(string $value, string $hashedValue): bool
+        {
+            return password_verify($value, $hashedValue);
+        }
     }
 }
