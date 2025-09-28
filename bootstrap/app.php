@@ -25,24 +25,22 @@ $router->get('/dashboard', function ($request, array $context) {
     return $controller->index($request, $context);
 }, ['auth']);
 
-$router->get('/tenant/login', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$tenantPortalControllerResolver = static fn (): TenantPortalController => new TenantPortalController(new TenantDirectory());
+
+$router->get('/tenant/login', function ($request, array $context) use ($tenantPortalControllerResolver) {
+    $controller = $tenantPortalControllerResolver();
     return $controller->login($request, $context);
 });
 
-$router->get('/tenant/dashboard', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$router->get('/tenant/dashboard', function ($request, array $context) use ($tenantPortalControllerResolver) {
+    $controller = $tenantPortalControllerResolver();
     return $controller->dashboard($request, $context);
 }, ['tenant']);
 
-$router->get('/tenant/list', function ($request, array $context) {
-    $controller = new TenantPortalController();
+$router->get('/tenant/list', function ($request, array $context) use ($tenantPortalControllerResolver) {
+    $controller = $tenantPortalControllerResolver();
 
-    $app = $context['app'] ?? null;
-    $connection = $app instanceof Application ? $app->database() : null;
-    $directory = new TenantDirectory($connection);
-
-    return $controller->list($request, $context, $directory);
+    return $controller->list($request, $context);
 });
 
 $router->get('/', function ($request, array $context) {

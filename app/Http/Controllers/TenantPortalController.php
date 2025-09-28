@@ -9,6 +9,10 @@ use Framework\Http\Response;
 
 class TenantPortalController
 {
+    public function __construct(private TenantDirectory $directory)
+    {
+    }
+
     public function login(Request $request, array $context): Response
     {
         /** @var Application $app */
@@ -32,9 +36,9 @@ class TenantPortalController
         return Response::view($content);
     }
 
-    public function list(Request $request, array $context, TenantDirectory $directory): Response
+    public function list(Request $request, array $context): Response
     {
-        $tenants = $directory->all();
+        $tenants = $this->directory->all();
 
         /** @var Application $app */
         $app = $context['app'];
