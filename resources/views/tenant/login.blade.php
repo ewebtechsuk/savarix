@@ -5,8 +5,10 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">Company Login</div>
+                <div class="card-header">Tenant Login</div>
                 <div class="card-body">
+                    <h1 class="h4 mb-3">Tenant Login</h1>
+                    <p class="text-muted">Sign in with your tenant credentials to access the dashboard.</p>
                     <form method="POST" action="/login">
                         @csrf
                         <div class="mb-3">

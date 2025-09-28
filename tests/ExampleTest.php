@@ -4,12 +4,11 @@ namespace Tests;
 
 class ExampleTest extends TestCase
 {
-    public function testHomeDisplaysMarketingPage(): void
+    public function testHomeDisplaysMarketingPage()
     {
-        $response = $this->get('/');
-
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Modern Estate Agency Software');
-        $this->assertSee($response, 'Get Started Free');
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Modern Estate Agency Software')
+            ->assertSee('Get Started Free');
     }
 }

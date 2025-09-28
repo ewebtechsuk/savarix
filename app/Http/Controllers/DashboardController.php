@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Core\Application;
-use Framework\Http\Request;
-use Framework\Http\Response;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
-class DashboardController
+class DashboardController extends Controller
 {
-    public function index(Request $request, array $context): Response
+    public function index(Request $request): View
     {
-        /** @var Application $app */
-        $app = $context['app'];
-        $user = $app->auth()->user();
-        $content = $app->view('dashboard.index', ['user' => $user]);
-        return Response::view($content);
+        return view('dashboard.index', [
+            'user' => $request->user(),
+            'stats' => [
+                'property_count' => 0,
+                'tenancy_count' => 0,
+                'lead_count' => 0,
+                'payment_count' => 0,
+            ],
+        ]);
     }
 }

@@ -3,33 +3,32 @@
 namespace Tests;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 class DashboardTest extends TestCase
 {
-    public function testLoginPageLoads(): void
+    use DatabaseMigrations;
+
+    public function testLoginPageLoads()
     {
-        $response = $this->get('/login');
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Login');
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Log in');
     }
 
-    public function testDashboardRequiresAuthentication(): void
+    public function testDashboardRequiresAuthentication()
     {
-        $response = $this->get('/dashboard');
-        $this->assertRedirect($response, '/login');
+        $this->get('/dashboard')
+            ->assertRedirect('/login');
     }
 
-    public function testAuthenticatedUserCanSeeDashboard(): void
+    public function testAuthenticatedUserCanSeeDashboard()
     {
-        $user = User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password'),
-        ]);
+        $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get('/dashboard');
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Dashboard');
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Dashboard');
     }
 }
