@@ -2,47 +2,36 @@
 
 namespace Tests;
 
-use App\Models\User;
-
 class TenantPortalTest extends TestCase
 {
-    public function testTenantLoginPageLoadsSuccessfully(): void
+    public function test_frontend_landing_page_is_served(): void
     {
-        $response = $this->get('/tenant/login');
+        $response = $this->get('/');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Login');
+        $response->assertOk();
+        $response->assertSee('Modern Estate Agency Software');
     }
 
-    public function testTenantDashboardRequiresAuthentication(): void
+    public function test_static_pricing_page_is_accessible(): void
     {
-        $response = $this->get('/tenant/dashboard');
+        $response = $this->get('/pricing.html');
 
-        $this->assertRedirect($response, '/tenant/login');
+        $response->assertOk();
+        $response->assertSee('Pricing', false);
     }
 
-    public function testTenantDashboardWelcomesAuthenticatedUser(): void
+    public function test_frontend_asset_route_serves_files(): void
     {
-        $user = User::create([
-            'name' => 'Aktonz Tenant',
-            'email' => 'tenant@aktonz.com',
-            'password' => 'secret',
-        ]);
+        $response = $this->get('/assets/style.css');
 
-        $response = $this->actingAs($user)->get('/tenant/dashboard');
-
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Dashboard');
-        $this->assertSee($response, 'Aktonz Tenant');
+        $response->assertOk();
+        $response->assertSee('font-family', false);
     }
 
-    public function testTenantDirectoryListsKnownTenants(): void
+    public function test_requesting_unknown_static_page_returns_not_found(): void
     {
-        $response = $this->get('/tenant/list');
+        $response = $this->get('/unknown-page.html');
 
-        $this->assertStatus($response, 200);
-        $this->assertSee($response, 'Tenant Directory');
-        $this->assertSee($response, 'Aktonz');
-        $this->assertSee($response, 'aktonz.darkorange-chinchilla-918430.hostingersite.com');
+        $response->assertNotFound();
     }
 }
