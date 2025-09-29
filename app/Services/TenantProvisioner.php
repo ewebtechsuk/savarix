@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Tenant;
+use App\Support\CompanyIdGenerator;
 use Database\Seeders\TenantPortalUserSeeder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
@@ -37,8 +38,12 @@ class TenantProvisioner
             $tenant = DB::transaction(function () use ($subdomain, $data, &$messages) {
                 $tenant = Tenant::create([
                     'id' => $subdomain,
-                    'data' => $data,
                 ]);
+
+                if (!empty($data)) {
+                    $tenant->forceFill($data);
+                    $tenant->save();
+                }
 
                 $domain = $tenant->domains()->create([
                     'domain' => (string) $this->buildTenantDomain($subdomain),
@@ -178,7 +183,7 @@ class TenantProvisioner
         $data = Arr::get($payload, 'data', []);
         $data = is_array($data) ? $data : [];
 
-        $companyId = $this->generateCompanyId();
+        $companyId = CompanyIdGenerator::generate();
         $data['company_id'] = $companyId;
 
         $name = Arr::get($payload, 'name');
@@ -193,15 +198,6 @@ class TenantProvisioner
         }
 
         return $data;
-    }
-
-    protected function generateCompanyId(): int
-    {
-        do {
-            $companyId = random_int(100000, 999999);
-        } while (Tenant::query()->where('data->company_id', $companyId)->exists());
-
-        return $companyId;
     }
 
     protected function runTenantMigrations(Tenant $tenant): void

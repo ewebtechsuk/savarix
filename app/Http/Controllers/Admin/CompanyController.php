@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Rules\Subdomain as SubdomainRule;
 use App\Services\TenantProvisioner;
+use App\Support\CompanyIdGenerator;
 use App\Support\SubdomainNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,19 +63,16 @@ class CompanyController extends Controller
 
         $domain = $this->tenantProvisioner->buildTenantDomain($validated['subdomain']);
 
-        // Generate a unique 4-6 digit company_id
-        do {
-            $company_id = '468173';
-        } while (Tenant::where('data->company_id', $company_id)->exists());
+        $company_id = CompanyIdGenerator::generate();
 
         $tenant = Tenant::create([
             'id' => $validated['subdomain'],
-            'data' => [
-                'name' => $validated['name'],
-                'company_id' => $company_id,
-                // company_number left blank for user/customer to fill
-            ],
         ]);
+
+        $tenant->forceFill([
+            'name' => $validated['name'],
+            'company_id' => $company_id,
+        ])->save();
         $tenant->domains()->create(['domain' => $domain]);
 
         return redirect()->route('admin.companies.index')->with('success', 'Company created successfully.');

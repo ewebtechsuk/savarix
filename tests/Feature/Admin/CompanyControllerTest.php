@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioner;
 use App\Support\SubdomainNormalizer;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -22,14 +23,27 @@ class CompanyControllerTest extends TestCase
     {
         parent::setUp();
 
-        if (!Route::has('admin.companies.store')) {
-            Route::middleware('web')->group(function () {
-                Route::post('admin/companies', [CompanyController::class, 'store'])
-                    ->name('admin.companies.store');
-                Route::put('admin/companies/{company}', [CompanyController::class, 'update'])
-                    ->name('admin.companies.update');
-            });
+        $router = $this->app['router'];
+
+        if (!$router->has('admin.companies.store')) {
+            $router->post('admin/companies', [CompanyController::class, 'store'])
+                ->name('admin.companies.store')
+                ->middleware('web');
         }
+
+        if (!$router->has('admin.companies.update')) {
+            $router->put('admin/companies/{company}', [CompanyController::class, 'update'])
+                ->name('admin.companies.update')
+                ->middleware('web');
+        }
+
+        if (!$router->has('admin.companies.index')) {
+            $router->get('admin/companies', fn () => response()->noContent())
+                ->name('admin.companies.index')
+                ->middleware('web');
+        }
+
+        $router->getRoutes()->refreshNameLookups();
     }
 
     public function test_store_rejects_subdomains_with_invalid_characters(): void
@@ -90,6 +104,54 @@ class CompanyControllerTest extends TestCase
         $response->assertRedirect('/admin/companies/create');
         $response->assertSessionHasErrors('subdomain');
         $this->assertSame('existing', SubdomainNormalizer::normalize($variant));
+    }
+
+    public function test_store_generates_unique_company_id_when_existing_id_present(): void
+    {
+        $existingTenant = Tenant::factory()->create([
+            'id' => 'existing',
+            'slug' => 'existing',
+            'name' => 'Existing Tenant',
+            'data' => ['company_id' => '123456'],
+        ]);
+
+        $provisioner = $this->app->make(TenantProvisioner::class);
+
+        Domain::create([
+            'domain' => $provisioner->buildTenantDomain('existing'),
+            'tenant_id' => $existingTenant->id,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $this->withoutMiddleware([
+            RoleMiddleware::class,
+            VerifyCsrfToken::class,
+        ]);
+
+        URL::shouldReceive('setRequest')->byDefault()->andReturnNull();
+        URL::shouldReceive('getRequest')->byDefault()->andReturn($this->app->make('request'));
+        URL::shouldReceive('route')->andReturn('/admin/companies');
+        URL::shouldReceive('to')->andReturn('/admin/companies');
+
+        $response = $this->post('/admin/companies', [
+            'name' => 'Second Company',
+            'subdomain' => 'second-company',
+        ]);
+
+        $response->assertRedirect('/admin/companies');
+
+        $newTenant = Tenant::query()->find('second-company');
+
+        $this->assertNotNull($newTenant);
+
+        $companyId = $newTenant->company_id;
+
+        $this->assertNotNull($companyId);
+        $this->assertNotSame('123456', (string) $companyId);
+        $this->assertNotEmpty((string) $companyId);
     }
 
     public function test_update_rejects_subdomains_with_invalid_characters(): void
