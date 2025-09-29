@@ -45,6 +45,21 @@ Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supp
 Update the variable in each environment (`.env`, GitHub Actions secrets, Hostinger control panel, etc.) so tenancy middleware resolves the central application correctly. Local developers can follow `docs/local_subdomain_setup.txt` for guidance on mapping subdomains via `/etc/hosts`.
 
 
+### Identity verification (Onfido)
+
+The onboarding flow now provisions an [Onfido](https://onfido.com/) verification session for each new tenant. Configure the following environment variables so the application can authenticate API calls and validate webhook signatures:
+
+```
+ONFIDO_API_TOKEN=token_xxx
+ONFIDO_WORKFLOW_ID=your-workflow-id
+ONFIDO_WEBHOOK_SECRET=whsec_xxx
+ONFIDO_BASE_URL=https://api.eu.onfido.com    # Optional when using the EU shard
+ONFIDO_API_VERSION=v3.6                     # Optional, defaults to v3.6
+ONFIDO_SHARE_LINK_TTL=3600                  # Optional TTL (seconds) for generated share links
+```
+
+Use the same webhook secret configured in the Onfido dashboard so callbacks are accepted. Point Onfido webhooks at `https://your-domain/webhooks/onfido`.
+
 
 ### Continuous Integration
 

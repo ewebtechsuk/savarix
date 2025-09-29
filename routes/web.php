@@ -97,7 +97,6 @@ Route::group(['prefix' => 'tenant'], function () {
 Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Tenant']], function () {
     Route::group(['prefix' => 'onboarding'], function () {
         Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
-        Route::get('verification/callback', [VerificationController::class, 'callback'])->name('verification.callback');
         Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
     });
 
@@ -108,6 +107,8 @@ Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'ro
 });
 
 Route::post('/stripe/webhook', [PaymentController::class, 'webhook'])->name('stripe.webhook');
+
+Route::post('/webhooks/onfido', [VerificationController::class, 'callback'])->name('verification.callback');
 
 Route::group([
     'middleware' => 'auth:landlord',

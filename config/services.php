@@ -69,4 +69,13 @@ return [
         ],
 
     ],
+
+    'onfido' => [
+        'api_token' => env('ONFIDO_API_TOKEN'),
+        'webhook_secret' => env('ONFIDO_WEBHOOK_SECRET'),
+        'workflow_id' => env('ONFIDO_WORKFLOW_ID'),
+        'base_url' => env('ONFIDO_BASE_URL', 'https://api.eu.onfido.com'),
+        'version' => env('ONFIDO_API_VERSION', 'v3.6'),
+        'share_link_ttl' => env('ONFIDO_SHARE_LINK_TTL', 3600),
+    ],
 ];

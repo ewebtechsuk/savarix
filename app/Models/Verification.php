@@ -11,6 +11,14 @@ class Verification extends Model
         'status',
         'provider',
         'provider_reference',
+        'provider_session_url',
+        'session_metadata',
+        'error_code',
+        'error_message',
+    ];
+
+    protected $casts = [
+        'session_metadata' => 'array',
     ];
 
     public function tenant()

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Stancl\Tenancy\Database\Models\Tenant;
 use App\Models\User;
 use App\Models\Verification;
 use App\Services\ConversionTrackingService;
@@ -12,6 +11,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\Tenant;
+use Throwable;
 
 class OnboardingController extends Controller
 {
@@ -60,7 +61,9 @@ class OnboardingController extends Controller
         $domain = $tenantId . '.' . $domainHost;
 
         $tenant = null;
-        $verificationReference = null;
+        $verification = null;
+        $verificationUrl = null;
+        $verificationError = null;
 
         DB::beginTransaction();
 
@@ -90,17 +93,25 @@ class OnboardingController extends Controller
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
             ]);
-
-            $verificationReference = $kyc->start($tenant);
-
-            Verification::create([
-                'tenant_id' => $tenant->id,
-                'status' => 'started',
-                'provider' => $kyc->providerName(),
-                'provider_reference' => $verificationReference,
-            ]);
         } finally {
             tenancy()->end();
+        }
+
+        try {
+            $verification = $kyc->start($tenant);
+            $verificationUrl = $verification->provider_session_url;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $verification = Verification::create([
+                'tenant_id' => $tenant->id,
+                'status' => 'error',
+                'provider' => $kyc->providerName(),
+                'provider_reference' => null,
+                'error_message' => 'Unable to start identity verification. Our team has been notified.',
+            ]);
+
+            $verificationError = 'We were unable to start the identity verification session. Please try again later or contact support.';
         }
 
         $tracking->record(
@@ -108,7 +119,8 @@ class OnboardingController extends Controller
             [
                 'tenant_id' => $tenant->id,
                 'domain' => $domain,
-                'verification_reference' => $verificationReference,
+                'verification_reference' => $verification?->provider_reference,
+                'verification_status' => $verification?->status,
             ],
             $sessionId
         );
@@ -118,11 +130,15 @@ class OnboardingController extends Controller
                 'status' => 'ok',
                 'tenant_id' => $tenant->id,
                 'domain' => $domain,
-                'verification_reference' => $verificationReference,
+                'verification_reference' => $verification?->provider_reference,
+                'verification_url' => $verificationUrl,
+                'verification_error' => $verificationError,
             ], 201);
         }
 
         return redirect('https://' . $domain . '/login')
-            ->with('success', 'Account created! Please log in.');
+            ->with('success', 'Account created! Please log in.')
+            ->with('verification_error', $verificationError)
+            ->with('verification_status', $verification?->status);
     }
 }
