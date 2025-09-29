@@ -12,13 +12,17 @@ class InspectionController extends Controller
     public function index()
     {
         $inspections = Inspection::with('property')->where('agent_id', auth()->id())->get();
-        return view('inspections.index', compact('inspections'));
+        $routePrefix = $this->routePrefix();
+
+        return view('inspections.index', compact('inspections', 'routePrefix'));
     }
 
     public function create()
     {
         $inspection = new Inspection();
-        return view('inspections.edit', compact('inspection'));
+        $routePrefix = $this->routePrefix();
+
+        return view('inspections.edit', compact('inspection', 'routePrefix'));
     }
 
     public function store(Request $request)
@@ -52,13 +56,15 @@ class InspectionController extends Controller
             $agent->notify(new InspectionScheduled($inspection));
         }
 
-        return redirect()->route('inspections.index');
+        return redirect()->route($this->routePrefix().'.index');
     }
 
     public function edit(Inspection $inspection)
     {
         $inspection->load('items');
-        return view('inspections.edit', compact('inspection'));
+        $routePrefix = $this->routePrefix();
+
+        return view('inspections.edit', compact('inspection', 'routePrefix'));
     }
 
     public function update(Request $request, Inspection $inspection)
@@ -86,6 +92,11 @@ class InspectionController extends Controller
             ]);
         }
 
-        return redirect()->route('inspections.index');
+        return redirect()->route($this->routePrefix().'.index');
+    }
+
+    private function routePrefix(): string
+    {
+        return request()->routeIs('agent.*') ? 'agent.inspections' : 'inspections';
     }
 }

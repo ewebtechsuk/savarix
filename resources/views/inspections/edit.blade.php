@@ -1,9 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@php($routePrefix = $routePrefix ?? 'inspections')
+
 <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">{{ $inspection->exists ? 'Edit' : 'Create' }} Inspection</h1>
-    <form method="POST" enctype="multipart/form-data" action="{{ $inspection->exists ? route('inspections.update', $inspection) : route('inspections.store') }}" class="space-y-4">
+    <form method="POST" enctype="multipart/form-data" action="{{ $inspection->exists ? route($routePrefix . '.update', $inspection) : route($routePrefix . '.store') }}" class="space-y-4">
         @csrf
         @if($inspection->exists)
             @method('PUT')

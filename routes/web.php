@@ -121,7 +121,11 @@ Route::group([
     Route::resource('tenants', TenantController::class);
 });
 
-Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent']], function () {
+Route::group([
+    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent'],
+    'prefix' => 'agent',
+    'as' => 'agent.',
+], function () {
     Route::resource('inspections', InspectionController::class);
 });
 
