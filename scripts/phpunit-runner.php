@@ -13,8 +13,24 @@ if (!is_file($autoloadPath)) {
 
 require $autoloadPath;
 
-use PHPUnit\TextUI\Application;
+$polyfills = __DIR__ . '/../tests/phpunit_polyfills.php';
 
-$application = new Application();
+if (is_file($polyfills)) {
+    require_once $polyfills;
+}
 
-exit($application->run($_SERVER['argv'] ?? []));
+if (class_exists(\PHPUnit\TextUI\Application::class)) {
+    $application = new PHPUnit\TextUI\Application();
+
+    exit($application->run($_SERVER['argv'] ?? []));
+}
+
+if (class_exists(\PHPUnit_TextUI_Command::class)) {
+    $command = new \PHPUnit_TextUI_Command();
+
+    return $command->run($_SERVER['argv'] ?? [], true);
+}
+
+fwrite(STDERR, "Unable to locate a compatible PHPUnit entry point.\n");
+
+exit(1);

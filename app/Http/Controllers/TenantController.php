@@ -61,6 +61,7 @@ class TenantController extends Controller
                 'required',
                 'string',
                 'max:255',
+                'regex:/^[a-z0-9-]+$/i',
                 function ($attribute, $value, $fail) use ($domain) {
                     if ($domain === null) {
                         return;
@@ -75,6 +76,8 @@ class TenantController extends Controller
             ],
             'data' => 'nullable|array',
             'user' => 'nullable|array',
+        ], [
+            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
         ]);
         $result = $this->tenantProvisioner->provision([
             'subdomain' => $validated['subdomain'],
@@ -109,9 +112,19 @@ class TenantController extends Controller
     {
         Log::info('Tenant update request', $request->all());
 
+        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
+            ->trim()
+            ->trim('.')
+            ->lower()
+            ->trim();
+
+        $request->merge(['subdomain' => $normalizedSubdomain]);
+
         $request->validate([
-            'subdomain' => 'nullable|string|max:255',
+            'subdomain' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/i'],
             'data' => 'nullable|array',
+        ], [
+            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
         ]);
         $tenant = Tenant::findOrFail($id);
         $data = is_array($tenant->data) ? $tenant->data : [];
