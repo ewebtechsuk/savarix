@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Tenant;
-use Stripe\Stripe;
-use Stripe\Checkout\Session as StripeSession;
+use App\Services\TenantProvisioner;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Stripe\Checkout\Session as StripeSession;
+use Stripe\Stripe;
 
 class CompanyController extends Controller
 {
+    public function __construct(private readonly TenantProvisioner $tenantProvisioner)
+    {
+    }
+
     public function index()
     {
         $companies = Tenant::all();
@@ -24,10 +30,42 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
+            ->trim()
+            ->lower()
+            ->replace('.', '')
+            ->trim();
+
+        $request->merge(['subdomain' => $normalizedSubdomain]);
+
+        $domain = $normalizedSubdomain !== ''
+            ? $this->tenantProvisioner->buildTenantDomain($normalizedSubdomain)
+            : null;
+
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'subdomain' => 'required|string|max:255|unique:domains,domain',
+            'subdomain' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9-]+$/i',
+                function ($attribute, $value, $fail) use ($domain) {
+                    if ($domain === null) {
+                        return;
+                    }
+
+                    $exists = DB::table('domains')->where('domain', $domain)->exists();
+
+                    if ($exists) {
+                        $fail(trans('validation.unique', ['attribute' => $attribute]));
+                    }
+                },
+            ],
+        ], [
+            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
         ]);
+
+        $domain = $this->tenantProvisioner->buildTenantDomain($validated['subdomain']);
 
         // Generate a unique 4-6 digit company_id
         do {
@@ -35,14 +73,14 @@ class CompanyController extends Controller
         } while (Tenant::where('data->company_id', $company_id)->exists());
 
         $tenant = Tenant::create([
-            'id' => $request->subdomain,
+            'id' => $validated['subdomain'],
             'data' => [
-                'name' => $request->name,
+                'name' => $validated['name'],
                 'company_id' => $company_id,
                 // company_number left blank for user/customer to fill
             ],
         ]);
-        $tenant->domains()->create(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+        $tenant->domains()->create(['domain' => $domain]);
 
         return redirect()->route('admin.companies.index')->with('success', 'Company created successfully.');
     }
@@ -55,11 +93,47 @@ class CompanyController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'subdomain' => 'nullable|string|max:255',
-            'data' => 'nullable|array',
-        ]);
         $tenant = Tenant::findOrFail($id);
+        $existingDomain = optional($tenant->domains()->first())->domain;
+
+        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
+            ->trim()
+            ->lower()
+            ->replace('.', '')
+            ->trim();
+
+        $request->merge(['subdomain' => $normalizedSubdomain]);
+
+        $domain = $normalizedSubdomain !== ''
+            ? $this->tenantProvisioner->buildTenantDomain($normalizedSubdomain)
+            : null;
+
+        $request->validate([
+            'subdomain' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9-]+$/i',
+                function ($attribute, $value, $fail) use ($domain, $existingDomain) {
+                    if ($domain === null) {
+                        return;
+                    }
+
+                    if (is_string($existingDomain) && strcasecmp($existingDomain, $domain) === 0) {
+                        return;
+                    }
+
+                    $exists = DB::table('domains')->where('domain', $domain)->exists();
+
+                    if ($exists) {
+                        $fail(trans('validation.unique', ['attribute' => $attribute]));
+                    }
+                },
+            ],
+            'data' => 'nullable|array',
+        ], [
+            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
+        ]);
         $data = $tenant->data ?? [];
         // Merge all submitted data fields, but keep existing values if not present in request
         if ($request->has('data')) {
@@ -75,10 +149,12 @@ class CompanyController extends Controller
         ]);
         // Update domain if provided
         if ($request->filled('subdomain')) {
+            $updatedDomain = $this->tenantProvisioner->buildTenantDomain((string) $request->input('subdomain', ''));
+
             if ($tenant->domains()->exists()) {
-                $tenant->domains()->update(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+                $tenant->domains()->update(['domain' => $updatedDomain]);
             } else {
-                $tenant->domains()->create(['domain' => $request->subdomain . '.' . config('tenancy.central_domains')[0]]);
+                $tenant->domains()->create(['domain' => $updatedDomain]);
             }
         }
         return redirect()->route('admin.companies.show', $tenant->id)->with('success', 'Company updated successfully.');
