@@ -53,14 +53,16 @@ if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
 
         $loader->setPsr4('App\\', [$projectRoot.'/app']);
         $loader->setPsr4('Tests\\', [$projectRoot.'/tests']);
-        $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
-        $loader->setPsr4('Illuminate\\', [$projectRoot.'/framework/Illuminate']);
-        $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
-
         $loader->setPsr4('Database\\Seeders\\', [$projectRoot.'/database/seeders']);
         $loader->addClassMap([
             'Tests\\TestCase' => $projectRoot.'/tests/TestCase.php',
         ]);
+
+        if (is_dir($projectRoot.'/framework')) {
+            $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
+            $loader->setPsr4('Illuminate\\', [$projectRoot.'/framework/Illuminate']);
+            $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
+        }
     }
 }
 

@@ -2,10 +2,11 @@
 
 namespace Tests;
 
-use App\Core\Application;
 use App\Models\User;
 use App\Tenancy\TenantRepositoryManager;
 use Database\Seeders\TenantFixtures;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -14,6 +15,8 @@ trait CreatesApplication
     public function createApplication(): Application
     {
         $app = require __DIR__ . '/../bootstrap/app.php';
+
+        $app->make(Kernel::class)->bootstrap();
 
         User::truncate();
 
