@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioner;
@@ -33,7 +34,10 @@ class TenantControllerTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->withoutMiddleware(RoleMiddleware::class);
+        $this->withoutMiddleware([
+            RoleMiddleware::class,
+            VerifyCsrfToken::class,
+        ]);
 
         $response = $this->from(route('tenants.create'))
             ->post(route('tenants.store'), [
