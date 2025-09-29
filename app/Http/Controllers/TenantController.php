@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use App\Services\TenantProvisioner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
@@ -42,8 +44,35 @@ class TenantController extends Controller
     {
         Log::info('Tenant store request', $request->all());
 
+        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
+            ->trim()
+            ->trim('.')
+            ->lower()
+            ->trim();
+
+        $request->merge(['subdomain' => $normalizedSubdomain]);
+
+        $domain = $normalizedSubdomain !== ''
+            ? $this->tenantProvisioner->buildTenantDomain($normalizedSubdomain)
+            : null;
+
         $validated = $request->validate([
-            'subdomain' => 'required|string|max:255|unique:domains,domain',
+            'subdomain' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($domain) {
+                    if ($domain === null) {
+                        return;
+                    }
+
+                    $exists = DB::table('domains')->where('domain', $domain)->exists();
+
+                    if ($exists) {
+                        $fail(trans('validation.unique', ['attribute' => $attribute]));
+                    }
+                },
+            ],
             'data' => 'nullable|array',
             'user' => 'nullable|array',
         ]);
