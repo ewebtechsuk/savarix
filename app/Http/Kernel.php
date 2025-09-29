@@ -55,6 +55,7 @@ class Kernel extends HttpKernel
         'token' => \App\Http\Middleware\Token::class,
         'is_admin' => \App\Http\Middleware\IsAdmin::class,
         'tenancy' => \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class,
+        'preventAccessFromCentralDomains' => \Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains::class,
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

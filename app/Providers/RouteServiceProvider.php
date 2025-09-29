@@ -8,26 +8,47 @@ use Illuminate\Support\Facades\Route;
 class RouteServiceProvider extends ServiceProvider
 {
     /**
-     * Define the routes for the application.
+     * This namespace is applied to your controller routes.
+     *
+     * In addition, it is set as the URL generator's root namespace.
+     */
+    protected $namespace = 'App\\Http\\Controllers';
+
+    /**
+     * Define your route model bindings, pattern filters, etc.
      */
     public function boot(): void
     {
-        $this->routes(function () {
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
+        parent::boot();
+    }
 
-            foreach (['landlord', 'tenant', 'agent'] as $context) {
-                $path = base_path("routes/{$context}.php");
+    /**
+     * Define the routes for the application.
+     */
+    public function map(): void
+    {
+        $this->mapApiRoutes();
+        $this->mapWebRoutes();
+    }
 
-                if (file_exists($path)) {
-                    Route::middleware('web')->group($path);
-                }
+    protected function mapWebRoutes(): void
+    {
+        Route::group([
+            'middleware' => 'web',
+            'namespace' => $this->namespace,
+        ], function () {
+            require base_path('routes/web.php');
+        });
+    }
 
-            }
-
-            Route::middleware('api')
-                ->prefix('api')
-                ->group(base_path('routes/api.php'));
+    protected function mapApiRoutes(): void
+    {
+        Route::group([
+            'middleware' => 'api',
+            'namespace' => $this->namespace,
+            'prefix' => 'api',
+        ], function () {
+            require base_path('routes/api.php');
         });
     }
 }

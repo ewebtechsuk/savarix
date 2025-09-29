@@ -3,7 +3,9 @@
 $binDir = __DIR__;
 $projectRoot = dirname($binDir, 2);
 $polyfills = $projectRoot.'/bootstrap/polyfills.php';
-if (is_file($polyfills)) {
+$composerFramework = $projectRoot.'/vendor/laravel/framework';
+
+if (is_file($polyfills) && ! is_dir($composerFramework)) {
     require_once $polyfills;
 }
 

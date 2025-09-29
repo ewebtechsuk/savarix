@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">Company Login</div>
+                <div class="card-header">Tenant Login</div>
                 <div class="card-body">
                     <form method="POST" action="/login">
                         @csrf

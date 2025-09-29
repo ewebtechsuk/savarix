@@ -10,31 +10,34 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     {{ __("You're logged in!") }}
+
                     @php
-                        $company = \App\Models\Tenant::where('data->company_id', '468173')->first();
+                        $tenantCollection = collect(\App\Tenancy\TenantRepositoryManager::getRepository()->allTenants());
+                        $company = $tenantCollection->firstWhere('slug', 'aktonz');
                     @endphp
+
                     @if($company)
                         <div class="mt-6">
-                            <h3 class="text-lg font-bold">Welcome to Aktonz Tenant Portal!</h3>
+                            <h3 class="text-lg font-bold">Welcome to {{ $company['name'] }}!</h3>
                             <div class="mt-2 text-green-600">Company profile found for Aktonz.</div>
-                            <pre>{{ json_encode($company->data, JSON_PRETTY_PRINT) }}</pre>
+                            <pre>{{ json_encode($company, JSON_PRETTY_PRINT) }}</pre>
                         </div>
                     @else
                         <div class="mt-6 text-red-600">No company profile found for Aktonz.</div>
                     @endif
 
-                    @php
-                        $tenants = \App\Models\Tenant::whereNotNull('data')->get();
-                    @endphp
                     <div class="mt-6">
                         <h3 class="text-lg font-bold">Debug: All Tenants With Data</h3>
                         <ul>
-                        @foreach($tenants as $tenant)
+                        @forelse($tenantCollection as $tenant)
                             <li>
-                                <strong>ID:</strong> {{ $tenant->id }}<br>
-                                <strong>Data:</strong> {{ json_encode($tenant->data) }}
+                                <strong>Slug:</strong> {{ $tenant['slug'] }}<br>
+                                <strong>Name:</strong> {{ $tenant['name'] }}<br>
+                                <strong>Domains:</strong> {{ implode(', ', $tenant['domains']) }}
                             </li>
-                        @endforeach
+                        @empty
+                            <li>No tenants are registered yet.</li>
+                        @endforelse
                         </ul>
                     </div>
                 </div>

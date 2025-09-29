@@ -27,11 +27,6 @@ $composerAlreadyLoaded = class_exists(\Composer\Autoload\ClassLoader::class, fal
 // install fresh dependencies, such as the CI sandbox used for kata exercises.
 $polyfills = __DIR__.'/polyfills.php';
 
-
-if (file_exists($polyfills)) {
-    require $polyfills;
-}
-
 if (!file_exists($vendorAutoload) && file_exists($cachedAutoload)) {
     $vendorAutoload = $cachedAutoload;
 }
@@ -45,6 +40,12 @@ if (file_exists($vendorAutoload)) {
     exit(1);
 }
 
+$shouldLoadPolyfills = ! is_dir($vendorDirectory.'/laravel/framework');
+
+if ($shouldLoadPolyfills && file_exists($polyfills)) {
+    require $polyfills;
+}
+
 if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
     foreach (\Composer\Autoload\ClassLoader::getRegisteredLoaders() as $loader) {
         if (! $loader instanceof \Composer\Autoload\ClassLoader) {
@@ -53,14 +54,16 @@ if (class_exists(\Composer\Autoload\ClassLoader::class, false)) {
 
         $loader->setPsr4('App\\', [$projectRoot.'/app']);
         $loader->setPsr4('Tests\\', [$projectRoot.'/tests']);
-        $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
-        $loader->setPsr4('Illuminate\\', [$projectRoot.'/framework/Illuminate']);
-        $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
-
         $loader->setPsr4('Database\\Seeders\\', [$projectRoot.'/database/seeders']);
         $loader->addClassMap([
             'Tests\\TestCase' => $projectRoot.'/tests/TestCase.php',
         ]);
+
+        if (is_dir($projectRoot.'/framework') && ! is_dir($vendorDirectory.'/laravel/framework')) {
+            $loader->setPsr4('Framework\\', [$projectRoot.'/framework']);
+            $loader->setPsr4('Illuminate\\', [$projectRoot.'/framework/Illuminate']);
+            $loader->setPsr4('PHPUnit\\', [$projectRoot.'/framework/PHPUnit']);
+        }
     }
 }
 

@@ -19,15 +19,16 @@ Route::post('marketing/leads', [MarketingLeadController::class, 'store'])
 Route::post('marketing/events', [MarketingAnalyticsController::class, 'store'])
     ->name('api.marketing.events.store');
 
-Route::middleware('auth:sanctum')
-    ->name('api.')
-    ->group(function () {
-        Route::apiResource('properties', PropertyApiController::class);
-        Route::apiResource('tenancies', TenancyApiController::class);
-        Route::apiResource('payments', PaymentApiController::class);
-        Route::apiResource('contacts', ContactApiController::class);
-        Route::apiResource('webhooks', WebhookApiController::class)->only(['index', 'store', 'destroy']);
-    });
+Route::group([
+    'middleware' => 'auth:sanctum',
+    'as' => 'api.',
+], function () {
+    Route::resource('properties', PropertyApiController::class, ['except' => ['create', 'edit']]);
+    Route::resource('tenancies', TenancyApiController::class, ['except' => ['create', 'edit']]);
+    Route::resource('payments', PaymentApiController::class, ['except' => ['create', 'edit']]);
+    Route::resource('contacts', ContactApiController::class, ['except' => ['create', 'edit']]);
+    Route::resource('webhooks', WebhookApiController::class, ['only' => ['index', 'store', 'destroy']]);
+});
 
 /*(Route::get('/user', function (Request $request) {
     return $request->user();

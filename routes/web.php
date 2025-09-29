@@ -14,12 +14,15 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceRequestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\LandlordDashboardController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\VerificationController;
 
 Route::get('/', function () {
-    return view('marketing.app');
+    return view('landing.home');
 })->name('marketing.home');
 
-Route::middleware('guest')->group(function () {
+Route::group(['middleware' => 'guest'], function () {
     Route::get('/onboarding/register', [OnboardingController::class, 'showRegistrationForm'])
         ->name('onboarding.register');
     Route::post('/onboarding/register', [OnboardingController::class, 'register'])
@@ -27,20 +30,21 @@ Route::middleware('guest')->group(function () {
 });
 
 // Single dashboard route for route('dashboard')
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::group(['middleware' => ['auth', 'verified']], function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+});
 
 
 // Central app routes (localhost:8888/)
-Route::middleware('auth')->group(function () {
+Route::group(['middleware' => 'auth'], function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Central dashboard routes (should NOT use tenancy middleware)
-Route::middleware(['auth', 'verified', 'role:Admin|Landlord'])->group(function () {
+Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], function () {
     // Remove duplicate dashboard route
     Route::post('/dashboard', [DashboardController::class, 'store'])->name('dashboard.store');
     Route::delete('/dashboard/{id}', [DashboardController::class, 'destroy'])->name('dashboard.destroy');
@@ -64,7 +68,7 @@ Route::middleware(['auth', 'verified', 'role:Admin|Landlord'])->group(function (
 });
 
 // Tenant routes (aktonz.ressapp.com, etc.)
-Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
+Route::group(['middleware' => ['auth', 'tenancy', 'role:Tenant']], function () {
     Route::resource('properties', PropertyController::class);
     Route::resource('contacts', ContactController::class);
     Route::resource('diary', DiaryController::class);
@@ -80,14 +84,44 @@ Route::middleware(['auth', 'tenancy', 'role:Tenant'])->group(function () {
 
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');
 
-Route::prefix('tenant')->group(function () {
+Route::group(['prefix' => 'tenant'], function () {
     Route::get('login', [TenantPortalController::class, 'login'])->name('tenant.login');
     Route::get('list', [TenantPortalController::class, 'list'])->name('tenant.list');
 
-    Route::middleware('auth:tenant')->group(function () {
+    Route::group(['middleware' => 'auth:tenant'], function () {
         Route::get('dashboard', [TenantPortalController::class, 'dashboard'])
             ->name('tenant.dashboard');
     });
+});
+
+Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Tenant']], function () {
+    Route::group(['prefix' => 'onboarding'], function () {
+        Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
+        Route::get('verification/callback', [VerificationController::class, 'callback'])->name('verification.callback');
+        Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
+    });
+
+    Route::get('/tenancies/{tenancy}/payments/create', [PaymentController::class, 'create'])
+        ->name('payments.create');
+    Route::post('/tenancies/{tenancy}/payments', [PaymentController::class, 'store'])
+        ->name('payments.store');
+});
+
+Route::post('/stripe/webhook', [PaymentController::class, 'webhook'])->name('stripe.webhook');
+
+Route::group([
+    'middleware' => 'auth:landlord',
+    'prefix' => 'landlord',
+    'as' => 'landlord.',
+], function () {
+    Route::get('/dashboard', [LandlordDashboardController::class, 'index'])
+        ->name('dashboard');
+
+    Route::resource('tenants', TenantController::class);
+});
+
+Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent']], function () {
+    Route::resource('inspections', InspectionController::class);
 });
 
 require __DIR__.'/auth.php';
