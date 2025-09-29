@@ -41,6 +41,10 @@ A GitHub Actions workflow runs the PHPUnit suite on every push and pull request.
 The static frontend located in `frontend/` is automatically published to GitHub Pages using the workflow in `.github/workflows/pages.yml`.
 Push changes to `main` and visit the repository's Pages environment to view the site.
 
+## Marketing bundle builds
+
+Run `npm run build:marketing` to compile the standalone marketing microsite. The marketing Vite config writes the generated HTML, assets, and the duplicated `404.html` fallback to the project root's `dist/` directory. The folder is ignored by Git so you can hand the contents off to the marketing team without polluting commits.
+
 ## Deploying to Hostinger
 
 Pushes to `main` automatically trigger `.github/workflows/deploy-hostinger.yml`, which builds production assets and uploads the
