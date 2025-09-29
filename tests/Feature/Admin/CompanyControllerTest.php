@@ -7,6 +7,7 @@ use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\TenantProvisioner;
+use App\Support\SubdomainNormalizer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -78,14 +79,17 @@ class CompanyControllerTest extends TestCase
             VerifyCsrfToken::class,
         ]);
 
+        $variant = ' Existing . ';
+
         $response = $this->from('/admin/companies/create')
             ->post('/admin/companies', [
                 'name' => 'Another Company',
-                'subdomain' => ' Existing . ',
+                'subdomain' => $variant,
             ]);
 
         $response->assertRedirect('/admin/companies/create');
         $response->assertSessionHasErrors('subdomain');
+        $this->assertSame('existing', SubdomainNormalizer::normalize($variant));
     }
 
     public function test_update_rejects_subdomains_with_invalid_characters(): void
@@ -158,13 +162,16 @@ class CompanyControllerTest extends TestCase
             VerifyCsrfToken::class,
         ]);
 
+        $variant = ' EXISTING . ';
+
         $response = $this->from('/admin/companies/' . $targetTenant->id . '/edit')
             ->put('/admin/companies/' . $targetTenant->id, [
-                'subdomain' => ' EXISTING ',
+                'subdomain' => $variant,
             ]);
 
         $response->assertRedirect('/admin/companies/' . $targetTenant->id . '/edit');
         $response->assertSessionHasErrors('subdomain');
+        $this->assertSame('existing', SubdomainNormalizer::normalize($variant));
     }
 }
 

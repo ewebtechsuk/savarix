@@ -2,11 +2,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Rules\Subdomain as SubdomainRule;
 use App\Services\TenantProvisioner;
+use App\Support\SubdomainNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
@@ -44,11 +45,7 @@ class TenantController extends Controller
     {
         Log::info('Tenant store request', $request->all());
 
-        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
-            ->trim()
-            ->trim('.')
-            ->lower()
-            ->trim();
+        $normalizedSubdomain = SubdomainNormalizer::normalize($request->input('subdomain', ''));
 
         $request->merge(['subdomain' => $normalizedSubdomain]);
 
@@ -61,7 +58,7 @@ class TenantController extends Controller
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[a-z0-9-]+$/i',
+                new SubdomainRule(),
                 function ($attribute, $value, $fail) use ($domain) {
                     if ($domain === null) {
                         return;
@@ -76,8 +73,6 @@ class TenantController extends Controller
             ],
             'data' => 'nullable|array',
             'user' => 'nullable|array',
-        ], [
-            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
         ]);
         $result = $this->tenantProvisioner->provision([
             'subdomain' => $validated['subdomain'],
@@ -112,19 +107,13 @@ class TenantController extends Controller
     {
         Log::info('Tenant update request', $request->all());
 
-        $normalizedSubdomain = (string) Str::of((string) $request->input('subdomain', ''))
-            ->trim()
-            ->trim('.')
-            ->lower()
-            ->trim();
+        $normalizedSubdomain = SubdomainNormalizer::normalize($request->input('subdomain', ''));
 
         $request->merge(['subdomain' => $normalizedSubdomain]);
 
         $request->validate([
-            'subdomain' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/i'],
+            'subdomain' => ['nullable', 'string', 'max:255', new SubdomainRule()],
             'data' => 'nullable|array',
-        ], [
-            'subdomain.regex' => 'The subdomain may only contain letters, numbers, and hyphens.',
         ]);
         $tenant = Tenant::findOrFail($id);
         $data = is_array($tenant->data) ? $tenant->data : [];
@@ -144,7 +133,19 @@ class TenantController extends Controller
         $tenant->save();
         $tenant->refresh(); // Ensure latest data is loaded
         if ($request->filled('subdomain')) {
-            $domain = $this->tenantProvisioner->buildTenantDomain((string) $request->input('subdomain', ''));
+            $updatedSubdomain = (string) $request->input('subdomain', '');
+            $domain = $this->tenantProvisioner->buildTenantDomain($updatedSubdomain);
+
+            $duplicate = DB::table('domains')
+                ->where('domain', $domain)
+                ->where('tenant_id', '!=', $tenant->id)
+                ->exists();
+
+            if ($duplicate) {
+                return back()->withInput()->withErrors([
+                    'subdomain' => trans('validation.unique', ['attribute' => 'subdomain']),
+                ]);
+            }
 
             if ($tenant->domains()->exists()) {
                 $tenant->domains()->update(['domain' => $domain]);
