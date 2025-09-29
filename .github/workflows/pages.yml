@@ -33,9 +33,9 @@ jobs:
         run: npm run build
       - name: Upload frontend artifact
         uses: actions/upload-pages-artifact@v3
-        if: ${{ hashFiles('public/build/**') != '' }}
+        if: ${{ hashFiles('dist/**') != '' }}
         with:
-          path: public/build
+          path: dist
 
   deploy:
     needs: build
