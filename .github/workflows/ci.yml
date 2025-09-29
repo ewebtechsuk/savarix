@@ -7,6 +7,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      TENANCY_CENTRAL_CONNECTION: sqlite
+      TENANCY_CENTRAL_DOMAINS: '127.0.0.1,localhost'
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2

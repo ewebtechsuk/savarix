@@ -5,6 +5,36 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use Stancl\Tenancy\Database\Models\Domain;
 
+$centralDomainsFromEnv = env('TENANCY_CENTRAL_DOMAINS');
+
+if (is_string($centralDomainsFromEnv)) {
+    $decoded = json_decode($centralDomainsFromEnv, true);
+
+    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+        $centralDomainsFromEnv = $decoded;
+    } else {
+        $centralDomainsFromEnv = array_filter(array_map(
+            static fn (string $value): string => trim($value),
+            preg_split('/[,\s]+/', $centralDomainsFromEnv) ?: []
+        ));
+    }
+}
+
+if (! is_array($centralDomainsFromEnv)) {
+    $centralDomainsFromEnv = [];
+}
+
+$defaultCentralDomains = ['127.0.0.1', 'localhost', 'ressapp.localhost'];
+$appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
+
+if (is_string($appUrlHost) && $appUrlHost !== '') {
+    $defaultCentralDomains[] = $appUrlHost;
+}
+
+$centralDomains = array_values(array_unique(
+    $centralDomainsFromEnv !== [] ? $centralDomainsFromEnv : $defaultCentralDomains
+));
+
 return [
     'tenant_model' => Tenant::class,
     'id_generator' => Stancl\Tenancy\UUIDGenerator::class,
@@ -16,12 +46,7 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-        'ressapp.localhost',
-        'darkorange-chinchilla-918430.hostingersite.com',
-    ],
+    'central_domains' => $centralDomains,
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
@@ -41,7 +66,7 @@ return [
      * Database tenancy config. Used by DatabaseTenancyBootstrapper.
      */
     'database' => [
-        'central_connection' => env('DB_CONNECTION', 'central'),
+        'central_connection' => env('TENANCY_CENTRAL_CONNECTION', env('DB_CONNECTION', 'mysql')),
 
         /**
          * Connection used as a "template" for the dynamically created tenant database connection.

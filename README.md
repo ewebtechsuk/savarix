@@ -31,6 +31,20 @@ If you have PHPUnit installed globally you can simply run `phpunit` instead.
 > **Note:** `./setup.sh` and `deploy_hostinger.sh` download a project-local `composer.phar` automatically when Composer isn't available on your PATH, so you can bootstrap the dependencies even in minimal environments (including shared hosting accounts).
 
 
+## Multi-tenancy configuration
+
+The Stancl Tenancy package now reads its central host list and database connection from the environment so every deployment can declare the values appropriate for that tier:
+
+```
+TENANCY_CENTRAL_CONNECTION=${DB_CONNECTION}
+TENANCY_CENTRAL_DOMAINS="app.localhost,staging.ressapp.io"
+```
+
+Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supply a JSON array (for example `["app.example.com","staging.example.com"]`). The defaults cover typical local development hosts (`127.0.0.1`, `localhost`, `ressapp.localhost` and the host portion of `APP_URL`).
+
+Update the variable in each environment (`.env`, GitHub Actions secrets, Hostinger control panel, etc.) so tenancy middleware resolves the central application correctly. Local developers can follow `docs/local_subdomain_setup.txt` for guidance on mapping subdomains via `/etc/hosts`.
+
+
 
 ### Continuous Integration
 
