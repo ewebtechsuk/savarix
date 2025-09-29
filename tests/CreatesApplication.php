@@ -2,12 +2,13 @@
 
 namespace Tests;
 
-use App\Models\User;
 use App\Tenancy\TenantRepositoryManager;
 use Database\Seeders\TenantFixtures;
+use Database\Seeders\TenantPortalUserSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Artisan;
 
 
 trait CreatesApplication
@@ -32,7 +33,36 @@ trait CreatesApplication
 
         $app['config']->set('app.key', $configuredKey);
 
-        User::truncate();
+        $databasePath = $app->databasePath('database.sqlite');
+
+        if (file_exists($databasePath)) {
+            unlink($databasePath);
+        }
+
+        touch($databasePath);
+
+        $app['config']->set('database.default', env('DB_CONNECTION', 'sqlite'));
+        $app['config']->set('database.connections.sqlite.database', env('DB_DATABASE', $databasePath));
+
+        $userMigrations = [
+            'database/migrations/2014_10_12_000000_create_users_table.php',
+            'database/migrations/2025_07_19_000000_add_email_verified_at_to_users_table.php',
+            'database/migrations/2025_07_29_000001_add_is_admin_to_users_table.php',
+            'database/migrations/2025_08_01_000001_add_login_token_to_users_table.php',
+        ];
+
+        foreach ($userMigrations as $migrationPath) {
+            Artisan::call('migrate', [
+                '--database' => $app['config']->get('database.default'),
+                '--force' => true,
+                '--path' => $migrationPath,
+            ]);
+        }
+
+        Artisan::call('db:seed', [
+            '--class' => TenantPortalUserSeeder::class,
+            '--force' => true,
+        ]);
 
         Auth::shouldUse('web');
         Auth::guard('web')->logout();

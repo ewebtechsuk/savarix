@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             ContactTagGroupSeeder::class,
             DemoDataSeeder::class, // Add demo data seeder
             CreateSuperAdminSeeder::class,
+            TenantPortalUserSeeder::class,
         ]);
     }
 }
