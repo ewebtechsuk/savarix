@@ -13,10 +13,9 @@ class InspectionFactory extends Factory
     {
         return [
             'property_id' => \App\Models\Property::factory(),
-            'date' => $this->faker->dateTimeBetween('-1 month', '+1 month'),
-            'result' => $this->faker->sentence(6),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'agent_id' => \App\Models\User::factory(),
+            'scheduled_at' => $this->faker->dateTimeBetween('-1 week', '+1 week'),
+            'status' => $this->faker->randomElement(['pending', 'completed']),
         ];
     }
 }

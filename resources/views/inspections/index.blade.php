@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+@php($routePrefix = $routePrefix ?? 'inspections')
+
 <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">Inspections</h1>
     <table class="min-w-full bg-white">
@@ -18,7 +20,7 @@
                 <td class="px-4 py-2">{{ $inspection->property->title ?? 'N/A' }}</td>
                 <td class="px-4 py-2">{{ $inspection->scheduled_at->format('Y-m-d H:i') }}</td>
                 <td class="px-4 py-2">{{ $inspection->status }}</td>
-                <td class="px-4 py-2"><a href="{{ route('inspections.edit', $inspection) }}" class="text-blue-600">Edit</a></td>
+                <td class="px-4 py-2"><a href="{{ route($routePrefix . '.edit', $inspection) }}" class="text-blue-600">Edit</a></td>
             </tr>
             @endforeach
         </tbody>
