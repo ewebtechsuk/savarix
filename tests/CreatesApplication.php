@@ -43,15 +43,19 @@ trait CreatesApplication
 
         $app['config']->set('database.default', env('DB_CONNECTION', 'sqlite'));
         $app['config']->set('database.connections.sqlite.database', env('DB_DATABASE', $databasePath));
+        $app['config']->set('database.connections.central', $app['config']->get('database.connections.sqlite'));
+        $app['config']->set('tenancy.database.central_connection', $app['config']->get('database.default'));
 
-        $userMigrations = [
+        $migrations = [
             'database/migrations/2014_10_12_000000_create_users_table.php',
+            'database/migrations/2019_09_15_000010_create_tenants_table.php',
+            'database/migrations/2019_09_15_000020_create_domains_table.php',
             'database/migrations/2025_07_19_000000_add_email_verified_at_to_users_table.php',
             'database/migrations/2025_07_29_000001_add_is_admin_to_users_table.php',
             'database/migrations/2025_08_01_000001_add_login_token_to_users_table.php',
         ];
 
-        foreach ($userMigrations as $migrationPath) {
+        foreach ($migrations as $migrationPath) {
             Artisan::call('migrate', [
                 '--database' => $app['config']->get('database.default'),
                 '--force' => true,

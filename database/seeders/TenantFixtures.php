@@ -2,14 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Tenancy\Repositories\InMemoryTenantRepository;
-use App\Tenancy\TenantRepositoryManager;
+use App\Models\Tenant;
 
 class TenantFixtures
 {
     public static function seed(): void
     {
-        $repository = new InMemoryTenantRepository([
+        Tenant::query()->each(static function (Tenant $tenant): void {
+            $tenant->delete();
+        });
+
+        $tenants = [
             [
                 'slug' => 'aktonz',
                 'name' => 'Aktonz',
@@ -33,8 +36,22 @@ class TenantFixtures
                     'oakwoodhomes.example.com',
                 ],
             ],
-        ]);
+        ];
 
-        TenantRepositoryManager::setRepository($repository);
+        foreach ($tenants as $tenantData) {
+            $tenant = Tenant::factory()->create([
+                'id' => $tenantData['slug'],
+            ]);
+
+            $tenant->forceFill([
+                'slug' => $tenantData['slug'],
+                'name' => $tenantData['name'],
+                'domains' => $tenantData['domains'],
+            ])->save();
+
+            foreach ($tenantData['domains'] as $domain) {
+                $tenant->domains()->updateOrCreate(['domain' => $domain]);
+            }
+        }
     }
 }
