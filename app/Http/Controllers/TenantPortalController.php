@@ -21,8 +21,10 @@ class TenantPortalController extends Controller
 
     public function dashboard(Request $request): View
     {
+        $tenantGuard = Auth::guard('tenant');
+
         return view('tenant.dashboard', [
-            'user' => Auth::guard('tenant')->user(),
+            'user' => $tenantGuard->check() ? $tenantGuard->user() : null,
         ]);
     }
 
