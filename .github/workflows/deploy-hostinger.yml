@@ -8,6 +8,8 @@ on:
 env:
   FTP_SYNC_STATE: .ftp-deploy-sync-state.json
   SFTP_PAYLOAD_DIR: .deploy-sftp
+  TENANCY_CENTRAL_CONNECTION: ${{ secrets.TENANCY_CENTRAL_CONNECTION || vars.TENANCY_CENTRAL_CONNECTION || 'mysql' }}
+  TENANCY_CENTRAL_DOMAINS: ${{ secrets.TENANCY_CENTRAL_DOMAINS || vars.TENANCY_CENTRAL_DOMAINS || '' }}
 
 
 jobs:
