@@ -19,7 +19,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VerificationController;
 
 Route::get('/', function () {
-    return view('marketing.app');
+    return view('landing.home');
 })->name('marketing.home');
 
 Route::group(['middleware' => 'guest'], function () {

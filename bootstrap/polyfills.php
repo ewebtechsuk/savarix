@@ -97,15 +97,15 @@ namespace {
         }
     }
 
-    if (!class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class, false)) {
+    if (!class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class)) {
         $maintenanceFallback = __DIR__.'/../deps/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/CheckForMaintenanceMode.php';
 
-        if (!class_exists(\Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class, false)
+        if (!class_exists(\Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class)
             && file_exists($maintenanceFallback)) {
             require_once $maintenanceFallback;
         }
 
-        if (class_exists(\Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class, false)) {
+        if (class_exists(\Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class)) {
             class_alias(
                 \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
                 \Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class
@@ -113,15 +113,15 @@ namespace {
         }
     }
 
-    if (!class_exists(\Illuminate\Foundation\Http\Middleware\ValidatePostSize::class, false)) {
+    if (!class_exists(\Illuminate\Foundation\Http\Middleware\ValidatePostSize::class)) {
         $validateFallback = __DIR__.'/../deps/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/VerifyPostSize.php';
 
-        if (!class_exists(\Illuminate\Foundation\Http\Middleware\VerifyPostSize::class, false)
+        if (!class_exists(\Illuminate\Foundation\Http\Middleware\VerifyPostSize::class)
             && file_exists($validateFallback)) {
             require_once $validateFallback;
         }
 
-        if (class_exists(\Illuminate\Foundation\Http\Middleware\VerifyPostSize::class, false)) {
+        if (class_exists(\Illuminate\Foundation\Http\Middleware\VerifyPostSize::class)) {
             class_alias(
                 \Illuminate\Foundation\Http\Middleware\VerifyPostSize::class,
                 \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class
@@ -131,7 +131,7 @@ namespace {
 }
 
 namespace Symfony\Component\Debug\Exception {
-    if (!class_exists(FatalErrorException::class, false)) {
+    if (!class_exists(FatalErrorException::class)) {
         class FatalErrorException extends \ErrorException
         {
             public function __construct(
@@ -213,7 +213,7 @@ namespace Illuminate\Foundation\Bootstrap {
     use Symfony\Component\Debug\Exception\FatalErrorException;
     use Symfony\Component\Debug\Exception\FatalThrowableError;
 
-    if (!class_exists(HandleExceptions::class, false)) {
+    if (!class_exists(HandleExceptions::class)) {
         class HandleExceptions
         {
             /**

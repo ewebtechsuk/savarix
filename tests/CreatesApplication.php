@@ -18,6 +18,20 @@ trait CreatesApplication
 
         $app->make(Kernel::class)->bootstrap();
 
+        $configuredKey = (string) env('APP_KEY', '');
+
+        if ($configuredKey === '') {
+            $configuredKey = 'base64:VNuWYLe0rTIOyH2PdBl8vmxlwmyEqDzEDDNGuphepaI=';
+
+            foreach (['APP_KEY' => $configuredKey] as $name => $value) {
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+                putenv($name.'='.$value);
+            }
+        }
+
+        $app['config']->set('app.key', $configuredKey);
+
         User::truncate();
 
         Auth::shouldUse('web');
