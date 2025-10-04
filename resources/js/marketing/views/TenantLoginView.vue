@@ -30,12 +30,12 @@
                         rel="noopener"
                         @click="trackLogin('fallback')"
                     >
-                        Try ressapp.com login
+                        Open backup login (app.ressapp.com)
                     </a>
                 </div>
                 <p class="tenant-login__bookmark">
-                    Bookmark <code>{{ loginHost }}</code> for fast access. If the primary domain is unavailable, you can also use
-                    <code>{{ fallbackHost }}</code>.
+                    Bookmark the backup login at <code>{{ fallbackHost }}</code> so you can still sign in if the primary Aktonz
+                    domain is unavailable.
                 </p>
                 <ul class="tenant-login__tips">
                     <li>Use a modern browser such as Chrome, Edge, or Safari for the best experience.</li>
@@ -63,7 +63,7 @@ const analytics = inject('analytics');
 const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
-const fallbackHost = 'aktonz.ressapp.com';
+const fallbackHost = 'app.ressapp.com';
 const loginUrl = `https://${loginHost}/login`;
 const fallbackUrl = `https://${fallbackHost}/login`;
 
