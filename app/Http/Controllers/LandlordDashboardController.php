@@ -2,15 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\ViewModels\LandlordDashboardViewModel;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class LandlordDashboardController extends Controller
 {
     /**
      * Display the landlord dashboard.
      */
-    public function index()
+    public function index(): View
     {
-        return view('landlord.dashboard');
+        $landlordGuard = Auth::guard('landlord');
+
+        abort_unless($landlordGuard->check(), 403);
+
+        $landlord = $landlordGuard->user();
+
+        return view('landlord.dashboard', [
+            'dashboard' => LandlordDashboardViewModel::fromLandlord($landlord),
+        ]);
     }
 }

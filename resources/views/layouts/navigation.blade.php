@@ -10,16 +10,23 @@
                     </a>
                 </div>
 
+                @php
+                    $authorizableUser = Auth::user();
+                    $canViewTenants = $authorizableUser instanceof \Illuminate\Contracts\Auth\Access\Authorizable
+                        ? $authorizableUser->can('view tenants')
+                        : false;
+                @endphp
+
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    @can('view tenants')
+                    @if ($canViewTenants)
                         <x-nav-link :href="route('tenants.index')" :active="request()->routeIs('tenants.*')">
                             {{ __('Tenants') }}
                         </x-nav-link>
-                    @endcan
+                    @endif
                     <!-- Removed all property, contact, diary, accounts links for landlord app -->
 
                 </div>
@@ -79,11 +86,11 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            @can('view tenants')
+            @if ($canViewTenants)
                 <x-responsive-nav-link :href="route('tenants.index')" :active="request()->routeIs('tenants.*')">
                     {{ __('Tenants') }}
                 </x-responsive-nav-link>
-            @endcan
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
