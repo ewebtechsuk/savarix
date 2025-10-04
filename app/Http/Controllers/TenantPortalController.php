@@ -6,6 +6,7 @@ use App\Tenancy\TenantDirectory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\ViewModels\TenantDashboardViewModel;
 
 class TenantPortalController extends Controller
 {
@@ -23,8 +24,12 @@ class TenantPortalController extends Controller
     {
         $tenantGuard = Auth::guard('tenant');
 
+        abort_unless($tenantGuard->check(), 403);
+
+        $tenant = $tenantGuard->user();
+
         return view('tenant.dashboard', [
-            'user' => $tenantGuard->check() ? $tenantGuard->user() : null,
+            'dashboard' => TenantDashboardViewModel::fromTenant($tenant),
         ]);
     }
 

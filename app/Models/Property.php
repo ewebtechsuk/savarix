@@ -30,6 +30,7 @@ class Property extends Model
         'status',
         'vendor_id',
         'landlord_id',
+        'tenant_id',
         'applicant_id',
         'notes',
         'activity_log',

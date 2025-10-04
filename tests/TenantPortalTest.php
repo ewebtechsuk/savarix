@@ -2,8 +2,10 @@
 
 namespace Tests;
 
-use App\Models\User;
+use App\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Stancl\Tenancy\Database\Models\Domain as TenantDomain;
 
 class TenantPortalTest extends TestCase
 {
@@ -26,39 +28,53 @@ class TenantPortalTest extends TestCase
 
     public function testTenantDashboardWelcomesAuthenticatedUser(): void
     {
-        $user = User::factory()->create([
+        $tenant = Tenant::factory()->create([
+            'id' => 'aktonz-' . Str::random(6),
             'name' => 'Aktonz Tenant',
-            'email' => 'tenant-test@example.com',
         ]);
 
-        Auth::guard('tenant')->login($user);
+        Auth::guard('tenant')->loginUsingId($tenant->getKey());
 
         $response = $this->get('/tenant/dashboard');
 
         $response->assertStatus(200)
-            ->assertSee('Tenant Dashboard')
-            ->assertSee('Aktonz Tenant');
+            ->assertSee('Welcome back, Aktonz Tenant!', false)
+            ->assertSee("Here's the latest activity across your tenancy.", false);
 
     }
 
     public function testTenantDirectoryListsKnownTenants(): void
     {
+        foreach ([
+            ['slug' => 'aktonz', 'name' => 'Aktonz', 'domain' => 'aktonz.example.test'],
+            ['slug' => 'haringey-estates', 'name' => 'Haringey Estates', 'domain' => 'haringey.example.test'],
+            ['slug' => 'oakwood-homes', 'name' => 'Oakwood Homes', 'domain' => 'oakwoodhomes.example.test'],
+        ] as $seed) {
+            $tenant = Tenant::factory()->create([
+                'id' => $seed['slug'] . '-' . Str::random(4),
+                'name' => $seed['name'],
+                'data' => [
+                    'slug' => $seed['slug'],
+                    'name' => $seed['name'],
+                ],
+            ]);
+
+            TenantDomain::create([
+                'domain' => $seed['domain'],
+                'tenant_id' => $tenant->id,
+            ]);
+        }
+
         $response = $this->get('/tenant/list');
 
         $response->assertStatus(200)
             ->assertSee('Tenant Directory');
 
-
-        foreach (['Aktonz', 'Haringey Estates', 'Oakwood Homes'] as $tenantName) {
-            $response->assertSee($tenantName);
-        }
-
-        foreach ([
-            'aktonz.darkorange-chinchilla-918430.hostingersite.com',
-            'haringey.ressapp.localhost:8888',
-            'oakwoodhomes.example.com',
-        ] as $domain) {
-            $response->assertSee($domain);
-        }
+        $response->assertSee('Aktonz');
+        $response->assertSee('aktonz.example.test');
+        $response->assertSee('Haringey Estates');
+        $response->assertSee('haringey.example.test');
+        $response->assertSee('Oakwood Homes');
+        $response->assertSee('oakwoodhomes.example.test');
     }
 }
