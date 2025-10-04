@@ -28,6 +28,26 @@
                 </div>
                 <p class="tenant-login__bookmark">
                     Bookmark <code>{{ primaryHost }}</code> for fast access. If that link is unavailable, you can also try
+                        class="primary"
+                        :href="loginUrl"
+                        target="_blank"
+                        rel="noopener"
+                        @click="trackLogin('primary')"
+                    >
+                        Open Aktonz login
+                    </a>
+                    <a
+                        class="tenant-login__alt"
+                        :href="fallbackUrl"
+                        target="_blank"
+                        rel="noopener"
+                        @click="trackLogin('fallback')"
+                    >
+                        Try ressapp.com login
+                    </a>
+                </div>
+                <p class="tenant-login__bookmark">
+                    Bookmark <code>{{ loginHost }}</code> for fast access. If the primary domain is unavailable, you can also use
                     <code>{{ fallbackHost }}</code>.
                 </p>
                 <ul class="tenant-login__tips">
@@ -71,6 +91,10 @@ const loginLinks = [
         alt: true,
     },
 ];
+const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
+const fallbackHost = 'aktonz.ressapp.com';
+const loginUrl = `https://${loginHost}/login`;
+const fallbackUrl = `https://${fallbackHost}/login`;
 
 function trackLogin(target) {
     analytics?.track(
