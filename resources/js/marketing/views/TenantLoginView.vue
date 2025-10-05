@@ -56,19 +56,10 @@ const analytics = inject('analytics');
 const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
-const defaultFallbackHost = 'app.ressapp.com';
-
-const tenantFallbackHost =
-    typeof window !== 'undefined' && window.tenantFallbackHost
-        ? window.tenantFallbackHost
-        : defaultFallbackHost;
-
-const globalFallbackHost =
-    typeof window !== 'undefined' && window.globalFallbackHost
-        ? window.globalFallbackHost
-        : defaultFallbackHost;
-
-const fallbackHost = tenantFallbackHost;
+const fallbackHost =
+    typeof globalThis !== 'undefined' && typeof globalThis.globalFallbackHost === 'string'
+        ? globalThis.globalFallbackHost
+        : 'app.ressapp.com';
 
 const loginLinks = [
     {
