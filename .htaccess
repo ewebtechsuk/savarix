@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Skip rewrites for requests already targeting the public directory.
+RewriteRule ^public/ - [L]
+
+# Allow existing files or directories to pass through untouched.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Otherwise send everything into the Laravel public directory.
+RewriteRule ^(.*)$ public/$1 [L]
