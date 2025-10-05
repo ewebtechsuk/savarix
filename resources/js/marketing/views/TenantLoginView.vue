@@ -69,9 +69,17 @@ const loginLinks = [
         id: 'fallback',
         label: `Open backup login (${fallbackHost})`,
         className: 'tenant-login__alt',
-        href: `https://${fallbackHost}/login`,
+        href: `https://${tenantFallbackHost}/login`,
+    },
+    {
+        id: 'global-fallback',
+        label: 'Open backup login (app.ressapp.com)',
+        className: 'tenant-login__alt',
+        href: `https://${globalFallbackHost}/login`,
     },
 ];
+
+const fallbackHost = globalFallbackHost;
 
 function trackLogin(target) {
     analytics?.track(
