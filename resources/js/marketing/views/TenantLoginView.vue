@@ -77,9 +77,9 @@ const loginLinks = [
     },
     {
         id: 'fallback',
-        label: `Open backup login (${tenantFallbackHost})`,
+        label: `Open backup login (${fallbackHost})`,
         className: 'tenant-login__alt',
-        href: `https://${resolvedTenantFallbackHost}/login`,
+        href: `https://${fallbackHost}/login`,
     },
     {
         id: 'global-fallback',
