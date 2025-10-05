@@ -56,7 +56,9 @@ const analytics = inject('analytics');
 const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
-const fallbackHost = 'app.ressapp.com';
+const tenantFallbackHost = 'aktonz.ressapp.com';
+const globalFallbackHost = 'app.ressapp.com';
+const fallbackHost = tenantFallbackHost || globalFallbackHost;
 
 const loginLinks = [
     {
@@ -67,19 +69,17 @@ const loginLinks = [
     },
     {
         id: 'fallback',
-        label: `Open backup login (${fallbackHost})`,
+        label: `Open backup login (${tenantFallbackHost})`,
         className: 'tenant-login__alt',
         href: `https://${tenantFallbackHost}/login`,
     },
     {
         id: 'global-fallback',
-        label: 'Open backup login (app.ressapp.com)',
+        label: `Open backup login (${globalFallbackHost})`,
         className: 'tenant-login__alt',
         href: `https://${globalFallbackHost}/login`,
     },
 ];
-
-const fallbackHost = globalFallbackHost;
 
 function trackLogin(target) {
     analytics?.track(
