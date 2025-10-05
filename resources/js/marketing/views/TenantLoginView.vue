@@ -18,21 +18,12 @@
                         v-for="link in loginLinks"
                         :key="link.id"
                         :href="link.href"
-                        :class="link.alt ? 'tenant-login__alt' : 'primary'"
+                        :class="link.className"
                         target="_blank"
                         rel="noopener"
                         @click="trackLogin(link.id)"
                     >
-                        Open backup login (app.ressapp.com)
-                    </a>
-                    <a
-                        class="tenant-login__alt"
-                        :href="fallbackUrl"
-                        target="_blank"
-                        rel="noopener"
-                        @click="trackLogin('fallback')"
-                    >
-                        Open backup login (app.ressapp.com)
+                        {{ link.label }}
                     </a>
                 </div>
                 <p class="tenant-login__bookmark">
@@ -66,20 +57,17 @@ const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
 const fallbackHost = 'app.ressapp.com';
-const loginUrl = `https://${loginHost}/login`;
-const fallbackUrl = `https://${fallbackHost}/login`;
-const fallbackHost = 'aktonz.ressapp.com';
 
 const loginLinks = [
     {
         id: 'primary',
         label: 'Open Aktonz login',
         className: 'primary',
-        href: `https://${primaryHost}/login`,
+        href: `https://${loginHost}/login`,
     },
     {
         id: 'fallback',
-        label: 'Try ressapp.com login',
+        label: `Open backup login (${fallbackHost})`,
         className: 'tenant-login__alt',
         href: `https://${fallbackHost}/login`,
     },

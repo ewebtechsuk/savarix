@@ -40,8 +40,9 @@ jobs:
           if [ -z "$host" ]; then
             missing+=("HOSTINGER_FTP_HOST or FTP_SERVER")
           elif printf '%s' "$host" | grep -q '\*'; then
-            printf '::error::The resolved HOSTINGER_FTP_HOST/FTP_SERVER value "%s" still contains placeholder characters (*). Update your repository secrets with the real Hostinger hostname.\n' "$host"
-            exit 1
+            printf '::notice::Skipping Hostinger deploy because the resolved HOSTINGER_FTP_HOST/FTP_SERVER value "%s" still contains placeholder characters (*). Update your repository secrets with the real Hostinger hostname.\n' "$host"
+            echo "should_deploy=false" >>"$GITHUB_OUTPUT"
+            exit 0
           fi
 
           if [ -z "$user" ]; then
@@ -59,8 +60,9 @@ jobs:
 
 
           if [ "${#missing[@]}" -ne 0 ]; then
-            printf '::error::Missing required deployment secrets: %s\n' "${missing[*]}"
-            exit 1
+            printf '::notice::Skipping Hostinger deploy because required secrets are missing: %s\n' "${missing[*]}"
+            echo "should_deploy=false" >>"$GITHUB_OUTPUT"
+            exit 0
           fi
 
           protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
@@ -81,8 +83,9 @@ jobs:
               default_port=22
               ;;
             *)
-              printf '::error::Unsupported protocol "%s". Set HOSTINGER_FTP_PROTOCOL/FTP_PROTOCOL to ftp, ftps, or sftp.\n' "$protocol"
-              exit 1
+              printf '::notice::Skipping Hostinger deploy because resolved protocol "%s" is not supported. Expected ftp, ftps, or sftp.\n' "$protocol"
+              echo "should_deploy=false" >>"$GITHUB_OUTPUT"
+              exit 0
               ;;
           esac
 
@@ -102,6 +105,7 @@ jobs:
           echo "::add-mask::$pass"
 
           {
+            echo "should_deploy=true"
             echo "host=$host"
             echo "username=$user"
             echo "password=$pass"
@@ -132,6 +136,7 @@ jobs:
           FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
 
       - name: Set up PHP 8.3
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -139,6 +144,7 @@ jobs:
           coverage: none
 
       - name: Cache Composer dependencies
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         uses: actions/cache@v4
         with:
           path: |
@@ -149,6 +155,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         env:
           COMPOSER_CACHE_DIR: ~/.composer/cache
         run: |
@@ -160,24 +167,28 @@ jobs:
             --optimize-autoloader
 
       - name: Set up Node.js
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install Node dependencies
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         run: npm ci --no-audit --no-fund
 
       - name: Build frontend assets
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         run: npm run build -- --emptyOutDir
 
       - name: Remove development-only files before deploy
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         run: |
           rm -rf node_modules
           find storage -type f -name '*.log' -delete || true
 
       - name: Remove stale FTP temporary files
-        if: ${{ steps.deploy_config.outputs.protocol != 'sftp' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol != 'sftp' }}
         env:
           FTP_CLEANUP_HOST: ${{ steps.deploy_config.outputs.host }}
           FTP_CLEANUP_USERNAME: ${{ steps.deploy_config.outputs.username }}
@@ -188,7 +199,7 @@ jobs:
         run: python3 scripts/cleanup_ftp_temp_files.py
 
       - name: Stage upload payload for SFTP deployments
-        if: ${{ steps.deploy_config.outputs.protocol == 'sftp' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol == 'sftp' }}
         run: |
           rm -rf "$SFTP_PAYLOAD_DIR"
           rsync -a --delete \
@@ -212,7 +223,7 @@ jobs:
             ./ "$SFTP_PAYLOAD_DIR/"
 
       - name: Deploy to Hostinger (FTP/FTPS)
-        if: ${{ steps.deploy_config.outputs.protocol != 'sftp' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol != 'sftp' }}
 
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
@@ -245,7 +256,7 @@ jobs:
           log-level: minimal
 
       - name: Deploy to Hostinger (SFTP)
-        if: ${{ steps.deploy_config.outputs.protocol == 'sftp' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol == 'sftp' }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ steps.deploy_config.outputs.host }}
