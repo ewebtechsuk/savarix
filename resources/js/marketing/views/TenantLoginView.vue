@@ -26,7 +26,7 @@
                         {{ link.label }}
                     </a>
                 </div>
-                <p class="tenant-login__bookmark">
+                <p v-if="fallbackHost" class="tenant-login__bookmark">
                     Bookmark the backup login at <code>{{ fallbackHost }}</code> so you can still sign in if the primary Aktonz
                     domain is unavailable.
                 </p>
@@ -56,17 +56,9 @@ const analytics = inject('analytics');
 const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
-
-const defaultFallbackHost = 'app.ressapp.com';
-const resolvedTenantFallbackHost =
-    typeof globalThis !== 'undefined' && typeof globalThis.tenantFallbackHost === 'string'
-        ? globalThis.tenantFallbackHost
-        : defaultFallbackHost;
-const resolvedGlobalFallbackHost =
-    typeof globalThis !== 'undefined' && typeof globalThis.globalFallbackHost === 'string'
-        ? globalThis.globalFallbackHost
-        : defaultFallbackHost;
-const fallbackHost = resolvedTenantFallbackHost;
+const tenantFallbackHost = 'aktonz.ressapp.com';
+const globalFallbackHost = 'app.ressapp.com';
+const fallbackHost = tenantFallbackHost || globalFallbackHost;
 
 const loginLinks = [
     {
@@ -75,19 +67,23 @@ const loginLinks = [
         className: 'primary',
         href: `https://${loginHost}/login`,
     },
-    {
-        id: 'fallback',
-        label: `Open backup login (${fallbackHost})`,
-        className: 'tenant-login__alt',
-        href: `https://${fallbackHost}/login`,
-    },
-    {
-        id: 'global-fallback',
-        label: `Open backup login (${resolvedGlobalFallbackHost})`,
-        className: 'tenant-login__alt',
-        href: `https://${resolvedGlobalFallbackHost}/login`,
-    },
-];
+    tenantFallbackHost
+        ? {
+              id: 'fallback',
+              label: `Open backup login (${tenantFallbackHost})`,
+              className: 'tenant-login__alt',
+              href: `https://${tenantFallbackHost}/login`,
+          }
+        : null,
+    globalFallbackHost && globalFallbackHost !== tenantFallbackHost
+        ? {
+              id: 'global-fallback',
+              label: `Open backup login (${globalFallbackHost})`,
+              className: 'tenant-login__alt',
+              href: `https://${globalFallbackHost}/login`,
+          }
+        : null,
+].filter(Boolean);
 
 function trackLogin(target) {
     analytics?.track(
