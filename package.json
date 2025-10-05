@@ -1,5 +1,6 @@
 {
     "private": true,
+    "type": "module",
     "scripts": {
         "prod": "npm run build",
         "dev": "vite",
