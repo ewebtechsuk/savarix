@@ -2,6 +2,15 @@
 
 This repository contains a Laravel application.
 
+## Branching model
+
+The canonical integration branch is `main`. The historic `master` branch is no
+longer used in this repository, so you will not see it locally after cloning.
+When the hosting instructions or older automation scripts mention `master`,
+substitute `main` instead (for example, `git checkout main` or `git pull origin
+main`). Keeping your local clone on the `main` branch ensures you receive the
+latest code that powers production deployments.
+
 ## Running Artisan Commands
 
 All Artisan commands must be executed from the project root where the `artisan` file lives.

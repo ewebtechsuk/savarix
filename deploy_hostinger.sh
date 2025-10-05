@@ -1,5 +1,5 @@
 #!/bin/bash
-# Laravel deployment script for Hostinger (master branch)
+# Laravel deployment script for Hostinger (main branch)
 
 # Exit on error
 set -euo pipefail
