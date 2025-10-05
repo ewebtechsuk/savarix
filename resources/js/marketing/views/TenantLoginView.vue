@@ -26,7 +26,7 @@
                         {{ link.label }}
                     </a>
                 </div>
-                <p class="tenant-login__bookmark">
+                <p v-if="fallbackHost" class="tenant-login__bookmark">
                     Bookmark the backup login at <code>{{ fallbackHost }}</code> so you can still sign in if the primary Aktonz
                     domain is unavailable.
                 </p>
@@ -67,19 +67,23 @@ const loginLinks = [
         className: 'primary',
         href: `https://${loginHost}/login`,
     },
-    {
-        id: 'fallback',
-        label: `Open backup login (${tenantFallbackHost})`,
-        className: 'tenant-login__alt',
-        href: `https://${tenantFallbackHost}/login`,
-    },
-    {
-        id: 'global-fallback',
-        label: `Open backup login (${globalFallbackHost})`,
-        className: 'tenant-login__alt',
-        href: `https://${globalFallbackHost}/login`,
-    },
-];
+    tenantFallbackHost
+        ? {
+              id: 'fallback',
+              label: `Open backup login (${tenantFallbackHost})`,
+              className: 'tenant-login__alt',
+              href: `https://${tenantFallbackHost}/login`,
+          }
+        : null,
+    globalFallbackHost && globalFallbackHost !== tenantFallbackHost
+        ? {
+              id: 'global-fallback',
+              label: `Open backup login (${globalFallbackHost})`,
+              className: 'tenant-login__alt',
+              href: `https://${globalFallbackHost}/login`,
+          }
+        : null,
+].filter(Boolean);
 
 function trackLogin(target) {
     analytics?.track(
