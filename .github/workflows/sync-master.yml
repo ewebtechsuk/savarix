@@ -1,0 +1,24 @@
+name: Sync master branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-master:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update master to match main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push --force-with-lease origin HEAD:master
