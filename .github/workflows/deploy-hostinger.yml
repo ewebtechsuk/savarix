@@ -143,8 +143,28 @@ jobs:
           extensions: mbstring, bcmath, intl, pdo_mysql
           coverage: none
 
+      - name: Detect dependency changes
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        id: dependency_changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            composer:
+              - 'composer.json'
+              - 'composer.lock'
+            frontend:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'vite.config.js'
+              - 'marketing.vite.config.js'
+              - 'tailwind.config.js'
+              - 'postcss.config.js'
+              - 'gulpfile.js'
+              - 'resources/**'
+
       - name: Cache Composer dependencies
         if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        id: composer_cache
         uses: actions/cache@v4
         with:
           path: |
@@ -155,7 +175,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.composer_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.composer == 'true') }}
         env:
           COMPOSER_CACHE_DIR: ~/.composer/cache
         run: |
@@ -166,19 +186,40 @@ jobs:
             --no-interaction \
             --optimize-autoloader
 
-      - name: Set up Node.js
+      - name: Restore cached frontend build
         if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        id: frontend_build_cache
+        uses: actions/cache@v4
+        with:
+          path: public/build
+          key: >-
+            ${{
+              runner.os
+            }}-vite-build-${{
+              hashFiles(
+                'package-lock.json',
+                'vite.config.js',
+                'marketing.vite.config.js',
+                'tailwind.config.js',
+                'postcss.config.js',
+                'gulpfile.js',
+                'resources/**'
+              )
+            }}
+
+      - name: Set up Node.js
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install Node dependencies
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
         run: npm ci --no-audit --no-fund
 
       - name: Build frontend assets
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
+        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
         run: npm run build -- --emptyOutDir
 
       - name: Remove development-only files before deploy
