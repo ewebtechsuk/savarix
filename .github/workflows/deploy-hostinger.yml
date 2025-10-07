@@ -170,7 +170,7 @@ jobs:
           path: |
             ~/.composer/cache
             vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
 
@@ -191,7 +191,9 @@ jobs:
         id: frontend_build_cache
         uses: actions/cache@v4
         with:
-          path: public/build
+          path: |
+            public/build
+            dist
           key: >-
             ${{
               runner.os
