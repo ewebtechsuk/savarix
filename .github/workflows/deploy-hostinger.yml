@@ -11,29 +11,41 @@ env:
   TENANCY_CENTRAL_CONNECTION: ${{ secrets.TENANCY_CENTRAL_CONNECTION || vars.TENANCY_CENTRAL_CONNECTION || 'mysql' }}
   TENANCY_CENTRAL_DOMAINS: ${{ secrets.TENANCY_CENTRAL_DOMAINS || vars.TENANCY_CENTRAL_DOMAINS || '' }}
 
-
 jobs:
-  deploy:
-    name: Upload application to Hostinger
+  prepare:
+    name: Resolve deployment configuration
     runs-on: ubuntu-latest
-
+    outputs:
+      should_deploy: ${{ steps.deploy_config.outputs.should_deploy }}
+      host: ${{ steps.deploy_config.outputs.host }}
+      username: ${{ steps.deploy_config.outputs.username }}
+      password: ${{ steps.deploy_config.outputs.password }}
+      server_dir: ${{ steps.deploy_config.outputs.server_dir }}
+      protocol: ${{ steps.deploy_config.outputs.protocol }}
+      port: ${{ steps.deploy_config.outputs.port }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Resolve deployment configuration
         id: deploy_config
+        shell: bash
         run: |
           host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
           user="${HOSTINGER_FTP_USERNAME:-${HOSTINGER_FTP_USER:-${FTP_USERNAME:-${FTP_USER:-}}}}"
           pass="${HOSTINGER_FTP_PASSWORD:-${HOSTINGER_FTP_PASS:-${FTP_PASSWORD:-${FTP_PASS:-}}}}"
-
           target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
           protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
           port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
 
-          host="$(printf '%s' "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          trim() {
+            printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+          }
 
+          host="$(trim "$host")"
+          user="$(trim "$user")"
+          pass="$(trim "$pass")"
+          target="$(trim "$target")"
+          protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
+          protocol="$(trim "$protocol")"
+          port="$(trim "$port")"
 
           missing=()
 
@@ -51,13 +63,11 @@ jobs:
 
           if [ -z "$pass" ]; then
             missing+=("HOSTINGER_FTP_PASSWORD/HOSTINGER_FTP_PASS or FTP_PASSWORD/FTP_PASS")
-
           fi
 
           if [ -z "$target" ]; then
             missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
           fi
-
 
           if [ "${#missing[@]}" -ne 0 ]; then
             printf '::notice::Skipping Hostinger deploy because required secrets are missing: %s\n' "${missing[*]}"
@@ -65,11 +75,8 @@ jobs:
             exit 0
           fi
 
-          protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
-          protocol="$(printf '%s' "$protocol" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           protocol="${protocol%%://*}"
           protocol="${protocol%%:*}"
-
 
           if [ -z "$protocol" ]; then
             protocol="ftps"
@@ -97,12 +104,9 @@ jobs:
             target="$target/"
           fi
 
-          echo "::add-mask::$host"
-          echo "::add-mask::$user"
-          echo "::add-mask::$target"
-          echo "::add-mask::$protocol"
-          echo "::add-mask::$port"
-          echo "::add-mask::$pass"
+          for secret in "$host" "$user" "$target" "$protocol" "$port" "$pass"; do
+            printf '::add-mask::%s\n' "$secret"
+          done
 
           {
             echo "should_deploy=true"
@@ -120,7 +124,6 @@ jobs:
           HOSTINGER_FTP_USER: ${{ secrets.HOSTINGER_FTP_USER || vars.HOSTINGER_FTP_USER }}
           HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
           HOSTINGER_FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASS || vars.HOSTINGER_FTP_PASS }}
-
           HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
           HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
           HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
@@ -130,13 +133,28 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USER || vars.FTP_USER }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
           FTP_PASS: ${{ secrets.FTP_PASS || vars.FTP_PASS }}
-
           FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
           FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
           FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
 
+  deploy:
+    name: Upload application to Hostinger
+    needs: prepare
+    if: ${{ needs.prepare.outputs.should_deploy == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ needs.prepare.outputs.host }}
+      DEPLOY_USERNAME: ${{ needs.prepare.outputs.username }}
+      DEPLOY_PASSWORD: ${{ needs.prepare.outputs.password }}
+      DEPLOY_SERVER_DIR: ${{ needs.prepare.outputs.server_dir }}
+      DEPLOY_PROTOCOL: ${{ needs.prepare.outputs.protocol }}
+      DEPLOY_PORT: ${{ needs.prepare.outputs.port }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up PHP 8.3
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -144,7 +162,6 @@ jobs:
           coverage: none
 
       - name: Detect dependency changes
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         id: dependency_changes
         uses: dorny/paths-filter@v3
         with:
@@ -163,7 +180,6 @@ jobs:
               - 'resources/**'
 
       - name: Cache Composer dependencies
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         id: composer_cache
         uses: actions/cache@v4
         with:
@@ -175,7 +191,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.composer_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.composer == 'true') }}
+        if: ${{ steps.composer_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.composer == 'true' }}
         env:
           COMPOSER_CACHE_DIR: ~/.composer/cache
         run: |
@@ -187,7 +203,6 @@ jobs:
             --optimize-autoloader
 
       - name: Restore cached frontend build
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         id: frontend_build_cache
         uses: actions/cache@v4
         with:
@@ -210,39 +225,38 @@ jobs:
             }}
 
       - name: Set up Node.js
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
+        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install Node dependencies
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
+        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
         run: npm ci --no-audit --no-fund
 
       - name: Build frontend assets
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && (steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true') }}
+        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
         run: npm run build -- --emptyOutDir
 
       - name: Remove development-only files before deploy
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' }}
         run: |
           rm -rf node_modules
           find storage -type f -name '*.log' -delete || true
 
       - name: Remove stale FTP temporary files
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol != 'sftp' }}
+        if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
         env:
-          FTP_CLEANUP_HOST: ${{ steps.deploy_config.outputs.host }}
-          FTP_CLEANUP_USERNAME: ${{ steps.deploy_config.outputs.username }}
-          FTP_CLEANUP_PASSWORD: ${{ steps.deploy_config.outputs.password }}
-          FTP_CLEANUP_PROTOCOL: ${{ steps.deploy_config.outputs.protocol }}
-          FTP_CLEANUP_PORT: ${{ steps.deploy_config.outputs.port }}
-          FTP_CLEANUP_TARGET: ${{ steps.deploy_config.outputs.server_dir }}
+          FTP_CLEANUP_HOST: ${{ env.DEPLOY_HOST }}
+          FTP_CLEANUP_USERNAME: ${{ env.DEPLOY_USERNAME }}
+          FTP_CLEANUP_PASSWORD: ${{ env.DEPLOY_PASSWORD }}
+          FTP_CLEANUP_PROTOCOL: ${{ env.DEPLOY_PROTOCOL }}
+          FTP_CLEANUP_PORT: ${{ env.DEPLOY_PORT }}
+          FTP_CLEANUP_TARGET: ${{ env.DEPLOY_SERVER_DIR }}
         run: python3 scripts/cleanup_ftp_temp_files.py
 
       - name: Stage upload payload for SFTP deployments
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol == 'sftp' }}
+        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
         run: |
           rm -rf "$SFTP_PAYLOAD_DIR"
           rsync -a --delete \
@@ -266,18 +280,16 @@ jobs:
             ./ "$SFTP_PAYLOAD_DIR/"
 
       - name: Deploy to Hostinger (FTP/FTPS)
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol != 'sftp' }}
-
+        if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0
         with:
-          server: ${{ steps.deploy_config.outputs.host }}
-          username: ${{ steps.deploy_config.outputs.username }}
-          password: ${{ steps.deploy_config.outputs.password }}
-          protocol: ${{ steps.deploy_config.outputs.protocol }}
-          port: ${{ steps.deploy_config.outputs.port }}
-          server-dir: ${{ steps.deploy_config.outputs.server_dir }}
+          server: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USERNAME }}
+          password: ${{ env.DEPLOY_PASSWORD }}
+          protocol: ${{ env.DEPLOY_PROTOCOL }}
+          port: ${{ env.DEPLOY_PORT }}
+          server-dir: ${{ env.DEPLOY_SERVER_DIR }}
           local-dir: ./
-
           exclude: |
             **/.git*/**
             **/.gitignore
@@ -299,13 +311,13 @@ jobs:
           log-level: minimal
 
       - name: Deploy to Hostinger (SFTP)
-        if: ${{ steps.deploy_config.outputs.should_deploy == 'true' && steps.deploy_config.outputs.protocol == 'sftp' }}
+        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ steps.deploy_config.outputs.host }}
-          username: ${{ steps.deploy_config.outputs.username }}
-          password: ${{ steps.deploy_config.outputs.password }}
-          port: ${{ steps.deploy_config.outputs.port }}
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USERNAME }}
+          password: ${{ env.DEPLOY_PASSWORD }}
+          port: ${{ env.DEPLOY_PORT }}
           source: ${{ format('{0}/', env.SFTP_PAYLOAD_DIR) }}
-          target: ${{ steps.deploy_config.outputs.server_dir }}
+          target: ${{ env.DEPLOY_SERVER_DIR }}
           overwrite: true
