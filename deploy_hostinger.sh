@@ -69,10 +69,13 @@ if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=$' .env; then
     php artisan key:generate
 fi
 
-# 7. Run migrations (optional, remove if not needed)
+# 7. Clear any cached configuration, routes, or views
+php artisan optimize:clear
+
+# 8. Run migrations (optional, remove if not needed)
 php artisan migrate --force
 
-# 8. Set permissions
+# 9. Set permissions
 chmod -R 775 storage bootstrap/cache
 
 echo "Deployment complete!"

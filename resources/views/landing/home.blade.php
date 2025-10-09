@@ -88,7 +88,7 @@
 
         <footer id="contact" class="bg-dark text-white py-4 mt-5">
             <div class="container text-center small">
-                &copy; <?php echo date('Y'); ?> ressapp. Not affiliated with Apex27. All rights reserved.
+                &copy; {{ now()->year }} ressapp. Not affiliated with Apex27. All rights reserved.
             </div>
         </footer>
 
