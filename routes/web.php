@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\MagicLoginController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Landing\HomeController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantPortalController;
 use App\Http\Controllers\DashboardController;
@@ -18,9 +19,7 @@ use App\Http\Controllers\LandlordDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VerificationController;
 
-Route::get('/', function () {
-    return view('landing.home');
-})->name('marketing.home');
+Route::get('/', HomeController::class)->name('marketing.home');
 
 Route::group(['middleware' => 'guest'], function () {
     Route::get('/onboarding/register', [OnboardingController::class, 'showRegistrationForm'])
