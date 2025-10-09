@@ -12,6 +12,24 @@ php artisan tail
 cat storage/logs/laravel.log | tail -n 100
 ```
 
+### Running the log script on Hostinger
+
+1. SSH into the production server (`ssh username@server-ip`).
+2. Change to the project directory (for example, `cd ~/domains/<your-domain>/public_html`).
+3. Ensure the script is executable once (`chmod +x scripts/tail_laravel_log.sh`).
+4. Execute it with the desired line count:
+
+   ```bash
+   ./scripts/tail_laravel_log.sh 200
+   ```
+
+If you see a “permission denied” error when running the script, prefix the command with
+`bash`:
+
+```bash
+bash scripts/tail_laravel_log.sh 200
+```
+
 The stack trace written to `storage/logs/laravel.log` will tell you exactly which exception is being thrown. Always start by reproducing the failure and checking the most recent log entry, then share the relevant snippet when asking for help.
 
 ## 2. Verify Composer dependencies
