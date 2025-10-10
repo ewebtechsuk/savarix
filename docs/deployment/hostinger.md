@@ -61,11 +61,31 @@ No. The deploy workflow already passes the resolved `HOSTINGER_FTP_HOST` value i
 
 ### HTTP 500 after deploying
 
-If the public site is still returning an HTTP 500 error after a deploy:
+If the public site is still returning an HTTP 500 error after a deploy, walk through the production checklist before retrying the GitHub Action:
 
-1. **Inspect the Laravel log on Hostinger** – SSH into the account and open `storage/logs/laravel.log` (for example `tail -f storage/logs/laravel.log`). The stack trace pinpoints the exact configuration issue.
-2. **Run `deploy_hostinger.sh` on the server** – this script installs Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable.
-3. **Double-check the `.env` file** – confirm values such as `APP_URL`, `APP_ENV=production`, database credentials, queue/cache drivers, and any API keys required for third-party integrations. An empty or missing `APP_KEY` is a common cause of HTTP 500 responses.
-4. **Clear cached configuration manually** – if you edited `.env` directly, run `php artisan optimize:clear` (already handled by the deploy script) to flush stale config/route/view caches.
+1. **Inspect the Laravel log on Hostinger** – SSH into the account and stream `storage/logs/laravel.log` so you can see the exact exception being thrown:
 
-Once the log is clean and the application boots locally via `php artisan serve`, redeploy (or rerun the GitHub Actions job) and reload the homepage.
+   ```bash
+   ssh <user>@<host>
+   cd ~/domains/<your-domain>/public_html
+   tail -f storage/logs/laravel.log
+   ```
+
+   Copy the latest stack trace when asking for help; it confirms whether the failure is due to missing environment variables, migrations, or file permissions.
+
+2. **Run `deploy_hostinger.sh` on the server** – this script installs Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable. When you prefer to execute the steps manually, run:
+
+   ```bash
+   composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+   php artisan migrate --force
+   php artisan optimize:clear
+   chmod -R 775 storage bootstrap/cache
+   ```
+
+3. **Double-check the `.env` file** – confirm values such as `APP_KEY` (must not be empty), database credentials, queue/cache drivers, and any API keys required for third-party integrations. After editing `.env`, repeat the cache clear step:
+
+   ```bash
+   php artisan optimize:clear
+   ```
+
+Once the log is clean and the application boots locally via `php artisan serve`, rerun the deploy workflow and reload the homepage.
