@@ -54,3 +54,18 @@ Connected to Hostinger FTP cleanup target: host=dar**************com protocol=FT
 ```
 
 Use that log line to confirm the workflow is using the hostname you just configured (the first and last few characters remain visible for easy verification).
+
+### Do I need a separate `FTP_CLEANUP_HOST` secret?
+
+No. The deploy workflow already passes the resolved `HOSTINGER_FTP_HOST` value into the cleanup helper as `FTP_CLEANUP_HOST` (along with the matching username, password, protocol, port, and target directory). Creating a standalone secret or environment named `FTP_CLEANUP_HOST` on GitHub does not change what the workflow uses and may cause confusion later. Focus on keeping the four required `HOSTINGER_FTP_*` secrets up to date—when those are correct the cleanup step will automatically report the right host in the masked log line above.
+
+### HTTP 500 after deploying
+
+If the public site is still returning an HTTP 500 error after a deploy:
+
+1. **Inspect the Laravel log on Hostinger** – SSH into the account and open `storage/logs/laravel.log` (for example `tail -f storage/logs/laravel.log`). The stack trace pinpoints the exact configuration issue.
+2. **Run `deploy_hostinger.sh` on the server** – this script installs Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable.
+3. **Double-check the `.env` file** – confirm values such as `APP_URL`, `APP_ENV=production`, database credentials, queue/cache drivers, and any API keys required for third-party integrations. An empty or missing `APP_KEY` is a common cause of HTTP 500 responses.
+4. **Clear cached configuration manually** – if you edited `.env` directly, run `php artisan optimize:clear` (already handled by the deploy script) to flush stale config/route/view caches.
+
+Once the log is clean and the application boots locally via `php artisan serve`, redeploy (or rerun the GitHub Actions job) and reload the homepage.
