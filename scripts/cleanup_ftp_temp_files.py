@@ -19,6 +19,34 @@ from typing import Iterable, Tuple
 
 ENV_PREFIX = "FTP_CLEANUP_"
 
+ENV_HINTS = {
+    "HOST": (
+        "Populate the repository secret HOSTINGER_FTP_HOST (or FTP_SERVER) "
+        "with the FTP hostname shown in Hostinger's hPanel under Websites → "
+        "Manage → FTP Accounts."
+    ),
+    "USERNAME": (
+        "Populate HOSTINGER_FTP_USERNAME (or FTP_USERNAME) with the FTP "
+        "username from Hostinger's FTP Accounts page."
+    ),
+    "PASSWORD": (
+        "Populate HOSTINGER_FTP_PASSWORD (or FTP_PASSWORD) with the FTP "
+        "password from Hostinger. Reset it in hPanel if you do not have it."
+    ),
+    "TARGET": (
+        "Populate HOSTINGER_FTP_TARGET_DIR (or FTP_TARGET_DIR) with the "
+        "remote directory path, typically `public_html/`."
+    ),
+    "PORT": (
+        "Populate HOSTINGER_FTP_PORT (or FTP_PORT) when Hostinger instructs "
+        "you to use a non-standard port."
+    ),
+    "PROTOCOL": (
+        "Populate HOSTINGER_FTP_PROTOCOL (or FTP_PROTOCOL) with ftp, ftps, "
+        "or sftp to match the Hostinger connection settings."
+    ),
+}
+
 
 class CleanupError(RuntimeError):
     """Raised when the cleanup script encounters a fatal error."""
@@ -34,12 +62,18 @@ def env(name: str, default: str | None = None) -> str:
         # or raise a useful error instead of passing "" further downstream.
         if default is not None:
             return default
-        raise CleanupError(
-            f"Missing required environment variable {ENV_PREFIX}{name}"
-        )
+        hint = ENV_HINTS.get(name)
+        message = f"Missing required environment variable {ENV_PREFIX}{name}"
+        if hint:
+            message = f"{message}. {hint}"
+        raise CleanupError(message)
     if default is not None:
         return default
-    raise CleanupError(f"Missing required environment variable {ENV_PREFIX}{name}")
+    hint = ENV_HINTS.get(name)
+    message = f"Missing required environment variable {ENV_PREFIX}{name}"
+    if hint:
+        message = f"{message}. {hint}"
+    raise CleanupError(message)
 
 
 def normalise_target(path: str) -> str | None:

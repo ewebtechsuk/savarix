@@ -103,6 +103,9 @@ Always populate these secrets with the real values from your Hostinger control p
 `your.hostinger.server`, or `ftp.example.com` will be rejected before any connection attempt. The workflow fails fast with a
 clear error message when any required secret is missing so you can correct the configuration before an upload attempt.
 
+For screenshots and detailed instructions on where to find each value inside hPanel, see
+[`docs/deployment/hostinger.md`](docs/deployment/hostinger.md).
+
 > **Composer access tokens:** If Composer warns about missing GitHub authentication while resolving dependencies, add a
 > `GITHUB_TOKEN` repository secret (or set it as an Actions variable). The workflow automatically picks it up so private
 > packages can be installed during the build.
