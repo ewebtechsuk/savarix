@@ -97,7 +97,7 @@ column may be used):
 
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
 | `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
-| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). The cleanup script runs only for FTP/FTPS uploads. |
+| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). The cleanup script runs only for FTP/FTPS uploads and logs the resolved host/protocol/port so you can confirm the right secret values are in use. |
 
 Always populate these secrets with the real values from your Hostinger control panel—placeholders such as `***`,
 `your.hostinger.server`, or `ftp.example.com` will be rejected before any connection attempt. The workflow fails fast with a

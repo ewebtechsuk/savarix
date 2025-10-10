@@ -121,6 +121,18 @@ def normalise_host(raw_host: str) -> str:
     return host
 
 
+def mask_value(value: str, *, min_visible: int = 2) -> str:
+    """Return a masked representation that preserves context without secrets."""
+
+    stripped = value.strip()
+    length = len(stripped)
+    if length <= min_visible * 2:
+        return "*" * length if length else ""
+    prefix = stripped[:min_visible]
+    suffix = stripped[-min_visible:]
+    return f"{prefix}{'*' * (length - (min_visible * 2))}{suffix}"
+
+
 @contextmanager
 def preserve_cwd(ftp: ftplib.FTP) -> Iterable[None]:
     current = ftp.pwd()
@@ -235,6 +247,15 @@ def connect() -> ftplib.FTP:
     target = normalise_target(env("TARGET", ""))
     if target:
         ftp.cwd(target)
+
+    masked_host = mask_value(host, min_visible=3)
+    print(
+        "Connected to Hostinger FTP cleanup target:",
+        f"host={masked_host}",
+        f"protocol={protocol.upper()}",
+        f"port={port}",
+        f"directory={ftp.pwd()}",
+    )
 
     return ftp
 

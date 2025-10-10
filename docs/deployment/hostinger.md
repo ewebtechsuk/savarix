@@ -46,3 +46,11 @@ If you have the hPanel FTP details open (like in the screenshot the team shared)
 7. (Optional) Add **`HOSTINGER_FTP_PORT`** if Hostinger support gave you a non-standard port. Otherwise leave it unset so the workflow falls back to `21` for FTP/FTPS or `22` for SFTP.
 
 After you add each secret, rerun the **Deploy to Hostinger** workflow. The `Resolve deployment configuration` job will surface any remaining missing values; when all four required secrets are present (`HOSTINGER_FTP_HOST`, `HOSTINGER_FTP_USERNAME`, `HOSTINGER_FTP_PASSWORD`, and `HOSTINGER_FTP_TARGET_DIR`), the deploy job proceeds and the cleanup step connects successfully.
+
+When the cleanup helper connects it now prints a masked summary such as:
+
+```
+Connected to Hostinger FTP cleanup target: host=dar**************com protocol=FTPS port=21 directory=/public_html
+```
+
+Use that log line to confirm the workflow is using the hostname you just configured (the first and last few characters remain visible for easy verification).
