@@ -19,6 +19,36 @@ from typing import Iterable, Tuple
 
 ENV_PREFIX = "FTP_CLEANUP_"
 
+ENV_HINTS = {
+    "HOST": (
+        "Populate the repository secret HOSTINGER_FTP_HOST (or FTP_SERVER) "
+        "with the FTP hostname shown in Hostinger's hPanel under Websites → "
+        "Manage → FTP Accounts. Copy just the host (for example, "
+        "`darkorange-chinchilla-918430.hostingersite.com`) without the "
+        "`ftp://` prefix."
+    ),
+    "USERNAME": (
+        "Populate HOSTINGER_FTP_USERNAME (or FTP_USERNAME) with the FTP "
+        "username from Hostinger's FTP Accounts page."
+    ),
+    "PASSWORD": (
+        "Populate HOSTINGER_FTP_PASSWORD (or FTP_PASSWORD) with the FTP "
+        "password from Hostinger. Reset it in hPanel if you do not have it."
+    ),
+    "TARGET": (
+        "Populate HOSTINGER_FTP_TARGET_DIR (or FTP_TARGET_DIR) with the "
+        "remote directory path, typically `public_html/`."
+    ),
+    "PORT": (
+        "Populate HOSTINGER_FTP_PORT (or FTP_PORT) when Hostinger instructs "
+        "you to use a non-standard port."
+    ),
+    "PROTOCOL": (
+        "Populate HOSTINGER_FTP_PROTOCOL (or FTP_PROTOCOL) with ftp, ftps, "
+        "or sftp to match the Hostinger connection settings."
+    ),
+}
+
 
 class CleanupError(RuntimeError):
     """Raised when the cleanup script encounters a fatal error."""
@@ -27,10 +57,25 @@ class CleanupError(RuntimeError):
 def env(name: str, default: str | None = None) -> str:
     value = os.environ.get(f"{ENV_PREFIX}{name}")
     if value is not None:
-        return value
+        stripped = value.strip()
+        if stripped:
+            return stripped
+        # Treat empty strings as missing so we either fall back to defaults
+        # or raise a useful error instead of passing "" further downstream.
+        if default is not None:
+            return default
+        hint = ENV_HINTS.get(name)
+        message = f"Missing required environment variable {ENV_PREFIX}{name}"
+        if hint:
+            message = f"{message}. {hint}"
+        raise CleanupError(message)
     if default is not None:
         return default
-    raise CleanupError(f"Missing required environment variable {ENV_PREFIX}{name}")
+    hint = ENV_HINTS.get(name)
+    message = f"Missing required environment variable {ENV_PREFIX}{name}"
+    if hint:
+        message = f"{message}. {hint}"
+    raise CleanupError(message)
 
 
 def normalise_target(path: str) -> str | None:
@@ -59,6 +104,33 @@ def join_remote(base: str, name: str) -> str:
         cleaned = name.lstrip("/")
         return f"/{cleaned}" if cleaned else "/"
     return f"{base}/{name}" if name else base
+
+
+def normalise_host(raw_host: str) -> str:
+    host = raw_host.strip()
+    if not host:
+        return host
+    lowered = host.lower()
+    for prefix in ("ftp://", "ftps://", "sftp://"):
+        if lowered.startswith(prefix):
+            host = host[len(prefix) :]
+            break
+    host = host.strip()
+    while host.endswith("/"):
+        host = host[:-1]
+    return host
+
+
+def mask_value(value: str, *, min_visible: int = 2) -> str:
+    """Return a masked representation that preserves context without secrets."""
+
+    stripped = value.strip()
+    length = len(stripped)
+    if length <= min_visible * 2:
+        return "*" * length if length else ""
+    prefix = stripped[:min_visible]
+    suffix = stripped[-min_visible:]
+    return f"{prefix}{'*' * (length - (min_visible * 2))}{suffix}"
 
 
 @contextmanager
@@ -145,7 +217,11 @@ def cleanup_directory(ftp: ftplib.FTP) -> int:
 
 def connect() -> ftplib.FTP:
     protocol = env("PROTOCOL", "ftp").strip().lower()
-    host = env("HOST")
+    host = normalise_host(env("HOST"))
+    if not host:
+        raise CleanupError(
+            "FTP hostname cannot be empty after removing any ftp:// prefix."
+        )
     username = env("USERNAME")
     password = env("PASSWORD")
     port = int(env("PORT", "21"))
@@ -171,6 +247,15 @@ def connect() -> ftplib.FTP:
     target = normalise_target(env("TARGET", ""))
     if target:
         ftp.cwd(target)
+
+    masked_host = mask_value(host, min_visible=3)
+    print(
+        "Connected to Hostinger FTP cleanup target:",
+        f"host={masked_host}",
+        f"protocol={protocol.upper()}",
+        f"port={port}",
+        f"directory={ftp.pwd()}",
+    )
 
     return ftp
 

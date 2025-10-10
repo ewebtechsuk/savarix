@@ -91,17 +91,19 @@ column may be used):
 
 | Secret (choose one name per row) | Required | Description |
 | --- | --- | --- |
-| `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server. |
+| `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server (omit the `ftp://` prefix shown in hPanel). |
 | `HOSTINGER_FTP_USERNAME` **or** `HOSTINGER_FTP_USER` **or** `FTP_USERNAME` **or** `FTP_USER` | ✅ | Username that has write access to the deployment directory. |
 | `HOSTINGER_FTP_PASSWORD` **or** `HOSTINGER_FTP_PASS` **or** `FTP_PASSWORD` **or** `FTP_PASS` | ✅ | Password or app token for the account above. |
 
 | `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
 | `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
-| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). |
+| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). The cleanup script runs only for FTP/FTPS uploads and logs the resolved host/protocol/port so you can confirm the right secret values are in use. |
 
 Always populate these secrets with the real values from your Hostinger control panel—placeholders such as `***`,
 `your.hostinger.server`, or `ftp.example.com` will be rejected before any connection attempt. The workflow fails fast with a
 clear error message when any required secret is missing so you can correct the configuration before an upload attempt.
+
+For screenshots, a step-by-step checklist that matches the Hostinger FTP screen, guidance on whether you need extra secrets, and troubleshooting tips for HTTP 500 errors after deploys, see [docs/deployment/hostinger.md](docs/deployment/hostinger.md).
 
 > **Composer access tokens:** If Composer warns about missing GitHub authentication while resolving dependencies, add a
 > `GITHUB_TOKEN` repository secret (or set it as an Actions variable). The workflow automatically picks it up so private
