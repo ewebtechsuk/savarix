@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PropertyApiController;
 use App\Http\Controllers\Api\TenancyApiController;
+use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\PartnerIntegrationController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\WebhookApiController;
 use App\Http\Controllers\Api\AuthApiController;
@@ -28,6 +30,9 @@ Route::group([
     Route::resource('payments', PaymentApiController::class, ['except' => ['create', 'edit']]);
     Route::resource('contacts', ContactApiController::class, ['except' => ['create', 'edit']]);
     Route::resource('webhooks', WebhookApiController::class, ['only' => ['index', 'store', 'destroy']]);
+    Route::apiResource('integrations', PartnerIntegrationController::class);
+    Route::get('dashboard/unified', [DashboardApiController::class, 'unified'])
+        ->name('api.dashboard.unified');
 });
 
 /*(Route::get('/user', function (Request $request) {
