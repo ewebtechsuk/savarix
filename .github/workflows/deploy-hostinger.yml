@@ -143,73 +143,12 @@ jobs:
     if: ${{ needs.prepare.outputs.should_deploy == 'true' }}
     runs-on: ubuntu-latest
     env:
-      DEPLOY_HOST: ${{
-        needs.prepare.outputs.host
-          || secrets.HOSTINGER_FTP_HOST
-          || vars.HOSTINGER_FTP_HOST
-          || secrets.HOSTINGER_FTP_SERVER
-          || vars.HOSTINGER_FTP_SERVER
-          || secrets.FTP_SERVER
-          || vars.FTP_SERVER
-          || secrets.FTP_HOST
-          || vars.FTP_HOST
-      }}
-      DEPLOY_USERNAME: ${{
-        needs.prepare.outputs.username
-          || secrets.HOSTINGER_FTP_USERNAME
-          || vars.HOSTINGER_FTP_USERNAME
-          || secrets.HOSTINGER_FTP_USER
-          || vars.HOSTINGER_FTP_USER
-          || secrets.FTP_USERNAME
-          || vars.FTP_USERNAME
-          || secrets.FTP_USER
-          || vars.FTP_USER
-      }}
-      DEPLOY_PASSWORD: ${{
-        needs.prepare.outputs.password
-          || secrets.HOSTINGER_FTP_PASSWORD
-          || vars.HOSTINGER_FTP_PASSWORD
-          || secrets.HOSTINGER_FTP_PASS
-          || vars.HOSTINGER_FTP_PASS
-          || secrets.FTP_PASSWORD
-          || vars.FTP_PASSWORD
-          || secrets.FTP_PASS
-          || vars.FTP_PASS
-      }}
-      DEPLOY_SERVER_DIR: ${{
-        needs.prepare.outputs.server_dir
-          || secrets.HOSTINGER_FTP_TARGET_DIR
-          || vars.HOSTINGER_FTP_TARGET_DIR
-          || secrets.FTP_TARGET_DIR
-          || vars.FTP_TARGET_DIR
-      }}
-      DEPLOY_PROTOCOL: ${{
-        needs.prepare.outputs.protocol
-          || secrets.HOSTINGER_FTP_PROTOCOL
-          || vars.HOSTINGER_FTP_PROTOCOL
-          || secrets.FTP_PROTOCOL
-          || vars.FTP_PROTOCOL
-          || 'ftps'
-      }}
-      DEPLOY_PORT: ${{
-        needs.prepare.outputs.port
-          || secrets.HOSTINGER_FTP_PORT
-          || vars.HOSTINGER_FTP_PORT
-          || secrets.FTP_PORT
-          || vars.FTP_PORT
-          || (
-            (
-              needs.prepare.outputs.protocol
-                || secrets.HOSTINGER_FTP_PROTOCOL
-                || vars.HOSTINGER_FTP_PROTOCOL
-                || secrets.FTP_PROTOCOL
-                || vars.FTP_PROTOCOL
-                || 'ftps'
-            ) == 'sftp'
-              && '22'
-              || '21'
-          )
-      }}
+      DEPLOY_HOST: ${{ needs.prepare.outputs.host || secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST || secrets.HOSTINGER_FTP_SERVER || vars.HOSTINGER_FTP_SERVER || secrets.FTP_SERVER || vars.FTP_SERVER || secrets.FTP_HOST || vars.FTP_HOST }}
+      DEPLOY_USERNAME: ${{ needs.prepare.outputs.username || secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME || secrets.HOSTINGER_FTP_USER || vars.HOSTINGER_FTP_USER || secrets.FTP_USERNAME || vars.FTP_USERNAME || secrets.FTP_USER || vars.FTP_USER }}
+      DEPLOY_PASSWORD: ${{ needs.prepare.outputs.password || secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_FTP_PASS || vars.HOSTINGER_FTP_PASS || secrets.FTP_PASSWORD || vars.FTP_PASSWORD || secrets.FTP_PASS || vars.FTP_PASS }}
+      DEPLOY_SERVER_DIR: ${{ needs.prepare.outputs.server_dir || secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR || secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
+      DEPLOY_PROTOCOL: ${{ needs.prepare.outputs.protocol || secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL || secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL || 'ftps' }}
+      DEPLOY_PORT: ${{ needs.prepare.outputs.port || secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT || secrets.FTP_PORT || vars.FTP_PORT || (((needs.prepare.outputs.protocol || secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL || secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL || 'ftps') == 'sftp') && '22' || '21') }}
 
     steps:
       - name: Checkout repository
