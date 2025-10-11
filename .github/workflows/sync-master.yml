@@ -17,7 +17,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect legacy master branch
+        id: detect-master
+        run: |
+          if git ls-remote --exit-code origin refs/heads/master >/dev/null 2>&1; then
+            echo "exists=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >>"$GITHUB_OUTPUT"
+            echo "::notice::Skipping master sync because the remote branch does not exist."
+          fi
+
       - name: Update master to match main
+        if: steps.detect-master.outputs.exists == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
