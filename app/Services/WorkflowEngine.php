@@ -10,8 +10,10 @@ use App\Models\Task;
 use App\Models\Workflow;
 use App\Models\WorkflowAction;
 use App\Models\WorkflowTrigger;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WorkflowEngine
 {
@@ -20,14 +22,13 @@ class WorkflowEngine
      */
     public function processModelEvent(string $event, $model, array $context = []): void
     {
-        Workflow::with('triggers', 'actions')->where('active', true)->get()
-            ->each(function (Workflow $workflow) use ($event, $model, $context) {
-                foreach ($workflow->triggers as $trigger) {
-                    if ($this->matchesModelEventTrigger($trigger, $event, $model, $context)) {
-                        $this->runActions($workflow, $model, $context);
-                    }
+        $this->activeWorkflows()->each(function (Workflow $workflow) use ($event, $model, $context) {
+            foreach ($workflow->triggers as $trigger) {
+                if ($this->matchesModelEventTrigger($trigger, $event, $model, $context)) {
+                    $this->runActions($workflow, $model, $context);
                 }
-            });
+            }
+        });
     }
 
     /**
@@ -35,14 +36,13 @@ class WorkflowEngine
      */
     public function runScheduled(): void
     {
-        Workflow::with('triggers', 'actions')->where('active', true)->get()
-            ->each(function (Workflow $workflow) {
-                foreach ($workflow->triggers as $trigger) {
-                    if ($trigger->type === 'schedule') {
-                        $this->runActions($workflow);
-                    }
+        $this->activeWorkflows()->each(function (Workflow $workflow) {
+            foreach ($workflow->triggers as $trigger) {
+                if ($trigger->type === 'schedule') {
+                    $this->runActions($workflow);
                 }
-            });
+            }
+        });
     }
 
     protected function matchesModelEventTrigger(WorkflowTrigger $trigger, string $event, $model, array $context): bool
@@ -224,5 +224,29 @@ class WorkflowEngine
         }
 
         return strtr($template, $replacements);
+    }
+
+    protected function activeWorkflows(): Collection
+    {
+        try {
+            return Workflow::with('triggers', 'actions')
+                ->where('active', true)
+                ->get();
+        } catch (QueryException $exception) {
+            if ($this->isMissingWorkflowTable($exception)) {
+                return collect();
+            }
+
+            throw $exception;
+        }
+    }
+
+    protected function isMissingWorkflowTable(QueryException $exception): bool
+    {
+        if ($exception->getCode() === '42S02') {
+            return true;
+        }
+
+        return str_contains($exception->getMessage(), 'no such table');
     }
 }
