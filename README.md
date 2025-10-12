@@ -28,14 +28,21 @@ php artisan migrate
 
 ## Running Tests
 
-Tests are written with PHPUnit. After installing dependencies with Composer run the test suite from the project root:
+Tests are written with PHPUnit. Run them from the project root after installing PHP dependencies:
 
+```bash
+composer install
+php artisan test
+```
+
+The `php artisan test` wrapper bootstraps the application's testing environment before delegating to PHPUnit. If you prefer to
+invoke PHPUnit directly you can use the binary in `vendor/bin`:
 
 ```bash
 ./vendor/bin/phpunit
 ```
 
-If you have PHPUnit installed globally you can simply run `phpunit` instead.
+With a global PHPUnit installation you may also run `phpunit` from the project root.
 
 > **Note:** `./setup.sh` and `deploy_hostinger.sh` download a project-local `composer.phar` automatically when Composer isn't available on your PATH, so you can bootstrap the dependencies even in minimal environments (including shared hosting accounts).
 
