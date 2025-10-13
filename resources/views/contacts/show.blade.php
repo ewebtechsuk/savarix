@@ -3,6 +3,10 @@
 {{-- Ensure jQuery is loaded before Select2 and custom scripts --}}
 @include('contacts._jquery')
 
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@endpush
+
 @section('content')
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -84,9 +88,10 @@
                             </form>
                             <ul class="list-group">
                                 @forelse($contact->notes as $note)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                                        data-update-url="{{ route('contacts.notes.inline.update', [$contact, $note]) }}"
+                                        data-delete-url="{{ route('contacts.notes.inline.destroy', [$contact, $note]) }}">
                                         <span class="note-text">{{ $note->note }}</span>
-                                        <input type="hidden" class="note-id" value="{{ $note->id }}">
                                         <span>
                                             <button class="btn btn-sm btn-outline-secondary me-1 edit-note-btn" data-id="{{ $note->id }}">Edit</button>
                                             <button class="btn btn-sm btn-success me-1 save-note-btn" data-id="{{ $note->id }}" style="display:none;">Save</button>
@@ -123,27 +128,30 @@
                             <p class="text-muted">No referrals for this contact.</p>
                         </div>
                         <div class="tab-pane fade" id="properties" role="tabpanel">
-                            <form action="{{ route('contacts.assignProperty', $contact) }}" method="POST" class="mb-3" id="assign-property-form">
-                                @csrf
-                                <input type="hidden" name="landlord_id" value="{{ $contact->id }}">
-                                <label for="property-select" class="form-label">Assign Property to this Landlord:</label>
-                                <select id="property-select" name="property_id" class="form-select" style="width:100%"></select>
-                                <button type="submit" class="btn btn-primary mt-2">Assign</button>
-                            </form>
-                            @if($contact->properties->count())
-                                <ul class="list-group">
-                                    @foreach($contact->properties as $property)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>{{ $property->title ?? 'Property #' . $property->id }}</strong><br>
-                                                <span>{{ $property->address }}</span>
-                                            </div>
-                                            <a href="{{ route('properties.show', $property) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                            @if($contact->type === 'landlord')
+                                <form action="{{ route('contacts.assignProperty', $contact) }}" method="POST" class="mb-3" id="assign-property-form">
+                                    @csrf
+                                    <label for="property-select" class="form-label">Assign property to this landlord:</label>
+                                    <select id="property-select" name="property_id" class="form-select" style="width:100%" data-placeholder="Search properties"></select>
+                                    <button type="submit" class="btn btn-primary mt-2">Assign</button>
+                                </form>
+                                @if($contact->properties->count())
+                                    <ul class="list-group">
+                                        @foreach($contact->properties as $property)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ $property->title ?? 'Property #' . $property->id }}</strong><br>
+                                                    <span>{{ $property->address }}</span>
+                                                </div>
+                                                <a href="{{ route('properties.show', $property) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p>No properties found for this contact.</p>
+                                @endif
                             @else
-                                <p>No properties found for this contact.</p>
+                                <p class="text-muted">Property assignment is available only for landlord contacts.</p>
                             @endif
                         </div>
                         <div class="tab-pane fade" id="management" role="tabpanel">
@@ -160,7 +168,7 @@
                                 @csrf
                                 <div class="row g-2">
                                     <div class="col-md-5">
-                                        <input type="text" name="property" class="form-control" placeholder="Property">
+                                        <select name="property_id" id="viewing-property" class="form-select" style="width:100%" data-placeholder="Search properties"></select>
                                     </div>
                                     <div class="col-md-4">
                                         <input type="datetime-local" name="date" class="form-control">
@@ -237,7 +245,9 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
-                        <a href="{{ route('properties.create', ['landlord_id' => $contact->id]) }}" class="btn btn-primary">Add Property for this Landlord</a>
+                        @if($contact->type === 'landlord')
+                            <a href="{{ route('properties.create', ['landlord_id' => $contact->id]) }}" class="btn btn-primary">Add property for this landlord</a>
+                        @endif
                         <a href="{{ route('contacts.edit', $contact) }}" class="btn btn-warning">Edit</a>
                         <form action="{{ route('contacts.destroy', $contact) }}" method="POST" style="display:inline-block;">
                             @csrf
@@ -255,47 +265,50 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script>
 $(document).ready(function() {
-    $('#property-select').select2({
-        placeholder: 'Search for a property...',
-        ajax: {
-            url: '{{ route('properties.searchUnassigned') }}',
-            dataType: 'json',
-            delay: 250,
-            data: function(params) {
-                return { q: params.term };
-            },
-            processResults: function (data) {
-                return {
-                    results: data.map(function(item) {
-                        return { id: item.id, text: item.title + ' (' + item.address + ')' };
-                    })
-                };
-            },
-            cache: true
-        },
-        minimumInputLength: 1
-    });
+    const csrfToken = '{{ csrf_token() }}';
+    const propertySearchUrl = '{{ route('contacts.properties.search') }}';
 
-    // Inline AJAX editing for notes
+    function select2Config(placeholder) {
+        return {
+            placeholder: placeholder,
+            width: '100%',
+            ajax: {
+                url: propertySearchUrl,
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return { results: data };
+                },
+                cache: true
+            },
+            minimumInputLength: 1
+        };
+    }
+
+    $('#property-select').select2(select2Config('Search properties to assign'));
+    $('#viewing-property').select2(select2Config('Select viewing property'));
+
     $(document).on('click', '.edit-note-btn', function() {
         var $li = $(this).closest('li');
-        var noteId = $(this).data('id');
         var noteText = $li.find('.note-text').text();
         $li.find('.note-text').replaceWith('<input type="text" class="form-control note-edit-input" value="'+noteText+'" style="width:60%">');
         $(this).hide();
         $li.find('.save-note-btn').show();
     });
+
     $(document).on('click', '.save-note-btn', function() {
         var $li = $(this).closest('li');
-        var noteId = $(this).data('id');
+        var updateUrl = $li.data('update-url');
         var newText = $li.find('.note-edit-input').val();
         $.ajax({
-            url: '/api/contacts/{{ $contact->id }}/note/' + noteId,
+            url: updateUrl,
             type: 'PATCH',
-            data: { note: newText, _token: '{{ csrf_token() }}' },
+            data: { note: newText, _token: csrfToken },
             success: function(resp) {
                 $li.find('.note-edit-input').replaceWith('<span class="note-text">'+resp.note+'</span>');
                 $li.find('.save-note-btn').hide();
@@ -303,19 +316,19 @@ $(document).ready(function() {
             }
         });
     });
+
     $(document).on('click', '.delete-note-btn', function() {
         var $li = $(this).closest('li');
-        var noteId = $(this).data('id');
+        var deleteUrl = $li.data('delete-url');
         if(confirm('Delete this note?')) {
             $.ajax({
-                url: '/api/contacts/{{ $contact->id }}/note/' + noteId,
+                url: deleteUrl,
                 type: 'DELETE',
-                data: { _token: '{{ csrf_token() }}' },
+                data: { _token: csrfToken },
                 success: function() { $li.remove(); }
             });
         }
     });
-    // Repeat similar for communications and viewings as needed
 });
 </script>
 @endpush

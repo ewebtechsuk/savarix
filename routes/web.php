@@ -69,7 +69,32 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
 // Tenant routes (aktonz.ressapp.com, etc.)
 Route::group(['middleware' => ['auth', 'tenancy', 'role:Tenant']], function () {
     Route::resource('properties', PropertyController::class);
+    Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
+    Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
+    Route::post('contacts/bulk', [ContactController::class, 'bulk'])->name('contacts.bulk');
+    Route::post('contacts/{contact}/notes', [ContactController::class, 'addNote'])->name('contacts.addNote');
+    Route::delete('contacts/{contact}/notes/{note}', [ContactController::class, 'deleteNote'])->name('contacts.notes.destroy');
+    Route::put('contacts/{contact}/notes/{note}', [ContactController::class, 'updateNote'])->name('contacts.notes.update');
+    Route::patch('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiUpdateNote'])->name('contacts.notes.inline.update');
+    Route::delete('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiDeleteNote'])->name('contacts.notes.inline.destroy');
+
+    Route::post('contacts/{contact}/communications', [ContactController::class, 'addCommunication'])->name('contacts.addCommunication');
+    Route::delete('contacts/{contact}/communications/{communication}', [ContactController::class, 'deleteCommunication'])->name('contacts.communications.destroy');
+    Route::put('contacts/{contact}/communications/{communication}', [ContactController::class, 'updateCommunication'])->name('contacts.communications.update');
+    Route::patch('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiUpdateCommunication'])->name('contacts.communications.inline.update');
+    Route::delete('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiDeleteCommunication'])->name('contacts.communications.inline.destroy');
+
+    Route::post('contacts/{contact}/viewings', [ContactController::class, 'addViewing'])->name('contacts.addViewing');
+    Route::delete('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'deleteViewing'])->name('contacts.viewings.destroy');
+    Route::put('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'updateViewing'])->name('contacts.viewings.update');
+    Route::patch('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiUpdateViewing'])->name('contacts.viewings.inline.update');
+    Route::delete('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiDeleteViewing'])->name('contacts.viewings.inline.destroy');
+
+    Route::post('contacts/{contact}/assign-property', [ContactController::class, 'assignProperty'])->name('contacts.assignProperty');
+
     Route::resource('contacts', ContactController::class);
+
+    Route::post('properties/{property}/assign-landlord', [PropertyController::class, 'assignLandlord'])->name('properties.assignLandlord');
     Route::resource('diary', DiaryController::class);
     Route::resource('accounts', AccountController::class);
     Route::resource('inspections', InspectionController::class);

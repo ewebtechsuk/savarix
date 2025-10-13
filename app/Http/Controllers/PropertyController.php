@@ -9,6 +9,7 @@ use App\Models\PropertyMedia;
 use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Facades\Tenancy;
 use Illuminate\Support\Facades\Http;
+use App\Models\MarketingEvent;
 
 class PropertyController extends Controller
 {
@@ -88,6 +89,7 @@ class PropertyController extends Controller
             'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
             'publish_to_portal' => 'boolean',
             'send_marketing_campaign' => 'boolean',
+            'marketing_notes' => 'nullable|string',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -103,6 +105,8 @@ class PropertyController extends Controller
         }
         $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
         $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
+        $marketingNotes = trim($validated['marketing_notes'] ?? '');
+        unset($validated['marketing_notes']);
         $tenant = tenant(); // Stancl Tenancy v3+ helper
         if ($tenant) {
             $validated['tenant_id'] = $tenant->id;
@@ -115,6 +119,16 @@ class PropertyController extends Controller
                 $validated['longitude'] = $coords['lng'];
             }
         }
+        if ($marketingNotes !== '') {
+            $validated['activity_log'] = [
+                'marketing_notes' => [[
+                    'note' => $marketingNotes,
+                    'recorded_at' => now()->toIso8601String(),
+                    'author_id' => auth()->id(),
+                ]],
+            ];
+        }
+
         $property = Property::create($validated);
 
         if ($request->hasFile('media')) {
@@ -153,7 +167,36 @@ class PropertyController extends Controller
         }
         $property->load(['media', 'features', 'landlord', 'documents']);
         $features = $property->features()->pluck('name')->toArray();
-        return view('properties.show', compact('property', 'features'));
+
+        $marketingEvents = MarketingEvent::query()
+            ->where('metadata->property_id', $property->id)
+            ->orderByDesc('occurred_at')
+            ->limit(5)
+            ->get();
+
+        $marketingStats = [
+            'media_count' => $property->media->count(),
+            'document_count' => $property->documents->count(),
+            'feature_count' => count($features),
+            'portal_status' => $property->publish_to_portal ? 'Live' : 'Offline',
+            'campaign_status' => $property->send_marketing_campaign ? 'Enabled' : 'Disabled',
+            'last_updated' => optional($property->updated_at)->diffForHumans(),
+        ];
+
+        $completed = 0;
+        $checklistTotal = 3;
+        if ($marketingStats['media_count'] > 0) {
+            $completed++;
+        }
+        if ($marketingStats['document_count'] > 0) {
+            $completed++;
+        }
+        if ($property->publish_to_portal || $property->send_marketing_campaign) {
+            $completed++;
+        }
+        $marketingStats['readiness'] = $checklistTotal > 0 ? (int) round(($completed / $checklistTotal) * 100) : 0;
+
+        return view('properties.show', compact('property', 'features', 'marketingEvents', 'marketingStats'));
     }
 
     /**
@@ -193,6 +236,7 @@ class PropertyController extends Controller
             'media.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
             'publish_to_portal' => 'boolean',
             'send_marketing_campaign' => 'boolean',
+            'marketing_notes' => 'nullable|string',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -208,12 +252,23 @@ class PropertyController extends Controller
         }
         $validated['publish_to_portal'] = $request->boolean('publish_to_portal');
         $validated['send_marketing_campaign'] = $request->boolean('send_marketing_campaign');
+        $marketingNotes = trim($validated['marketing_notes'] ?? '');
+        unset($validated['marketing_notes']);
         if (!empty($validated['address']) || !empty($validated['city']) || !empty($validated['postcode'])) {
             $coords = $this->geocodeAddress(trim(($validated['address'] ?? '') . ' ' . ($validated['city'] ?? '') . ' ' . ($validated['postcode'] ?? '')));
             if ($coords) {
                 $validated['latitude'] = $coords['lat'];
                 $validated['longitude'] = $coords['lng'];
             }
+        }
+        if ($marketingNotes !== '') {
+            $log = $property->activity_log ?? [];
+            $log['marketing_notes'][] = [
+                'note' => $marketingNotes,
+                'recorded_at' => now()->toIso8601String(),
+                'author_id' => auth()->id(),
+            ];
+            $validated['activity_log'] = $log;
         }
         $property->update($validated);
 

@@ -178,18 +178,24 @@
                                 @endforeach
                             </div>
                         </div>
+                        @php
+                            $latestMarketingNote = collect(data_get($property->activity_log, 'marketing_notes', []))->last();
+                        @endphp
                         <div class="mb-3">
                             <h5>Marketing</h5>
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" name="publish_to_portal" id="publish_to_portal" value="1" @checked(old('publish_to_portal', $property->publish_to_portal))>
-                                <label class="form-check-label" for="publish_to_portal">Publish to portal X</label>
+                                <label class="form-check-label" for="publish_to_portal">Publish to portal syndication</label>
                             </div>
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" name="send_marketing_campaign" id="send_marketing_campaign" value="1" @checked(old('send_marketing_campaign', $property->send_marketing_campaign))>
-                                <label class="form-check-label" for="send_marketing_campaign">Send marketing campaign</label>
+                                <label class="form-check-label" for="send_marketing_campaign">Include in active marketing campaigns</label>
                             </div>
-                            <label for="marketing_notes" class="form-label">Marketing Notes</label>
-                            <textarea name="marketing_notes" class="form-control">{{ $property->marketing_notes ?? '' }}</textarea>
+                            <label for="marketing_notes" class="form-label">Add marketing note</label>
+                            <textarea name="marketing_notes" id="marketing_notes" class="form-control" rows="3" placeholder="Record portal updates, brochure changes or campaign ideas"></textarea>
+                            @if($latestMarketingNote)
+                                <div class="form-text">Last note on {{ isset($latestMarketingNote['recorded_at']) ? \Carbon\Carbon::parse($latestMarketingNote['recorded_at'])->format('j M Y H:i') : 'unknown date' }}: "{{ $latestMarketingNote['note'] ?? '—' }}"</div>
+                            @endif
                         </div>
                         <button type="submit" class="btn btn-warning">Update</button>
                         <a href="{{ route('properties.index') }}" class="btn btn-secondary">Cancel</a>

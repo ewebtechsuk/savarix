@@ -9,8 +9,26 @@ class Contact extends Model
 {
     use HasFactory;
 
+    public const TYPES = [
+        'landlord' => 'Landlord',
+        'tenant' => 'Tenant',
+        'applicant' => 'Applicant',
+        'vendor' => 'Vendor',
+        'contractor' => 'Contractor',
+        'supplier' => 'Supplier',
+    ];
+
     protected $fillable = [
-        'type', 'name', 'email', 'phone', 'address', 'notes', 'first_name', 'last_name'
+        'type',
+        'name',
+        'first_name',
+        'last_name',
+        'company',
+        'email',
+        'phone',
+        'address',
+        'notes',
+        'company_id',
     ];
 
     public function groups()

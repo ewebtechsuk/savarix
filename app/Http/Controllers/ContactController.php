@@ -8,8 +8,10 @@ use App\Models\ContactTag;
 use App\Models\ContactNote;
 use App\Models\ContactCommunication;
 use App\Models\ContactViewing;
+use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class ContactController extends Controller
 {
@@ -19,19 +21,87 @@ class ContactController extends Controller
     public function index(Request $request)
     {
         $tenant = tenant();
-        $company_id = $tenant->company_id ?? '468173';
-        $query = Contact::where('company_id', $company_id);
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%")
-                  ->orWhere('phone', 'like', "%$search%")
-                  ->orWhere('company', 'like', "%$search%") ;
+        $companyId = $tenant->company_id ?? null;
+
+        $baseQuery = Contact::query()
+            ->when($companyId, fn ($query) => $query->where('company_id', $companyId));
+
+        $filters = $request->only(['search', 'type', 'group', 'tag']);
+        $filteredQuery = clone $baseQuery;
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $filteredQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('company', 'like', "%{$search}%");
             });
         }
-        $contacts = $query->get();
-        return view('contacts.index', compact('contacts'));
+
+        if (!empty($filters['type']) && $filters['type'] !== 'all') {
+            $filteredQuery->where('type', $filters['type']);
+        }
+
+        if (!empty($filters['group']) && $filters['group'] !== 'all') {
+            $filteredQuery->whereHas('groups', function ($relation) use ($filters) {
+                $relation->where('contact_groups.id', $filters['group']);
+            });
+        }
+
+        if (!empty($filters['tag']) && $filters['tag'] !== 'all') {
+            $filteredQuery->whereHas('tags', function ($relation) use ($filters) {
+                $relation->where('tags.id', $filters['tag']);
+            });
+        }
+
+        $contacts = (clone $filteredQuery)
+            ->with(['groups', 'tags'])
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
+        $typeBreakdown = Contact::query()
+            ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
+            ->select('type', DB::raw('COUNT(*) as total'))
+            ->groupBy('type')
+            ->orderBy('type')
+            ->pluck('total', 'type');
+
+        $groupBreakdown = ContactGroup::query()
+            ->withCount(['contacts' => function ($relation) use ($companyId) {
+                if ($companyId) {
+                    $relation->where('company_id', $companyId);
+                }
+            }])
+            ->orderBy('name')
+            ->get();
+
+        $tagBreakdown = ContactTag::query()
+            ->withCount(['contacts' => function ($relation) use ($companyId) {
+                if ($companyId) {
+                    $relation->where('company_id', $companyId);
+                }
+            }])
+            ->orderBy('name')
+            ->get();
+
+        $totals = [
+            'overall' => $baseQuery->count(),
+            'filtered' => $contacts->total(),
+        ];
+
+        $types = Contact::TYPES;
+
+        return view('contacts.index', compact(
+            'contacts',
+            'filters',
+            'types',
+            'typeBreakdown',
+            'groupBreakdown',
+            'tagBreakdown',
+            'totals'
+        ));
     }
 
     /**
@@ -41,7 +111,8 @@ class ContactController extends Controller
     {
         $allGroups = ContactGroup::orderBy('name')->get();
         $allTags = ContactTag::orderBy('name')->get();
-        return view('contacts.create', compact('allGroups', 'allTags'));
+        $types = Contact::TYPES;
+        return view('contacts.create', compact('allGroups', 'allTags', 'types'));
     }
 
     /**
@@ -49,14 +120,28 @@ class ContactController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->filled('name') && ($request->filled('first_name') || $request->filled('last_name'))) {
+            $request->merge([
+                'name' => trim($request->input('first_name', '') . ' ' . $request->input('last_name', '')),
+            ]);
+        }
+
         $validated = $request->validate([
             'type' => 'required|string|max:50',
             'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:120',
+            'last_name' => 'nullable|string|max:120',
+            'company' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+
+        if ($tenant = tenant()) {
+            $validated['company_id'] = $tenant->company_id;
+        }
+
         $contact = Contact::create($validated);
         $contact->groups()->sync($request->input('groups', []));
         $contact->tags()->sync($request->input('tags', []));
@@ -79,8 +164,9 @@ class ContactController extends Controller
     {
         $allGroups = ContactGroup::orderBy('name')->get();
         $allTags = ContactTag::orderBy('name')->get();
+        $types = Contact::TYPES;
         $contact->load('groups', 'tags');
-        return view('contacts.edit', compact('contact', 'allGroups', 'allTags'));
+        return view('contacts.edit', compact('contact', 'allGroups', 'allTags', 'types'));
     }
 
     /**
@@ -88,14 +174,28 @@ class ContactController extends Controller
      */
     public function update(Request $request, Contact $contact)
     {
+        if (!$request->filled('name') && ($request->filled('first_name') || $request->filled('last_name'))) {
+            $request->merge([
+                'name' => trim($request->input('first_name', '') . ' ' . $request->input('last_name', '')),
+            ]);
+        }
+
         $validated = $request->validate([
             'type' => 'required|string|max:50',
             'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:120',
+            'last_name' => 'nullable|string|max:120',
+            'company' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+
+        if ($tenant = tenant()) {
+            $validated['company_id'] = $tenant->company_id;
+        }
+
         $contact->update($validated);
         $contact->groups()->sync($request->input('groups', []));
         $contact->tags()->sync($request->input('tags', []));
@@ -118,12 +218,53 @@ class ContactController extends Controller
     {
         $type = $request->get('type', 'landlord');
         $q = $request->get('q', '');
-        $results = Contact::where('type', $type)
+        $tenant = tenant();
+        $results = Contact::query()
+            ->when($tenant?->company_id, fn ($query) => $query->where('company_id', $tenant->company_id))
+            ->where('type', $type)
             ->where('name', 'like', "%$q%")
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name']);
         return response()->json($results);
+    }
+
+    public function searchProperties(Request $request)
+    {
+        $tenant = tenant();
+        $q = $request->get('q', '');
+        $onlyUnassigned = $request->boolean('unassigned', true);
+
+        $query = Property::query();
+
+        if ($tenant) {
+            $query->where('tenant_id', $tenant->id);
+        }
+
+        if ($onlyUnassigned) {
+            $query->whereNull('landlord_id');
+        }
+
+        if ($q) {
+            $query->where(function ($builder) use ($q) {
+                $builder->where('title', 'like', "%{$q}%")
+                    ->orWhere('address', 'like', "%{$q}%")
+                    ->orWhere('city', 'like', "%{$q}%")
+                    ->orWhere('postcode', 'like', "%{$q}%");
+            });
+        }
+
+        $properties = $query
+            ->orderBy('title')
+            ->limit(15)
+            ->get(['id', 'title', 'address']);
+
+        return response()->json($properties->map(function ($property) {
+            return [
+                'id' => $property->id,
+                'text' => trim($property->title . ' — ' . $property->address),
+            ];
+        }));
     }
 
     /**
@@ -136,7 +277,11 @@ class ContactController extends Controller
         if (!$action || empty($ids)) {
             return back()->with('error', 'No action or contacts selected.');
         }
-        $contacts = Contact::whereIn('id', $ids)->get();
+        $contactsQuery = Contact::query()->whereIn('id', $ids);
+        if ($tenant = tenant()) {
+            $contactsQuery->where('company_id', $tenant->company_id);
+        }
+        $contacts = $contactsQuery->get();
         if ($action === 'delete') {
             foreach ($contacts as $contact) {
                 $contact->delete();
@@ -211,11 +356,17 @@ class ContactController extends Controller
     public function addViewing(Request $request, Contact $contact)
     {
         $request->validate([
-            'property' => 'required|exists:properties,id',
+            'property_id' => 'required|exists:properties,id',
             'date' => 'required|date',
         ]);
+        $property = Property::findOrFail($request->property_id);
+        if ($tenant = tenant()) {
+            if ($property->tenant_id && $property->tenant_id !== $tenant->id) {
+                abort(403, 'Property does not belong to this tenant.');
+            }
+        }
         $contact->viewings()->create([
-            'property_id' => $request->property,
+            'property_id' => $property->id,
             'date' => $request->date,
             'user_id' => auth()->id(),
         ]);
@@ -308,14 +459,43 @@ class ContactController extends Controller
     {
         $viewing = $contact->viewings()->findOrFail($viewingId);
         $request->validate([
-            'property' => 'required|exists:properties,id',
+            'property_id' => 'required|exists:properties,id',
             'date' => 'required|date',
         ]);
+        $property = Property::findOrFail($request->property_id);
+        if ($tenant = tenant()) {
+            if ($property->tenant_id && $property->tenant_id !== $tenant->id) {
+                abort(403, 'Property does not belong to this tenant.');
+            }
+        }
         $viewing->update([
-            'property_id' => $request->property,
+            'property_id' => $property->id,
             'date' => $request->date,
         ]);
         return redirect()->route('contacts.show', $contact)->with('success', 'Viewing updated.');
+    }
+
+    public function assignProperty(Request $request, Contact $contact)
+    {
+        $request->validate([
+            'property_id' => 'required|exists:properties,id',
+        ]);
+
+        if ($contact->type !== 'landlord') {
+            return back()->with('error', 'Only landlord contacts can be assigned properties.');
+        }
+
+        $property = Property::findOrFail($request->property_id);
+        if ($tenant = tenant()) {
+            if ($property->tenant_id && $property->tenant_id !== $tenant->id) {
+                abort(403, 'Property does not belong to this tenant.');
+            }
+        }
+
+        $property->landlord_id = $contact->id;
+        $property->save();
+
+        return redirect()->route('contacts.show', $contact)->with('success', 'Property assigned successfully.');
     }
 
     /**
@@ -356,11 +536,17 @@ class ContactController extends Controller
     {
         $viewing = $contact->viewings()->findOrFail($viewingId);
         $request->validate([
-            'property' => 'required|exists:properties,id',
+            'property_id' => 'required|exists:properties,id',
             'date' => 'required|date',
         ]);
+        $property = Property::findOrFail($request->property_id);
+        if ($tenant = tenant()) {
+            if ($property->tenant_id && $property->tenant_id !== $tenant->id) {
+                abort(403, 'Property does not belong to this tenant.');
+            }
+        }
         $viewing->update([
-            'property_id' => $request->property,
+            'property_id' => $property->id,
             'date' => $request->date,
         ]);
         return response()->json(['success' => true, 'property_id' => $viewing->property_id, 'date' => $viewing->date]);

@@ -6,8 +6,8 @@
         @csrf
         @method('PUT')
         <div class="mb-3">
-            <label for="property" class="form-label">Property ID</label>
-            <input type="text" name="property" id="property" class="form-control" value="{{ old('property', $viewing->property_id) }}" required>
+            <label for="property_id" class="form-label">Property ID</label>
+            <input type="number" name="property_id" id="property_id" class="form-control" value="{{ old('property_id', $viewing->property_id) }}" required>
         </div>
         <div class="mb-3">
             <label for="date" class="form-label">Date</label>

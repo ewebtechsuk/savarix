@@ -201,8 +201,87 @@
                             <p class="text-muted">No timeline events.</p>
                         </div>
                         <div class="tab-pane fade" id="marketing" role="tabpanel">
-                            <h5>Marketing</h5>
-                            <p class="text-muted">No marketing information set.</p>
+                            <h5 class="mb-3">Marketing</h5>
+                            @php
+                                $marketingNotes = collect(data_get($property->activity_log, 'marketing_notes', []))
+                                    ->sortByDesc(fn ($entry) => $entry['recorded_at'] ?? null)
+                                    ->take(5);
+                            @endphp
+                            <div class="row g-3 mb-4">
+                                <div class="col-lg-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-uppercase text-muted small mb-2">Campaign overview</h6>
+                                            <p class="mb-1"><span class="fw-semibold">Portal status:</span> {{ $marketingStats['portal_status'] }}</p>
+                                            <p class="mb-1"><span class="fw-semibold">Campaign status:</span> {{ $marketingStats['campaign_status'] }}</p>
+                                            <p class="mb-0 text-muted small">Last updated {{ $marketingStats['last_updated'] ?? '—' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-uppercase text-muted small mb-2">Asset readiness</h6>
+                                            <div class="progress mb-3" style="height:8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ $marketingStats['readiness'] }}%;" aria-valuenow="{{ $marketingStats['readiness'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <ul class="list-unstyled small mb-0">
+                                                <li><strong>{{ $marketingStats['media_count'] }}</strong> media assets uploaded</li>
+                                                <li><strong>{{ $marketingStats['document_count'] }}</strong> documents linked</li>
+                                                <li><strong>{{ $marketingStats['feature_count'] }}</strong> features highlighted</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-uppercase text-muted small mb-2">Recent marketing activity</h6>
+                                            @forelse($marketingEvents as $event)
+                                                <div class="mb-3">
+                                                    <div class="fw-semibold">{{ $event->event_name }}</div>
+                                                    <div class="text-muted small">{{ optional($event->occurred_at)->format('j M Y H:i') ?? '—' }}</div>
+                                                    @if(!empty($event->metadata))
+                                                        <div class="text-muted small">{{ \Illuminate\Support\Str::limit(json_encode($event->metadata), 100) }}</div>
+                                                    @endif
+                                                </div>
+                                            @empty
+                                                <p class="text-muted mb-0">No tracked marketing events yet.</p>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light fw-semibold">Campaign journal</div>
+                                        <div class="card-body">
+                                            @forelse($marketingNotes as $entry)
+                                                <div class="mb-3">
+                                                    <div class="fw-semibold">{{ $entry['note'] ?? '—' }}</div>
+                                                    <div class="text-muted small">{{ isset($entry['recorded_at']) ? \Carbon\Carbon::parse($entry['recorded_at'])->format('j M Y H:i') : 'Unknown date' }}</div>
+                                                </div>
+                                            @empty
+                                                <p class="text-muted mb-0">No marketing notes captured yet. Add a note from the property edit screen to build the campaign history.</p>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header bg-light fw-semibold">Next actions</div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled mb-3 small">
+                                                <li class="mb-2"><strong>Refresh media</strong> — upload new photography or reorder the hero carousel.</li>
+                                                <li class="mb-2"><strong>Schedule outreach</strong> — launch an email or SMS campaign to active applicants.</li>
+                                                <li class="mb-2"><strong>Verify portal feeds</strong> — confirm the listing is syndicated to every partner site.</li>
+                                            </ul>
+                                            <a href="{{ route('properties.edit', $property) }}#marketing" class="btn btn-outline-primary btn-sm">Open marketing settings</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
