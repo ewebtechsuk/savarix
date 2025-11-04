@@ -63,7 +63,7 @@ Update the variable in each environment (`.env`, GitHub Actions secrets, Hosting
 
 ### Identity verification (Onfido)
 
-The onboarding flow now provisions an [Onfido](https://onfido.com/) verification session for each new tenant. Configure the following environment variables so the application can authenticate API calls and validate webhook signatures:
+The onboarding flow now provisions an [Onfido](https://onfido.com/) verification session for each new agent company workspace. Configure the following environment variables so the application can authenticate API calls and validate webhook signatures:
 
 ```
 ONFIDO_API_TOKEN=token_xxx
@@ -155,6 +155,6 @@ After it finishes you can run tests or start the application with `php artisan s
 
 See `docs/apex27_import.md` for instructions on using the bundled Python script
 that can ingest raw Apex27 exports (CSV or JSON) and post them to your Savirix
-tenant via the REST API, including automatic creation of contacts, properties,
+agent company via the REST API, including automatic creation of contacts, properties,
 tenancies and payments.
 
