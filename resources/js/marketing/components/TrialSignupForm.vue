@@ -1,7 +1,7 @@
 <template>
     <section class="trial-form">
         <h2>Launch your Savirix trial</h2>
-        <p>Spin up a tenant environment with the upgraded onboarding and KYC workflow in under two minutes.</p>
+        <p>Spin up an agency environment with the upgraded onboarding and KYC workflow in under two minutes.</p>
         <form @submit.prevent="submit">
             <label>
                 <span>Company name</span>
@@ -25,12 +25,12 @@
             </label>
             <div class="form-actions">
                 <button type="submit" :disabled="loading">
-                    <span v-if="! loading">Create trial tenant</span>
+                    <span v-if="! loading">Create trial agency</span>
                     <span v-else>Provisioning…</span>
                 </button>
                 <p v-if="error" class="error">{{ error }}</p>
                 <div v-if="success" class="success">
-                    <p>Your tenant is ready! Head to <a :href="loginUrl" target="_blank" rel="noopener">{{ loginUrl }}</a> to log in and finish KYC.</p>
+                    <p>Your agency workspace is ready! Head to <a :href="loginUrl" target="_blank" rel="noopener">{{ loginUrl }}</a> to log in and finish KYC.</p>
                 </div>
             </div>
         </form>
@@ -89,7 +89,7 @@ async function submit() {
             domain: response.domain,
         }, sessionId);
     } catch (err) {
-        error.value = err.message || 'We could not create the tenant. Please try again.';
+        error.value = err.message || 'We could not create the agency workspace. Please try again.';
         analytics?.track('marketing.signup_error', {
             message: error.value,
         }, sessionId);

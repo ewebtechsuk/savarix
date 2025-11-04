@@ -1,7 +1,7 @@
 # Apex27 to Savirix Import Helper
 
 `scripts/apex27_import.py` is a Python utility that can read a raw Apex27
-export (CSV or JSON) and stream it into your Savirix tenant by calling the
+export (CSV or JSON) and stream it into your Savirix agent company workspace by calling the
 public REST API.  Contacts are created first, followed by properties,
 tenancies and payments so that all cross-record references are resolved
 automatically.
@@ -35,7 +35,7 @@ Apex fields to Savirix payloads automatically:
 
 ```bash
 python scripts/apex27_import.py \
-    https://your-tenant.example.com \
+    https://your-agency.example.com \
     user@example.com \
     "super-secret-password" \
     --apex-format raw \
@@ -70,7 +70,7 @@ Any `external_id` captured from contacts, properties and tenancies is recorded
 and used to resolve relationships in subsequent steps.  During a dry run the
 script still performs all mapping logic so you can verify that every tenancy
 and payment can be linked to the correct Savirix record before making any
-changes to your tenant.
+changes to your agent company workspace.
 
 ## Raw Apex27 Example
 

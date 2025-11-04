@@ -1,3 +1,3 @@
 Aktonz company_id: 468173
 
-All code and queries should use this value for Aktonz tenant filtering and assignment.
+All code and queries should use this value for Aktonz agent company filtering and assignment.
