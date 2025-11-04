@@ -17,21 +17,11 @@ trait CreatesApplication
     {
         $app = require __DIR__ . '/../bootstrap/app.php';
 
-        $app->make(Kernel::class)->bootstrap();
-
         $configuredKey = (string) env('APP_KEY', '');
 
-        if ($configuredKey === '') {
-            $configuredKey = 'base64:VNuWYLe0rTIOyH2PdBl8vmxlwmyEqDzEDDNGuphepaI=';
-
-            foreach (['APP_KEY' => $configuredKey] as $name => $value) {
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
-                putenv($name.'='.$value);
-            }
+        if (! $this->isValidAppKey($configuredKey)) {
+            $configuredKey = 'base64:' . base64_encode(random_bytes(32));
         }
-
-        $app['config']->set('app.key', $configuredKey);
 
         $databasePath = $app->databasePath('database.sqlite');
 
@@ -41,10 +31,29 @@ trait CreatesApplication
 
         touch($databasePath);
 
-        $app['config']->set('database.default', env('DB_CONNECTION', 'sqlite'));
-        $app['config']->set('database.connections.sqlite.database', env('DB_DATABASE', $databasePath));
-        $app['config']->set('database.connections.central', $app['config']->get('database.connections.sqlite'));
-        $app['config']->set('tenancy.database.central_connection', $app['config']->get('database.default'));
+        foreach ([
+            'APP_KEY' => $configuredKey,
+            'DB_CONNECTION' => 'sqlite',
+            'DB_DATABASE' => $databasePath,
+            'TENANCY_CENTRAL_CONNECTION' => 'sqlite',
+            'DB_HOST' => '127.0.0.1',
+        ] as $name => $value) {
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+            putenv($name.'='.$value);
+        }
+
+        $app->make(Kernel::class)->bootstrap();
+
+        $app['config']->set('app.key', $configuredKey);
+        $app['config']->set('database.default', 'sqlite');
+        $app['config']->set('database.connections.sqlite.database', $databasePath);
+
+        $sqliteConnection = $app['config']->get('database.connections.sqlite');
+
+        $app['config']->set('database.connections.mysql', $sqliteConnection);
+        $app['config']->set('database.connections.central', $sqliteConnection);
+        $app['config']->set('tenancy.database.central_connection', 'sqlite');
 
         $migrations = [
             'database/migrations/2014_10_12_000000_create_users_table.php',
@@ -76,7 +85,27 @@ trait CreatesApplication
         TenantRepositoryManager::clear();
         TenantFixtures::seed();
 
-
         return $app;
+    }
+
+    private function isValidAppKey(string $key): bool
+    {
+        if ($key === '') {
+            return false;
+        }
+
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+
+            if ($decoded === false) {
+                return false;
+            }
+
+            return strlen($decoded) === 16 || strlen($decoded) === 32;
+        }
+
+        $length = strlen($key);
+
+        return $length === 16 || $length === 32;
     }
 }
