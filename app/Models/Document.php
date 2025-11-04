@@ -11,6 +11,8 @@ class Document extends Model
     use HasFactory;
 
     protected $fillable = [
+        'documentable_type',
+        'documentable_id',
         'name',
         'file_path',
         'signature_request_id',
