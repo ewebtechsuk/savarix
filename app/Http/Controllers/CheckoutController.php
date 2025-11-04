@@ -38,7 +38,7 @@ class CheckoutController extends Controller
                 'confirmation_method' => 'manual',
                 'confirm' => true,
                 'receipt_email' => $validated['billing_email'],
-                'description' => 'Savirix subscription for '.($validated['users']-1).' additional users',
+                'description' => 'savirix subscription for '.($validated['users']-1).' additional users',
             ]);
             return back()->with('success', 'Payment successful!');
         } catch (\Exception $e) {

@@ -33,7 +33,7 @@
                     <a href="mailto:sales@savirix.com" @click="trackNav('footer_email')">Contact</a>
                 </div>
             </div>
-            <p class="app-footer__note">&copy; 2025 Savirix Ltd. All rights reserved.</p>
+            <p class="app-footer__note">&copy; {{ new Date().getFullYear() }} Savirix. All rights reserved.</p>
         </footer>
     </div>
 </template>

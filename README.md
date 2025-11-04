@@ -53,7 +53,7 @@ The Stancl Tenancy package now reads its central host list and database connecti
 
 ```
 TENANCY_CENTRAL_CONNECTION=${DB_CONNECTION}
-TENANCY_CENTRAL_DOMAINS="app.localhost,staging.savirix.io"
+TENANCY_CENTRAL_DOMAINS="app.localhost,staging.savirix.com"
 ```
 
 Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supply a JSON array (for example `["app.example.com","staging.example.com"]`). The defaults cover typical local development hosts (`127.0.0.1`, `localhost`, `savirix.localhost` and the host portion of `APP_URL`).

@@ -296,7 +296,7 @@ class ContactController extends Controller
                 return back()->with('success', 'Tag added to selected contacts.');
             }
         } elseif ($action === 'email') {
-            $subject = $request->input('subject', 'Message from Savirix');
+            $subject = $request->input('subject', 'Message from SAVIRIX');
             $body = $request->input('body', 'This is a bulk message.');
             foreach ($contacts as $contact) {
                 if ($contact->email) {
