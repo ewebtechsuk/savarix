@@ -24,7 +24,7 @@ if (! is_array($centralDomainsFromEnv)) {
     $centralDomainsFromEnv = [];
 }
 
-$defaultCentralDomains = ['127.0.0.1', 'localhost', 'ressapp.localhost'];
+$defaultCentralDomains = ['127.0.0.1', 'localhost', 'savirix.localhost'];
 $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
 
 if (is_string($appUrlHost) && $appUrlHost !== '') {

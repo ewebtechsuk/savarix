@@ -2,7 +2,7 @@
     <div class="tenant-login">
         <section class="tenant-login__hero">
             <p class="tenant-login__eyebrow">Aktonz tenant portal</p>
-            <h1>Log in to your Ressapp tenant workspace</h1>
+            <h1>Log in to your Savirix tenant workspace</h1>
             <p>Securely access rent statements, maintenance updates, and documents shared by the Aktonz lettings team.</p>
         </section>
 
@@ -56,8 +56,8 @@ const analytics = inject('analytics');
 const sessionId = inject('marketingSession');
 
 const loginHost = 'aktonz.darkorange-chinchilla-918430.hostingersite.com';
-const tenantFallbackHost = 'aktonz.ressapp.com';
-const globalFallbackHost = 'app.ressapp.com';
+const tenantFallbackHost = 'aktonz.savirix.com';
+const globalFallbackHost = 'app.savirix.com';
 const fallbackHost = tenantFallbackHost || globalFallbackHost;
 
 const loginLinks = [

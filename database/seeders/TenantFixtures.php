@@ -17,7 +17,7 @@ class TenantFixtures
                 'slug' => 'aktonz',
                 'name' => 'Aktonz',
                 'domains' => [
-                    'aktonz.ressapp.localhost:8888',
+                    'aktonz.savirix.localhost:8888',
                     'aktonz.darkorange-chinchilla-918430.hostingersite.com',
                 ],
             ],
@@ -25,14 +25,14 @@ class TenantFixtures
                 'slug' => 'haringeyestates',
                 'name' => 'Haringey Estates',
                 'domains' => [
-                    'haringey.ressapp.localhost:8888',
+                    'haringey.savirix.localhost:8888',
                 ],
             ],
             [
                 'slug' => 'oakwoodhomes',
                 'name' => 'Oakwood Homes',
                 'domains' => [
-                    'oakwood.ressapp.localhost:8888',
+                    'oakwood.savirix.localhost:8888',
                     'oakwoodhomes.example.com',
                 ],
             ],

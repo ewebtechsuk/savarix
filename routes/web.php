@@ -66,7 +66,7 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
     Route::put('/maintenance/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance.update');
 });
 
-// Tenant routes (aktonz.ressapp.com, etc.)
+// Tenant routes (aktonz.savirix.com, etc.)
 Route::group(['middleware' => ['auth', 'tenancy', 'role:Tenant']], function () {
     Route::resource('properties', PropertyController::class);
     Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');

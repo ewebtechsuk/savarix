@@ -1,6 +1,6 @@
 # UK Estate & Letting Agent Software Competitors
 
-This document lists major UK competitors for Ressapp in the estate and letting agent software space. Each entry includes the company's website and a brief description of their offering.
+This document lists major UK competitors for Savirix in the estate and letting agent software space. Each entry includes the company's website and a brief description of their offering.
 
 1. **Reapit**  
    Website: https://www.reapit.com/  
@@ -52,7 +52,7 @@ This document lists major UK competitors for Ressapp in the estate and letting a
    Company: Eurolink Technology Ltd, London, UK.  
    Overview: Comprehensive CRM platform with workflow automation, accounts, and API integrations.
 
-## Improvement Opportunities for Ressapp
+## Improvement Opportunities for Savirix
 
 - **Unified CRM & Accounting**: Offer seamless sales, lettings, and client accounting similar to Reapit and PCHomes.
 - **Portal & Website Integrations**: Ensure one-click listing to portals like Rightmove, Zoopla, and OnTheMarket.
@@ -62,5 +62,5 @@ This document lists major UK competitors for Ressapp in the estate and letting a
 - **Analytics & Dashboards**: Include real-time KPIs and reporting to give agencies actionable insights.
 - **Scalability & Multi-Branch Support**: Support growth for agencies with multiple branches or franchises.
 
-Implementing these features thoughtfully will position Ressapp as a competitive choice among UK estate and letting agent software solutions.
+Implementing these features thoughtfully will position Savirix as a competitive choice among UK estate and letting agent software solutions.
 

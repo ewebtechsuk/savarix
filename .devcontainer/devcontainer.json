@@ -1,11 +1,11 @@
 {
-  "name": "RessApp",
+  "name": "Savirix",
   "image": "mcr.microsoft.com/devcontainers/php:8.3",
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "20" },
     "ghcr.io/devcontainers/features/mysql:1": {
       "version": "8.0",
-      "mysqlDatabase": "ressapp",
+      "mysqlDatabase": "savirix",
       "mysqlUser": "ressuser",
       "mysqlPassword": "secret"
     }
@@ -19,7 +19,7 @@
     "DB_CONNECTION": "mysql",
     "DB_HOST": "localhost",
     "DB_PORT": "3306",
-    "DB_DATABASE": "ressapp",
+    "DB_DATABASE": "savirix",
     "DB_USERNAME": "ressuser",
     "DB_PASSWORD": "secret",
     "CACHE_DRIVER": "file",

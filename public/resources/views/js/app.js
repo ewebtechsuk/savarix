@@ -9,7 +9,7 @@ angular.module('ngConfig', [])
 	});
 
 // Declare app level module which depends on views, and components
-var ressApp = angular.module('myApp', [
+var savirixApp = angular.module('myApp', [
   'ui.tinymce',
   'ngRoute',
   'ngConfig',

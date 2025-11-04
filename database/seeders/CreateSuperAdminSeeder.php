@@ -11,7 +11,7 @@ class CreateSuperAdminSeeder extends Seeder
     public function run()
     {
         User::updateOrCreate(
-            ['email' => 'admin@ressapp.com'],
+            ['email' => 'admin@savirix.com'],
             [
                 'name' => 'Super Admin',
                 'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'changeme')),

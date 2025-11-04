@@ -3,8 +3,8 @@
 1. Edit your hosts file:
    sudo nano /etc/hosts
    Add:
-   127.0.0.1   ressapp.localhost
-   127.0.0.1   aktonz.ressapp.localhost
+   127.0.0.1   savirix.localhost
+   127.0.0.1   aktonz.savirix.localhost
 
 2. Edit Apache config:
    - Open /Applications/MAMP/conf/apache/httpd.conf
@@ -14,17 +14,17 @@
 3. Edit /Applications/MAMP/conf/apache/extra/httpd-vhosts.conf:
    Add:
    <VirtualHost *:8888>
-       ServerName ressapp.localhost
-       DocumentRoot "/Applications/MAMP/htdocs/ressapp/public"
-       <Directory "/Applications/MAMP/htdocs/ressapp/public">
+       ServerName savirix.localhost
+       DocumentRoot "/Applications/MAMP/htdocs/savirix/public"
+       <Directory "/Applications/MAMP/htdocs/savirix/public">
            AllowOverride All
            Require all granted
        </Directory>
    </VirtualHost>
    <VirtualHost *:8888>
-       ServerName aktonz.ressapp.localhost
-       DocumentRoot "/Applications/MAMP/htdocs/ressapp/public"
-       <Directory "/Applications/MAMP/htdocs/ressapp/public">
+       ServerName aktonz.savirix.localhost
+       DocumentRoot "/Applications/MAMP/htdocs/savirix/public"
+       <Directory "/Applications/MAMP/htdocs/savirix/public">
            AllowOverride All
            Require all granted
        </Directory>
@@ -33,13 +33,13 @@
 4. Restart MAMP servers.
 
 5. Update .env:
-   APP_URL=http://ressapp.localhost:8888
+   APP_URL=http://savirix.localhost:8888
 
 6. Update your `.env` file so the tenancy central domains include your local hosts:
-   TENANCY_CENTRAL_DOMAINS="ressapp.localhost"
+   TENANCY_CENTRAL_DOMAINS="savirix.localhost"
 
 7. Access:
-   - Central: http://ressapp.localhost:8888/
-   - Aktonz:  http://aktonz.ressapp.localhost:8888/
+   - Central: http://savirix.localhost:8888/
+   - Aktonz:  http://aktonz.savirix.localhost:8888/
 
 This will enable Stancl Tenancy subdomain routing for local development.

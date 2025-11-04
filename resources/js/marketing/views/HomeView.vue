@@ -4,7 +4,7 @@
             <div class="hero-copy">
                 <p class="eyebrow">Unified marketing + operations</p>
                 <h1>Scale your property management business without multiplying headcount.</h1>
-                <p class="subtitle">Ressapp connects lead capture, onboarding, and tenant workflows into one automation layer. Close faster, collect sooner, and keep your team focused on clients.</p>
+                <p class="subtitle">Savirix connects lead capture, onboarding, and tenant workflows into one automation layer. Close faster, collect sooner, and keep your team focused on clients.</p>
                 <div class="hero-ctas">
                     <button class="primary" type="button" @click="openDemo">Book a guided demo</button>
                     <button class="ghost" type="button" @click="startTrial">Start free trial</button>

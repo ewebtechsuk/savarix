@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Tenant Directory</h1>
-    <p>The following tenants are currently registered in Ressapp:</p>
+    <p>The following tenants are currently registered in Savirix:</p>
     <ul>
         <?php foreach ($tenants as $tenant): ?>
             <li>

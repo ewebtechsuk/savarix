@@ -1,4 +1,4 @@
-# ressapp
+# Savirix
 
 This repository contains a Laravel application.
 
@@ -53,10 +53,10 @@ The Stancl Tenancy package now reads its central host list and database connecti
 
 ```
 TENANCY_CENTRAL_CONNECTION=${DB_CONNECTION}
-TENANCY_CENTRAL_DOMAINS="app.localhost,staging.ressapp.io"
+TENANCY_CENTRAL_DOMAINS="app.localhost,staging.savirix.com"
 ```
 
-Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supply a JSON array (for example `["app.example.com","staging.example.com"]`). The defaults cover typical local development hosts (`127.0.0.1`, `localhost`, `ressapp.localhost` and the host portion of `APP_URL`).
+Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supply a JSON array (for example `["app.example.com","staging.example.com"]`). The defaults cover typical local development hosts (`127.0.0.1`, `localhost`, `savirix.localhost` and the host portion of `APP_URL`).
 
 Update the variable in each environment (`.env`, GitHub Actions secrets, Hostinger control panel, etc.) so tenancy middleware resolves the central application correctly. Local developers can follow `docs/local_subdomain_setup.txt` for guidance on mapping subdomains via `/etc/hosts`.
 
@@ -154,7 +154,7 @@ After it finishes you can run tests or start the application with `php artisan s
 ## Apex27 Import Helper
 
 See `docs/apex27_import.md` for instructions on using the bundled Python script
-that can ingest raw Apex27 exports (CSV or JSON) and post them to your Ressapp
+that can ingest raw Apex27 exports (CSV or JSON) and post them to your Savirix
 tenant via the REST API, including automatic creation of contacts, properties,
 tenancies and payments.
 

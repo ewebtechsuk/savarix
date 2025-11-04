@@ -76,7 +76,7 @@
 
 - The offline research pack does not include profiles for 10Ninety, Lifesycle by Iceberg Digital, or Expert Agent, so fresh desk research is still needed to benchmark their automation, marketing, and pricing models.
 
-## Recommendations for Ressapp
+## Recommendations for Savirix
 
 - Deliver unified sales, lettings, and accounting workflows with strong portal integrations to match Reapit and PCHomes while staying competitive on operational breadth.【F:docs/competitors.md†L57-L63】
 - Invest in automation, workflow tooling, and client-facing apps to rival Street and Dezrez, ensuring agencies can deploy modern digital journeys.【F:docs/competitors.md†L59-L62】
@@ -85,6 +85,6 @@
 ## Implementation Progress
 
 - Introduced a unified dashboard service and API endpoint that aggregates sales, lettings, accounting, portal distribution, and active partner integration metrics so agencies receive a single snapshot of operations.【F:app/Services/UnifiedAgencyDashboardService.php†L7-L100】【F:app/Http/Controllers/Api/DashboardApiController.php†L7-L19】【F:routes/api.php†L9-L33】
-- Expanded workflow automation to detect property status transitions, create contextual follow-up tasks, trigger portal synchronisation jobs, and dispatch partner webhooks, aligning Ressapp with the automation focus highlighted by Street and Dezrez.【F:app/Providers/AppServiceProvider.php†L7-L53】【F:app/Services/WorkflowEngine.php†L9-L170】【F:app/Jobs/SyncPropertyToPortal.php†L7-L32】
+- Expanded workflow automation to detect property status transitions, create contextual follow-up tasks, trigger portal synchronisation jobs, and dispatch partner webhooks, aligning Savirix with the automation focus highlighted by Street and Dezrez.【F:app/Providers/AppServiceProvider.php†L7-L53】【F:app/Services/WorkflowEngine.php†L9-L170】【F:app/Jobs/SyncPropertyToPortal.php†L7-L32】
 - Added partner integration records, management APIs, and migrations so agencies can configure third-party portals or automation providers in line with AgentOS-style ecosystems.【F:app/Models/PartnerIntegration.php†L7-L28】【F:app/Http/Controllers/Api/PartnerIntegrationController.php†L7-L52】【F:database/migrations/2025_10_11_020500_create_partner_integrations_table.php†L1-L22】
 

@@ -39,7 +39,7 @@ class TenantProvisionerTest extends TestCase
         tenancy()->initialize($tenant);
 
         try {
-            $this->assertDatabaseHas('users', ['email' => 'admin@ressapp.com']);
+            $this->assertDatabaseHas('users', ['email' => 'admin@savirix.com']);
             $this->assertDatabaseHas('users', ['email' => 'tenant@aktonz.com']);
         } finally {
             tenancy()->end();
@@ -68,7 +68,7 @@ class TenantProvisionerTest extends TestCase
         tenancy()->initialize($tenant);
 
         try {
-            $this->assertDatabaseHas('users', ['email' => 'admin@ressapp.com']);
+            $this->assertDatabaseHas('users', ['email' => 'admin@savirix.com']);
         } finally {
             tenancy()->end();
         }

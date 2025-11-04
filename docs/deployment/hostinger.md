@@ -68,7 +68,7 @@ Run these steps the first time you bring a Hostinger environment online:
 4. Clone the repository or download the latest release:
 
    ```bash
-   git clone -b main https://github.com/ewebtechsuk/ressapp.git .
+   git clone -b main https://github.com/ewebtechsuk/savirix.git .
    ```
 
 5. Make the deployment script executable:

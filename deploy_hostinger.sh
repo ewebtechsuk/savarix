@@ -36,7 +36,7 @@ else
         echo "Directory is not empty and no artisan file found. Cleaning up before clone."
         rm -rf ./*
     fi
-    git clone -b main https://github.com/ewebtechsuk/ressapp.git .
+    git clone -b main https://github.com/ewebtechsuk/savirix.git .
 fi
 
 # 3. (Skip pull if just cloned)

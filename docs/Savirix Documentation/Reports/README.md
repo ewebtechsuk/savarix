@@ -17,4 +17,4 @@ Summarises analytics and downloadable reports available within Apex27.
 
 ## Next Actions
 - Gather sample data to produce meaningful screenshots in Scribe.
-- Identify any custom reports configured for RessApp tenants.
+- Identify any custom reports configured for Savirix tenants.

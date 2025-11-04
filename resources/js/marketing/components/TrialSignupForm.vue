@@ -1,6 +1,6 @@
 <template>
     <section class="trial-form">
-        <h2>Launch your Ressapp trial</h2>
+        <h2>Launch your Savirix trial</h2>
         <p>Spin up a tenant environment with the upgraded onboarding and KYC workflow in under two minutes.</p>
         <form @submit.prevent="submit">
             <label>

@@ -202,7 +202,7 @@ class CompanyControllerTest extends TestCase
         tenancy()->initialize($tenant);
 
         try {
-            $this->assertDatabaseHas('users', ['email' => 'admin@ressapp.com']);
+            $this->assertDatabaseHas('users', ['email' => 'admin@savirix.com']);
         } finally {
             tenancy()->end();
         }

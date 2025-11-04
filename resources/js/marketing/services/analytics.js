@@ -1,4 +1,4 @@
-const SESSION_KEY = 'ressapp_marketing_session';
+const SESSION_KEY = 'savirix_marketing_session';
 
 function generateSessionId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {

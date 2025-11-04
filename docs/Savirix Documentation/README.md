@@ -1,4 +1,4 @@
-# RessApp Documentation – Apex27 Module Captures
+# Savirix Documentation – Apex27 Module Captures
 
 This directory collates Scribe guides and notes for each Apex27 CRM module. Use the folder structure to jump into module-specific documentation and update the Feature Map as new guides are recorded.
 

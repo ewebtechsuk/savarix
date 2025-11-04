@@ -1,7 +1,7 @@
-# Apex27 to Ressapp Import Helper
+# Apex27 to Savirix Import Helper
 
 `scripts/apex27_import.py` is a Python utility that can read a raw Apex27
-export (CSV or JSON) and stream it into your Ressapp tenant by calling the
+export (CSV or JSON) and stream it into your Savirix tenant by calling the
 public REST API.  Contacts are created first, followed by properties,
 tenancies and payments so that all cross-record references are resolved
 automatically.
@@ -30,7 +30,7 @@ automatically.
 ## Running the Import
 
 When supplying raw Apex27 exports use the `raw` format so the script can map
-Apex fields to Ressapp payloads automatically:
+Apex fields to Savirix payloads automatically:
 
 
 ```bash
@@ -42,7 +42,7 @@ python scripts/apex27_import.py \
     --data-dir /path/to/apex/export
 ```
 
-If you prefer to provide Ressapp-ready JSON payloads (for example when the
+If you prefer to provide Savirix-ready JSON payloads (for example when the
 mapping is handled elsewhere) keep the default `prepared` format and populate
 `properties.json`, `tenancies.json`, `payments.json` and (optionally)
 `contacts.json` with the fields expected by the API.  Include `external_id`
@@ -69,7 +69,7 @@ values wherever a later record needs to reference a previously created one
 Any `external_id` captured from contacts, properties and tenancies is recorded
 and used to resolve relationships in subsequent steps.  During a dry run the
 script still performs all mapping logic so you can verify that every tenancy
-and payment can be linked to the correct Ressapp record before making any
+and payment can be linked to the correct Savirix record before making any
 changes to your tenant.
 
 ## Raw Apex27 Example
@@ -82,7 +82,7 @@ ID,Type,FirstName,LastName,Email,Mobile,Address1,Town,Postcode
 CNT-001,Landlord,Alex,Young,alex@example.com,+44123456789,12 Station Rd,Leeds,LS1 1AA
 ```
 
-It is converted into a Ressapp contact payload with `external_id: "CNT-001"`,
+It is converted into a Savirix contact payload with `external_id: "CNT-001"`,
 `type: "landlord"` and `name: "Alex Young"`.  Properties, tenancies and
-payments follow similar conventions, matching Apex27 identifiers to Ressapp
+payments follow similar conventions, matching Apex27 identifiers to Savirix
 IDs automatically.

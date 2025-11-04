@@ -16,13 +16,13 @@ class TenantPortalUserSeeder extends Seeder
 
     private function ensureAdminUser(): void
     {
-        if (User::where('email', 'admin@ressapp.com')->exists()) {
+        if (User::where('email', 'admin@savirix.com')->exists()) {
             return;
         }
 
         User::factory()->create([
             'name' => 'Portal Admin',
-            'email' => 'admin@ressapp.com',
+            'email' => 'admin@savirix.com',
             'password' => Hash::make(env('PORTAL_ADMIN_PASSWORD', 'changeme')),
             'is_admin' => true,
         ]);

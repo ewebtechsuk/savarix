@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Import Apex27 export data directly into a Ressapp tenant.
+"""Import Apex27 export data directly into a Savirix tenant.
 
 The importer now understands raw Apex27 exports (CSV or JSON) and can
 create contacts, properties, tenancies and payments in the correct
 order.  Relationship fields are automatically resolved by keeping track
-of the Ressapp identifiers created for each record.  You can still feed
-pre-shaped payloads that already match the Ressapp API by switching the
+of the Savirix identifiers created for each record.  You can still feed
+pre-shaped payloads that already match the Savirix API by switching the
 ``--apex-format`` flag to ``prepared``.
 
 Typical usage against a freshly downloaded Apex27 export directory:
@@ -54,10 +54,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "base_url",
-        help="Base URL of the Ressapp tenant, e.g. https://tenant.example.com",
+        help="Base URL of the Savirix tenant, e.g. https://tenant.example.com",
     )
-    parser.add_argument("email", help="Ressapp user email for API authentication")
-    parser.add_argument("password", help="Ressapp user password for API authentication")
+    parser.add_argument("email", help="Savirix user email for API authentication")
+    parser.add_argument("password", help="Savirix user password for API authentication")
     parser.add_argument(
         "--data-dir",
         default=Path("data/apex27"),
@@ -94,7 +94,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         choices=["prepared", "raw"],
         help=(
             "How to interpret the Apex27 files: 'raw' understands Apex27's native "
-            "exports while 'prepared' expects Ressapp-ready payloads (default: prepared)."
+            "exports while 'prepared' expects Savirix-ready payloads (default: prepared)."
 
         ),
     )

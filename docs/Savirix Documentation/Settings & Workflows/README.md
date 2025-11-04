@@ -16,5 +16,5 @@ Administrative configuration covering user management, automation rules, and com
 - Role-based access controls features module-level toggles and data visibility limits.
 
 ## Next Actions
-- Map default roles to RessApp persona definitions.
+- Map default roles to Savirix persona definitions.
 - Capture audit log interface if present.
