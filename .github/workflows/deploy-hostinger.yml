@@ -28,6 +28,8 @@ jobs:
         id: deploy_config
         shell: bash
         run: |
+          set -euo pipefail
+
           host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
           user="${HOSTINGER_FTP_USERNAME:-${HOSTINGER_FTP_USER:-${FTP_USERNAME:-${FTP_USER:-}}}}"
           pass="${HOSTINGER_FTP_PASSWORD:-${HOSTINGER_FTP_PASS:-${FTP_PASSWORD:-${FTP_PASS:-}}}}"
@@ -42,6 +44,51 @@ jobs:
           host="$(trim "$host")"
           user="$(trim "$user")"
           pass="$(trim "$pass")"
+          target="$(trim "$target")"
+          if [[ "$host" =~ ^([A-Za-z][A-Za-z0-9+.-]*)://(.+)$ ]]; then
+            detected_protocol="${BASH_REMATCH[1]}"
+            host_remainder="${BASH_REMATCH[2]}"
+            if [ -z "$protocol" ]; then
+              protocol="$detected_protocol"
+            fi
+          else
+            host_remainder="$host"
+          fi
+
+          # Split any embedded remote path from the host (ftp.example.com/path/to/dir)
+          if [[ "$host_remainder" == */* ]]; then
+            host_path="${host_remainder#*/}"
+            host_name="${host_remainder%%/*}"
+            if [ -z "$target" ] && [ -n "$host_path" ]; then
+              host_path="${host_path#/}"
+              target="$host_path"
+            fi
+          else
+            host_name="$host_remainder"
+          fi
+
+          # Extract a port from the host if one is embedded (ftp.example.com:2222)
+          if [[ "$host_name" =~ ^\[(.*)\](?::([0-9]+))?$ ]]; then
+            host_name="${BASH_REMATCH[1]}"
+            embedded_port="${BASH_REMATCH[2]}"
+          elif [[ "$host_name" == *:* ]]; then
+            possible_port="${host_name##*:}"
+            if [[ "$possible_port" =~ ^[0-9]+$ ]]; then
+              embedded_port="$possible_port"
+              host_name="${host_name%:*}"
+            else
+              embedded_port=""
+            fi
+          else
+            embedded_port=""
+          fi
+
+          if [ -z "$port" ] && [ -n "$embedded_port" ]; then
+            port="$embedded_port"
+          fi
+
+          host="$host_name"
+          host="$(trim "$host")"
           target="$(trim "$target")"
           protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
           protocol="$(trim "$protocol")"
