@@ -360,18 +360,21 @@ jobs:
       - name: Preflight SSH check
         if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
         with:
           host: ${{ secrets.HOSTINGER_FTP_HOST }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           # Use ONE of the following auth methods:
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           # key: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          port: ${{ secrets.HOSTINGER_FTP_PORT || '65002' }}
           script_stop: true
+          envs: HOSTINGER_TARGET_DIR
           script: |
             echo "Connected OK"
-            mkdir -p ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
-            ls -la ${{ secrets.HOSTINGER_FTP_TARGET_DIR }} | head -n 50
+            mkdir -p "$HOSTINGER_TARGET_DIR"
+            ls -la "$HOSTINGER_TARGET_DIR" | head -n 50
 
       - name: Upload application to Hostinger (SCP)
         if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
@@ -382,7 +385,7 @@ jobs:
           # Use ONE of the following auth methods:
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           # key: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT }}
+          port: ${{ secrets.HOSTINGER_FTP_PORT || '65002' }}
           source: ${{ env.SFTP_PAYLOAD_DIR }}/
           target: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
           overwrite: true
