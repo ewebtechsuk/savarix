@@ -12,6 +12,7 @@
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
         "alpinejs": "^3.4.2",
+        "@rollup/rollup-linux-x64-gnu": "^4.28.1",
         "autoprefixer": "^10.4.2",
         "bootstrap": "^5.3.7",
         "jquery": "^3.7.1",

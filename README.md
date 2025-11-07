@@ -112,6 +112,8 @@ clear error message when any required secret is missing so you can correct the c
 
 For screenshots, a step-by-step checklist that matches the Hostinger FTP screen, guidance on whether you need extra secrets, and troubleshooting tips for HTTP 500 errors after deploys, see [docs/deployment/hostinger.md](docs/deployment/hostinger.md).
 
+After each deploy, SSH into the server and verify that `public_html/` contains the built site's `index.html` and asset folders directly in the directory root. The deployment workflow temporarily stages files inside `.deploy-sftp/`, then the follow-up `Flatten deployment folder` step moves the contents into `public_html/` and removes both the staging directory and any stray `dist/` wrapper so the web root stays clean. If you still see either folder after a run, rerun the workflow and check the deployment logs for the flatten step.
+
 > **Composer access tokens:** If Composer warns about missing GitHub authentication while resolving dependencies, add a
 > `GITHUB_TOKEN` repository secret (or set it as an Actions variable). The workflow automatically picks it up so private
 > packages can be installed during the build.

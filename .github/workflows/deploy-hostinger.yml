@@ -75,9 +75,28 @@ jobs:
           port: 65002
           script_stop: true
           script: |
+            set -e
+
             TARGET="/home/u753768407/domains/savarix.com/public_html"
             STAGING="$TARGET/.deploy-sftp"
+
+            move_contents() {
+              SRC="$1"
+              DEST="$2"
+
+              for ITEM in "$SRC"/* "$SRC"/.[!.]* "$SRC"/..?*; do
+                if [ -e "$ITEM" ]; then
+                  mv "$ITEM" "$DEST"/
+                fi
+              done
+            }
+
             if [ -d "$STAGING" ]; then
-              cp -a "$STAGING"/. "$TARGET"/
+              move_contents "$STAGING" "$TARGET"
               rm -rf "$STAGING"
+            fi
+
+            if [ -d "$TARGET/dist" ]; then
+              move_contents "$TARGET/dist" "$TARGET"
+              rmdir "$TARGET/dist"
             fi

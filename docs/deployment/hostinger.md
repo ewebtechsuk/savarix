@@ -118,17 +118,47 @@ After the script completes:
 
 If the public site is still returning an HTTP 500 error after a deploy, walk through this checklist:
 
-1. **Inspect the Laravel log on Hostinger** – SSH into the account and stream `storage/logs/laravel.log` so you can see the exact exception being thrown:
+1. **Validate the document root layout** – the deployment workflow uploads into `public_html/.deploy-sftp/` and the follow-up flatten step moves the files into `public_html/`. If a failed run leaves either `.deploy-sftp/` or a stray `dist/` folder behind, clean them up manually:
 
    ```bash
-   ssh <user>@<host>
+   ssh -p 65002 <user>@<host>
    cd ~/domains/<your-domain>/public_html
-   tail -f storage/logs/laravel.log
+   mv .deploy-sftp/* . 2>/dev/null || true
+   rm -rf .deploy-sftp
+   if [ -d dist ]; then mv dist/* . && rmdir dist; fi
+   ls -la
    ```
 
-   Copy the latest stack trace when asking for help; it confirms whether the failure is due to missing environment variables, migrations, or file permissions.
+   The listing should show your built `index.html` and asset directories directly inside `public_html/`.
 
-2. **Re-run the deployment script** – `bash deploy_hostinger.sh` reinstalls Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable. When you prefer to execute the steps manually, run:
+2. **Inspect the Laravel log on Hostinger** – set `APP_DEBUG=true` in `.env` temporarily if you need detailed error pages, then tail the latest stack trace while reproducing the error:
+
+   ```bash
+   tail -n 50 storage/logs/laravel.log
+   ```
+
+   Remember to revert `APP_DEBUG=false` afterwards.
+
+3. **Fix storage permissions** – Laravel must be able to write to `storage/` and `bootstrap/cache/`. Reset ownership and permissions with:
+
+   ```bash
+   chown -R u753768407:www-data storage bootstrap/cache
+   find storage bootstrap/cache -type d -exec chmod 755 {} \;
+   find storage bootstrap/cache -type f -exec chmod 644 {} \;
+   ```
+
+   Replace `www-data` with the PHP-FPM user configured on your Hostinger plan if it differs.
+
+4. **Regenerate caches and confirm the `APP_KEY`** – make sure the application key is populated (run `php artisan tinker` then `config('app.key')` to double-check) and clear any cached configuration:
+
+   ```bash
+   php artisan config:clear
+   php artisan route:clear
+   php artisan view:clear
+   php artisan config:cache
+   ```
+
+5. **Re-run the deployment script** – `bash deploy_hostinger.sh` reinstalls Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable. When you prefer to execute the steps manually, run:
 
    ```bash
    composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
@@ -137,17 +167,11 @@ If the public site is still returning an HTTP 500 error after a deploy, walk thr
    chmod -R 775 storage bootstrap/cache
    ```
 
-3. **Double-check the `.env` file** – confirm values such as `APP_KEY` (must not be empty), database credentials, queue/cache drivers, and any API keys required for third-party integrations. After editing `.env`, repeat the cache clear step:
+6. **Confirm dependencies shipped with the build** – verify `vendor/` exists and contains the Composer autoloader. If not, rerun the script or the `composer install` command above.
 
-   ```bash
-   php artisan optimize:clear
-   ```
+7. **Rebuild front-end assets if applicable** – if the issue is limited to missing compiled assets, run `npm ci && npm run build` locally and commit the generated files if they are supposed to be tracked, or configure the workflow to upload the `dist/` output.
 
-4. **Confirm dependencies shipped with the build** – verify `vendor/` exists and contains the Composer autoloader. If not, rerun the script or the `composer install` command above.
-
-5. **Rebuild front-end assets if applicable** – if the issue is limited to missing compiled assets, run `npm ci && npm run build` locally and commit the generated files if they are supposed to be tracked, or configure the workflow to upload the `dist/` output.
-
-6. **Escalate with context** – when the problem persists, share the log snippet, the commands you ran, and the time of the failure. That information drastically reduces the time-to-fix.
+8. **Escalate with context** – when the problem persists, share the log snippet, the commands you ran, and the time of the failure. That information drastically reduces the time-to-fix.
 
 Following these steps resolves the majority of HTTP 500 issues encountered after deploying this project to Hostinger.
 
