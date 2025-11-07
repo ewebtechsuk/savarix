@@ -388,3 +388,42 @@ jobs:
           timeout: 60s
           command_timeout: 15m
           strip_components: 1
+
+      - name: Flatten staged payload on Hostinger
+        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_FTP_PORT || env.DEPLOY_PORT || '65002' }}
+          script_stop: true
+          envs: HOSTINGER_TARGET_DIR
+          script: |
+            set -eu
+
+            if [ -z "${HOSTINGER_TARGET_DIR:-}" ]; then
+              echo "HOSTINGER_TARGET_DIR is not set" >&2
+              exit 1
+            fi
+
+            TARGET="${HOSTINGER_TARGET_DIR%/}"
+
+            if [ -z "$TARGET" ]; then
+              echo "Resolved target directory is empty" >&2
+              exit 1
+            fi
+
+            mkdir -p "$TARGET"
+
+            PAYLOAD_DIR="$TARGET/.deploy-sftp"
+
+            if [ -d "$PAYLOAD_DIR" ]; then
+              if ls -A "$PAYLOAD_DIR" >/dev/null 2>&1; then
+                cp -a "$PAYLOAD_DIR"/. "$TARGET"/
+              fi
+
+              rm -rf "$PAYLOAD_DIR"
+            fi
