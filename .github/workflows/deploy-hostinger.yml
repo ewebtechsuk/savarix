@@ -80,23 +80,18 @@ jobs:
             TARGET="/home/u753768407/domains/savarix.com/public_html"
             STAGING="$TARGET/.deploy-sftp"
 
-            move_contents() {
+            merge_directory() {
               SRC="$1"
               DEST="$2"
 
-              for ITEM in "$SRC"/* "$SRC"/.[!.]* "$SRC"/..?*; do
-                if [ -e "$ITEM" ]; then
-                  mv "$ITEM" "$DEST"/
+              if [ -d "$SRC" ]; then
+                rsync -a --remove-source-files "$SRC"/ "$DEST"/
+                find "$SRC" -type d -empty -delete
+                if [ -d "$SRC" ]; then
+                  rmdir "$SRC" 2>/dev/null || rm -rf "$SRC"
                 fi
-              done
+              fi
             }
 
-            if [ -d "$STAGING" ]; then
-              move_contents "$STAGING" "$TARGET"
-              rm -rf "$STAGING"
-            fi
-
-            if [ -d "$TARGET/dist" ]; then
-              move_contents "$TARGET/dist" "$TARGET"
-              rmdir "$TARGET/dist"
-            fi
+            merge_directory "$STAGING" "$TARGET"
+            merge_directory "$TARGET/dist" "$TARGET"
