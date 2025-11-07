@@ -1,429 +1,83 @@
-name: Deploy to Hostinger
+name: Mirror GitHub Pages build to Hostinger
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-env:
-  FTP_SYNC_STATE: .ftp-deploy-sync-state.json
-  SFTP_PAYLOAD_DIR: .deploy-sftp
-  TENANCY_CENTRAL_CONNECTION: ${{ secrets.TENANCY_CENTRAL_CONNECTION || vars.TENANCY_CENTRAL_CONNECTION || 'mysql' }}
-  TENANCY_CENTRAL_DOMAINS: ${{ secrets.TENANCY_CENTRAL_DOMAINS || vars.TENANCY_CENTRAL_DOMAINS || '' }}
+concurrency:
+  group: 'hostinger-deploy'
+  cancel-in-progress: true
 
 jobs:
-  prepare:
-    name: Resolve deployment configuration
+  build:
+    name: Build static site
     runs-on: ubuntu-latest
-    outputs:
-      should_deploy: ${{ steps.deploy_config.outputs.should_deploy }}
-      host: ${{ steps.deploy_config.outputs.host }}
-      username: ${{ steps.deploy_config.outputs.username }}
-      password: ${{ steps.deploy_config.outputs.password }}
-      server_dir: ${{ steps.deploy_config.outputs.server_dir }}
-      protocol: ${{ steps.deploy_config.outputs.protocol }}
-      port: ${{ steps.deploy_config.outputs.port }}
-    steps:
-      - name: Resolve deployment configuration
-        id: deploy_config
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          host="${HOSTINGER_FTP_HOST:-${HOSTINGER_FTP_SERVER:-${FTP_SERVER:-${FTP_HOST:-}}}}"
-          user="${HOSTINGER_FTP_USERNAME:-${HOSTINGER_FTP_USER:-${FTP_USERNAME:-${FTP_USER:-}}}}"
-          pass="${HOSTINGER_FTP_PASSWORD:-${HOSTINGER_FTP_PASS:-${FTP_PASSWORD:-${FTP_PASS:-}}}}"
-          target="${HOSTINGER_FTP_TARGET_DIR:-${FTP_TARGET_DIR:-}}"
-          protocol="${HOSTINGER_FTP_PROTOCOL:-${FTP_PROTOCOL:-}}"
-          port="${HOSTINGER_FTP_PORT:-${FTP_PORT:-}}"
-
-          trim() {
-            printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
-          }
-
-          host="$(trim "$host")"
-          user="$(trim "$user")"
-          pass="$(trim "$pass")"
-          target="$(trim "$target")"
-          if [[ "$host" =~ ^([A-Za-z][A-Za-z0-9+.-]*)://(.+)$ ]]; then
-            detected_protocol="${BASH_REMATCH[1]}"
-            host_remainder="${BASH_REMATCH[2]}"
-            if [ -z "$protocol" ]; then
-              protocol="$detected_protocol"
-            fi
-          else
-            host_remainder="$host"
-          fi
-
-          # Split any embedded remote path from the host (ftp.example.com/path/to/dir)
-          if [[ "$host_remainder" == */* ]]; then
-            host_path="${host_remainder#*/}"
-            host_name="${host_remainder%%/*}"
-            if [ -z "$target" ] && [ -n "$host_path" ]; then
-              host_path="${host_path#/}"
-              target="$host_path"
-            fi
-          else
-            host_name="$host_remainder"
-          fi
-
-          # Extract a port from the host if one is embedded (ftp.example.com:2222)
-          if [[ "$host_name" =~ ^\[(.*)\](?::([0-9]+))?$ ]]; then
-            host_name="${BASH_REMATCH[1]}"
-            embedded_port="${BASH_REMATCH[2]}"
-          elif [[ "$host_name" == *:* ]]; then
-            possible_port="${host_name##*:}"
-            if [[ "$possible_port" =~ ^[0-9]+$ ]]; then
-              embedded_port="$possible_port"
-              host_name="${host_name%:*}"
-            else
-              embedded_port=""
-            fi
-          else
-            embedded_port=""
-          fi
-
-          if [ -z "$port" ] && [ -n "$embedded_port" ]; then
-            port="$embedded_port"
-          fi
-
-          host="$host_name"
-          host="$(trim "$host")"
-          target="$(trim "$target")"
-          protocol="$(printf '%s' "$protocol" | tr '[:upper:]' '[:lower:]')"
-          protocol="$(trim "$protocol")"
-          port="$(trim "$port")"
-
-          missing=()
-
-          if [ -z "$host" ]; then
-            missing+=("HOSTINGER_FTP_HOST or FTP_SERVER")
-          elif printf '%s' "$host" | grep -q '\*'; then
-            printf '::notice::Skipping Hostinger deploy because the resolved HOSTINGER_FTP_HOST/FTP_SERVER value "%s" still contains placeholder characters (*). Update your repository secrets with the real Hostinger hostname.\n' "$host"
-            echo "should_deploy=false" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ -z "$user" ]; then
-            missing+=("HOSTINGER_FTP_USERNAME/HOSTINGER_FTP_USER or FTP_USERNAME/FTP_USER")
-          fi
-
-          if [ -z "$target" ]; then
-            missing+=("HOSTINGER_FTP_TARGET_DIR or FTP_TARGET_DIR")
-          fi
-
-          if [ "${#missing[@]}" -ne 0 ]; then
-            printf '::notice::Skipping Hostinger deploy because required secrets are missing: %s\n' "${missing[*]}"
-            echo "should_deploy=false" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          protocol="${protocol%%://*}"
-          protocol="${protocol%%:*}"
-
-          if [ -z "$protocol" ]; then
-            protocol="ftps"
-          fi
-
-          case "$protocol" in
-            ftp|ftps)
-              default_port=21
-              ;;
-            sftp)
-              default_port=22
-              ;;
-            *)
-              printf '::notice::Skipping Hostinger deploy because resolved protocol "%s" is not supported. Expected ftp, ftps, or sftp.\n' "$protocol"
-              echo "should_deploy=false" >>"$GITHUB_OUTPUT"
-              exit 0
-              ;;
-          esac
-
-          if [ -z "$port" ]; then
-            port="$default_port"
-          fi
-
-          if [ "${target%/}" = "$target" ]; then
-            target="$target/"
-          fi
-
-          for secret in "$host" "$user" "$target" "$protocol" "$port" "$pass"; do
-            printf '::add-mask::%s\n' "$secret"
-          done
-
-          {
-            echo "should_deploy=true"
-            echo "host=$host"
-            echo "username=$user"
-            echo "password=$pass"
-            echo "server_dir=$target"
-            echo "protocol=$protocol"
-            echo "port=$port"
-          } >>"$GITHUB_OUTPUT"
-        env:
-          HOSTINGER_FTP_HOST: ${{ secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST }}
-          HOSTINGER_FTP_SERVER: ${{ secrets.HOSTINGER_FTP_SERVER || vars.HOSTINGER_FTP_SERVER }}
-          HOSTINGER_FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME }}
-          HOSTINGER_FTP_USER: ${{ secrets.HOSTINGER_FTP_USER || vars.HOSTINGER_FTP_USER }}
-          HOSTINGER_FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD }}
-          HOSTINGER_FTP_PASS: ${{ secrets.HOSTINGER_FTP_PASS || vars.HOSTINGER_FTP_PASS }}
-          HOSTINGER_FTP_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR }}
-          HOSTINGER_FTP_PROTOCOL: ${{ secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL }}
-          HOSTINGER_FTP_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT }}
-          FTP_SERVER: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
-          FTP_HOST: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
-          FTP_USER: ${{ secrets.FTP_USER || vars.FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
-          FTP_PASS: ${{ secrets.FTP_PASS || vars.FTP_PASS }}
-          FTP_TARGET_DIR: ${{ secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
-          FTP_PROTOCOL: ${{ secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL }}
-          FTP_PORT: ${{ secrets.FTP_PORT || vars.FTP_PORT }}
-
-  deploy:
-    name: Upload application to Hostinger
-    needs: prepare
-    if: ${{ needs.prepare.outputs.should_deploy == 'true' }}
-    runs-on: ubuntu-latest
-    env:
-      DEPLOY_HOST: ${{ needs.prepare.outputs.host || secrets.HOSTINGER_FTP_HOST || vars.HOSTINGER_FTP_HOST || secrets.HOSTINGER_FTP_SERVER || vars.HOSTINGER_FTP_SERVER || secrets.FTP_SERVER || vars.FTP_SERVER || secrets.FTP_HOST || vars.FTP_HOST }}
-      DEPLOY_USERNAME: ${{ needs.prepare.outputs.username || secrets.HOSTINGER_FTP_USERNAME || vars.HOSTINGER_FTP_USERNAME || secrets.HOSTINGER_FTP_USER || vars.HOSTINGER_FTP_USER || secrets.FTP_USERNAME || vars.FTP_USERNAME || secrets.FTP_USER || vars.FTP_USER }}
-      DEPLOY_PASSWORD: ${{ needs.prepare.outputs.password || secrets.HOSTINGER_FTP_PASSWORD || vars.HOSTINGER_FTP_PASSWORD || secrets.HOSTINGER_FTP_PASS || vars.HOSTINGER_FTP_PASS || secrets.FTP_PASSWORD || vars.FTP_PASSWORD || secrets.FTP_PASS || vars.FTP_PASS }}
-      DEPLOY_SERVER_DIR: ${{ needs.prepare.outputs.server_dir || secrets.HOSTINGER_FTP_TARGET_DIR || vars.HOSTINGER_FTP_TARGET_DIR || secrets.FTP_TARGET_DIR || vars.FTP_TARGET_DIR }}
-      DEPLOY_PROTOCOL: ${{ needs.prepare.outputs.protocol || secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL || secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL || 'ftps' }}
-      DEPLOY_PORT: ${{ secrets.HOSTINGER_FTP_PORT || vars.HOSTINGER_FTP_PORT || needs.prepare.outputs.port || secrets.FTP_PORT || vars.FTP_PORT || (((needs.prepare.outputs.protocol || secrets.HOSTINGER_FTP_PROTOCOL || vars.HOSTINGER_FTP_PROTOCOL || secrets.FTP_PROTOCOL || vars.FTP_PROTOCOL || 'ftps') == 'sftp') && '65002' || '21') }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: mbstring, bcmath, intl, pdo_mysql
-          coverage: none
-
-      - name: Detect dependency changes
-        id: dependency_changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            composer:
-              - 'composer.json'
-              - 'composer.lock'
-            frontend:
-              - 'package.json'
-              - 'package-lock.json'
-              - 'vite.config.js'
-              - 'marketing.vite.config.js'
-              - 'tailwind.config.js'
-              - 'postcss.config.js'
-              - 'gulpfile.js'
-              - 'resources/**'
-
-      - name: Cache Composer dependencies
-        id: composer_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.composer/cache
-            vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Install Composer dependencies
-        if: ${{ steps.composer_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.composer == 'true' }}
-        env:
-          COMPOSER_CACHE_DIR: ~/.composer/cache
-        run: |
-          composer install \
-            --no-dev \
-            --prefer-dist \
-            --no-progress \
-            --no-interaction \
-            --optimize-autoloader
-
-      - name: Restore cached frontend build
-        id: frontend_build_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            public/build
-            dist
-          key: >-
-            ${{
-              runner.os
-            }}-vite-build-${{
-              hashFiles(
-                'package-lock.json',
-                'vite.config.js',
-                'marketing.vite.config.js',
-                'tailwind.config.js',
-                'postcss.config.js',
-                'gulpfile.js',
-                'resources/**'
-              )
-            }}
-
       - name: Set up Node.js
-        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
 
-      - name: Install Node dependencies
-        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
-        run: npm ci --no-audit --no-fund
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+          npm_config_production: 'false'
+        run: npm ci
 
       - name: Build frontend assets
-        if: ${{ steps.frontend_build_cache.outputs.cache-hit != 'true' || steps.dependency_changes.outputs.frontend == 'true' }}
-        run: npm run build -- --emptyOutDir
-
-      - name: Remove development-only files before deploy
-        run: |
-          rm -rf node_modules
-          find storage -type f -name '*.log' -delete || true
-
-      - name: Remove stale FTP temporary files
-        if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
         env:
-          FTP_CLEANUP_HOST: ${{ env.DEPLOY_HOST }}
-          FTP_CLEANUP_USERNAME: ${{ env.DEPLOY_USERNAME }}
-          FTP_CLEANUP_PASSWORD: ${{ env.DEPLOY_PASSWORD }}
-          FTP_CLEANUP_PROTOCOL: ${{ env.DEPLOY_PROTOCOL }}
-          FTP_CLEANUP_PORT: ${{ env.DEPLOY_PORT }}
-          FTP_CLEANUP_TARGET: ${{ env.DEPLOY_SERVER_DIR }}
-        run: python3 scripts/cleanup_ftp_temp_files.py
+          NODE_ENV: production
+        run: npm run build
 
-      - name: Stage upload payload for SFTP deployments
-        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
-        run: |
-          rm -rf "$SFTP_PAYLOAD_DIR"
-          rsync -a --delete \
-            --exclude='.git/' \
-            --exclude='.gitignore' \
-            --exclude='.github/' \
-            --exclude='.devcontainer/' \
-            --exclude='node_modules/' \
-            --exclude='storage/logs/' \
-            --exclude='storage/framework/cache/data/' \
-            --exclude='storage/framework/sessions/' \
-            --exclude='storage/framework/testing/' \
-            --exclude='tests/' \
-            --exclude='docs/' \
-            --exclude='offline/' \
-            --exclude='framework/' \
-            --exclude='vendor/bin/' \
-            --exclude='deps/' \
-            --exclude='deps.tar.gz' \
-            --exclude="$FTP_SYNC_STATE" \
-            ./ "$SFTP_PAYLOAD_DIR/"
-
-      - name: Deploy to Hostinger (FTP/FTPS)
-        if: ${{ env.DEPLOY_PROTOCOL != 'sftp' }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.0
+      - name: Upload static build artifact
+        uses: actions/upload-artifact@v4
         with:
-          server: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USERNAME }}
-          password: ${{ env.DEPLOY_PASSWORD }}
-          protocol: ${{ env.DEPLOY_PROTOCOL }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT || env.DEPLOY_PORT }} # must be 65002 for Hostinger SFTP
-          server-dir: ${{ env.DEPLOY_SERVER_DIR }}
-          local-dir: ./
-          exclude: |
-            **/.git*/**
-            **/.gitignore
-            **/.github/**
-            **/.devcontainer/**
-            **/node_modules/**
-            **/storage/logs/**
-            **/storage/framework/cache/data/**
-            **/storage/framework/sessions/**
-            **/storage/framework/testing/**
-            **/tests/**
-            **/docs/**
-            **/offline/**
-            **/framework/**
-            **/vendor/bin/**
-            **/deps/**
-            **/deps.tar.gz
-          state-name: ${{ env.FTP_SYNC_STATE }}
-          log-level: minimal
+          name: dist
+          path: dist
 
-      - name: Preflight SSH check
-        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+  deploy:
+    name: Deploy static site to Hostinger
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Download static build artifact
+        uses: actions/download-artifact@v4
         with:
-          host: ${{ secrets.HOSTINGER_FTP_HOST }}
-          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT || '65002' }} # must be 65002 for Hostinger SFTP
-          script_stop: true
-          envs: HOSTINGER_TARGET_DIR
-          script: |
-            echo "Connected OK"
-            mkdir -p "$HOSTINGER_TARGET_DIR"
-            ls -la "$HOSTINGER_TARGET_DIR" | head -n 50
+          name: dist
+          path: dist
 
-      - name: Upload application to Hostinger via SSH/SFTP
-        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
+      - name: Upload static site to Hostinger
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOSTINGER_FTP_HOST }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT }}
-          # Upload the contents of the staging directory directly into the
-          # target directory instead of nesting everything under a
-          # `.deploy-sftp` folder on the server.
-          source: .deploy-sftp/*
-          target: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
+          port: 65002
+          source: dist/*
+          target: /home/u753768407/domains/savarix.com/public_html/
           overwrite: true
-          rm: false
           timeout: 60s
           command_timeout: 15m
           strip_components: 1
 
-      - name: Flatten staged payload on Hostinger
-        if: ${{ env.DEPLOY_PROTOCOL == 'sftp' }}
+      - name: Flatten deployment folder on Hostinger
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          HOSTINGER_TARGET_DIR: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
         with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USERNAME }}
+          host: ${{ secrets.HOSTINGER_FTP_HOST }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: ${{ secrets.HOSTINGER_FTP_PORT || env.DEPLOY_PORT || '65002' }}
+          port: 65002
           script_stop: true
-          envs: HOSTINGER_TARGET_DIR
           script: |
-            set -eu
-
-            if [ -z "${HOSTINGER_TARGET_DIR:-}" ]; then
-              echo "HOSTINGER_TARGET_DIR is not set" >&2
-              exit 1
-            fi
-
-            TARGET="${HOSTINGER_TARGET_DIR%/}"
-
-            if [ -z "$TARGET" ]; then
-              echo "Resolved target directory is empty" >&2
-              exit 1
-            fi
-
-            mkdir -p "$TARGET"
-
-            PAYLOAD_DIR="$TARGET/.deploy-sftp"
-
-            if [ -d "$PAYLOAD_DIR" ]; then
-              if ls -A "$PAYLOAD_DIR" >/dev/null 2>&1; then
-                cp -a "$PAYLOAD_DIR"/. "$TARGET"/
-              fi
-
-              rm -rf "$PAYLOAD_DIR"
+            TARGET="/home/u753768407/domains/savarix.com/public_html"
+            STAGING="$TARGET/.deploy-sftp"
+            if [ -d "$STAGING" ]; then
+              cp -a "$STAGING"/. "$TARGET"/
+              rm -rf "$STAGING"
             fi
