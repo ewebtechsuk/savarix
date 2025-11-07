@@ -384,5 +384,7 @@ jobs:
           source: .deploy-sftp/*
           target: ${{ secrets.HOSTINGER_FTP_TARGET_DIR }}
           overwrite: true
+          rm: false
           timeout: 60s
           command_timeout: 15m
+          strip_components: 1
