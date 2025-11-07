@@ -126,9 +126,15 @@ if [[ "$SKIP_NPM" == "false" && -f package.json ]]; then
 fi
 
 # 4. Generate app key if missing
-if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=\s*$' .env; then
+if ! grep -q '^APP_KEY=' .env; then
+  log "APP_KEY entry missing; adding placeholder"
+  printf '\nAPP_KEY=\n' >> .env
+fi
+
+if grep -Eq '^APP_KEY=[[:space:]]*$' .env; then
   log "Generating APP_KEY"
-  php artisan key:generate || warn "key:generate failed (app may already have key)"
+  php artisan key:generate --force --ansi \
+    || warn "key:generate failed (app may already have key)"
 fi
 
 # 5. Optionally wait for DB
