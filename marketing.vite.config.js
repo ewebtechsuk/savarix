@@ -17,9 +17,20 @@ function createSpaFallbacks() {
             const indexPath = resolve(outDir, 'index.html');
             const fallbackPath = resolve(outDir, '404.html');
             const redirectsPath = resolve(outDir, '_redirects');
+            const htaccessPath = resolve(outDir, '.htaccess');
 
             await copyFile(indexPath, fallbackPath);
             await writeFile(redirectsPath, '/* /index.html 200\n');
+            await writeFile(
+                htaccessPath,
+                `Options -Indexes\n` +
+                    `<IfModule mod_rewrite.c>\n` +
+                    `RewriteEngine On\n` +
+                    `RewriteCond %{REQUEST_FILENAME} !-f\n` +
+                    `RewriteCond %{REQUEST_FILENAME} !-d\n` +
+                    `RewriteRule ^ index.html [L]\n` +
+                    `</IfModule>\n`
+            );
         },
     };
 }
