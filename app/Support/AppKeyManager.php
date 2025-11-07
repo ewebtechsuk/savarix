@@ -12,18 +12,31 @@ class AppKeyManager
      */
     public static function ensure(): void
     {
-        $key = static::normalise(Config::get('app.key'))
-            ?? static::normalise(env('APP_KEY'))
+        $key = static::resolveFromEnvironment();
+
+        if (static::configAvailable()) {
+            Config::set('app.key', $key);
+        }
+    }
+
+    /**
+     * Resolve the application key, generating a persistent value when missing.
+     */
+    public static function resolveFromEnvironment(): string
+    {
+        $key = static::valueFromEnvironment()
             ?? static::readStoredKey();
 
         if ($key === null) {
-            $key = static::generateKey(Config::get('app.cipher', 'AES-256-CBC'));
+            $key = static::generateKey(static::resolveCipher());
             static::storeKey($key);
         } else {
             static::storeKeyIfMissing($key);
         }
 
         static::inject($key);
+
+        return $key;
     }
 
     /**
@@ -38,6 +51,19 @@ class AppKeyManager
         $value = trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * Retrieve an APP_KEY value from the environment.
+     */
+    protected static function valueFromEnvironment(): ?string
+    {
+        $value = $_ENV['APP_KEY']
+            ?? $_SERVER['APP_KEY']
+            ?? getenv('APP_KEY')
+            ?: null;
+
+        return static::normalise($value);
     }
 
     /**
@@ -60,6 +86,19 @@ class AppKeyManager
     protected static function generateKey(string $cipher): string
     {
         return 'base64:'.base64_encode(Encrypter::generateKey($cipher));
+    }
+
+    /**
+     * Determine the cipher that should be used when generating a key.
+     */
+    protected static function resolveCipher(): string
+    {
+        $value = $_ENV['APP_CIPHER']
+            ?? $_SERVER['APP_CIPHER']
+            ?? getenv('APP_CIPHER')
+            ?: null;
+
+        return static::normalise($value) ?? 'AES-256-CBC';
     }
 
     /**
@@ -112,10 +151,28 @@ class AppKeyManager
      */
     protected static function inject(string $key): void
     {
-        Config::set('app.key', $key);
-
         putenv('APP_KEY='.$key);
         $_ENV['APP_KEY'] = $key;
         $_SERVER['APP_KEY'] = $key;
+    }
+
+    /**
+     * Determine if the configuration repository is available.
+     */
+    protected static function configAvailable(): bool
+    {
+        if (! class_exists(Config::class)) {
+            return false;
+        }
+
+        if (! function_exists('app')) {
+            return false;
+        }
+
+        try {
+            return app()->bound('config');
+        } catch (\Throwable $exception) {
+            return false;
+        }
     }
 }

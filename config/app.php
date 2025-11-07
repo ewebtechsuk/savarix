@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\AppKeyManager;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -102,7 +104,7 @@ return [
     |
     */
 
-    'key' => env('APP_KEY'),
+    'key' => AppKeyManager::resolveFromEnvironment(),
 
     'cipher' => 'AES-256-CBC',
 
