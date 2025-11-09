@@ -24,11 +24,13 @@ class AppKeyManager
      */
     public static function resolveFromEnvironment(): string
     {
-        $key = static::valueFromEnvironment()
-            ?? static::readStoredKey();
+        $cipher = static::resolveCipher();
+
+        $key = static::valueFromEnvironment($cipher)
+            ?? static::readStoredKey($cipher);
 
         if ($key === null) {
-            $key = static::generateKey(static::resolveCipher());
+            $key = static::generateKey($cipher);
             static::storeKey($key);
         } else {
             static::storeKeyIfMissing($key);
@@ -56,20 +58,20 @@ class AppKeyManager
     /**
      * Retrieve an APP_KEY value from the environment.
      */
-    protected static function valueFromEnvironment(): ?string
+    protected static function valueFromEnvironment(string $cipher): ?string
     {
         $value = $_ENV['APP_KEY']
             ?? $_SERVER['APP_KEY']
             ?? getenv('APP_KEY')
             ?: null;
 
-        return static::normalise($value);
+        return static::prepareKey($value, $cipher);
     }
 
     /**
      * Read a stored key from disk.
      */
-    protected static function readStoredKey(): ?string
+    protected static function readStoredKey(string $cipher): ?string
     {
         $path = static::keyStoragePath();
 
@@ -77,7 +79,9 @@ class AppKeyManager
             return null;
         }
 
-        return static::normalise(@file_get_contents($path) ?: null);
+        $value = @file_get_contents($path) ?: null;
+
+        return static::prepareKey($value, $cipher);
     }
 
     /**
@@ -154,6 +158,46 @@ class AppKeyManager
         putenv('APP_KEY='.$key);
         $_ENV['APP_KEY'] = $key;
         $_SERVER['APP_KEY'] = $key;
+    }
+
+    /**
+     * Prepare a potential key value ensuring it is valid for the cipher.
+     */
+    protected static function prepareKey(?string $value, string $cipher): ?string
+    {
+        $value = static::normalise($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return static::isValidForCipher($value, $cipher) ? $value : null;
+    }
+
+    /**
+     * Determine if the provided key is compatible with the cipher.
+     */
+    protected static function isValidForCipher(string $key, string $cipher): bool
+    {
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+
+            if ($decoded === false) {
+                return false;
+            }
+
+            $keyLength = strlen($decoded);
+        } else {
+            $keyLength = strlen($key);
+        }
+
+        $cipher = strtolower($cipher);
+
+        return match ($cipher) {
+            'aes-128-cbc', 'aes-128-gcm' => $keyLength === 16,
+            'aes-256-cbc', 'aes-256-gcm' => $keyLength === 32,
+            default => in_array($keyLength, [16, 32], true),
+        };
     }
 
     /**
