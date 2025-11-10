@@ -1,5 +1,4 @@
-Upgrading from PHP-Parser 1.x to 2.0
-====================================
+# Upgrading from PHP-Parser 1.x to 2.0
 
 ### PHP version requirements
 

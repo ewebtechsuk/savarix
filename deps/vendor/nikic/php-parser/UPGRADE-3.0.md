@@ -1,5 +1,4 @@
-Upgrading from PHP-Parser 2.x to 3.0
-====================================
+# Upgrading from PHP-Parser 2.x to 3.0
 
 The backwards-incompatible changes in this release may be summarized as follows:
 
