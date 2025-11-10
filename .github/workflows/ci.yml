@@ -12,6 +12,11 @@ jobs:
       TENANCY_CENTRAL_DOMAINS: '127.0.0.1,localhost'
     steps:
       - uses: actions/checkout@v4
+      - name: Check for unresolved merge markers
+        run: |
+          if grep -RInE '^(<<<<<<<|=======|>>>>>>>)' -- . | grep -v "\.lock$" ; then
+            echo "ERROR: conflict markers found"; exit 1;
+          fi
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
