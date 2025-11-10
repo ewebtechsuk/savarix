@@ -20,5 +20,30 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction --no-scripts
 
+      - name: Prepare environment
+        run: |
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          # Use in-memory sqlite by default
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env || true
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=":memory:"/' .env || true
+          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env || true
+          sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env || true
+
+      - name: Generate application key
+        run: |
+          php artisan key:generate --ansi --no-interaction
+
+      - name: Run migrations
+        run: |
+          php artisan migrate --no-interaction --force
+
+      - name: Show log for debugging
+        run: |
+          tail -n +1 storage/logs/laravel.log || true
+
       - name: Run tests
-        run: vendor/bin/phpunit --testdox
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+        run: |
+          vendor/bin/phpunit --testdox --colors=never
