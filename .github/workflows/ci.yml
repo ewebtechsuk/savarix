@@ -28,15 +28,13 @@ jobs:
       - name: Prepare environment
         run: |
           php -r "file_exists('.env') || copy('.env.example', '.env');"
-          # Use in-memory sqlite by default
+          # Use file-based sqlite so migrations persist across processes
           sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env || true
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=":memory:"/' .env || true
+          sed -i 's#DB_DATABASE=.*#DB_DATABASE=database/database.sqlite#' .env || true
           sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env || true
           sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/' .env || true
-
-      - name: Generate application key
-        run: |
-          php artisan key:generate --ansi --no-interaction
+          mkdir -p database
+          touch database/database.sqlite
 
       - name: Run migrations
         run: |
@@ -49,6 +47,6 @@ jobs:
       - name: Run tests
         env:
           DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
+          DB_DATABASE: database/database.sqlite
         run: |
           vendor/bin/phpunit --testdox --colors=never
