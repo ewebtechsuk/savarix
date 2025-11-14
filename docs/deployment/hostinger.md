@@ -175,3 +175,28 @@ If the public site is still returning an HTTP 500 error after a deploy, walk thr
 
 Following these steps resolves the majority of HTTP 500 issues encountered after deploying this project to Hostinger.
 
+## 6. Manual Aktonz refresh script (fallback)
+
+Most production updates are handled automatically through GitHub Actions or by running `deploy_hostinger.sh`. When either of
+those options is unavailable you can fall back to the **Aktonz manual sync script** that mirrors the on-server repository into
+`public_html/`, rewrites `index.php` to reference `laravel_app/`, and refreshes all caches.
+
+1. SSH into the Aktonz Hostinger account (`ssh u753768407.savarix.com@<host>`), then run the script from the repository root:
+
+   ```bash
+   bash scripts/hostinger_manual_sync.sh
+   ```
+
+2. The helper performs the full checklist the team previously executed by hand:
+   - Creates a timestamped backup of `laravel_app_core/` if it still exists.
+   - Syncs the Git repository in `/home/u753768407.savarix.com/laravel_app` and pushes any unsaved changes upstream.
+   - Resets `public_html/`, copies `public/` assets, and rewrites the document root `index.php` to load `../laravel_app/`.
+   - Runs `composer install --no-dev --optimize-autoloader`, refreshes caches, and enforces permissions.
+   - Reminds you to double-check the hPanel document root and optionally prune the backup once the site is verified.
+
+3. Visit `https://aktonz.savarix.com/login` when the script finishes to confirm the tenant portal loads correctly. Keep the
+backup directory until the site has been stable for a while (`rm -rf /home/u753768407.savarix.com/laravel_app_core_backup_*`).
+
+The script lives at [`scripts/hostinger_manual_sync.sh`](../../scripts/hostinger_manual_sync.sh) so it is versioned alongside
+the rest of the deployment tooling.
+
