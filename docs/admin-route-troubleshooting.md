@@ -2,8 +2,21 @@
 
 When the admin login unexpectedly 404s, use this checklist to confirm the correct route and domain are being served.
 
-## 1) Confirm Laravel registered the admin login route
-Run on the same host where the Laravel app is deployed:
+## 1) Confirm the deployed `.env` values
+Open the production `.env` (for example via the Hostinger File Manager or SSH into the container) and verify:
+
+```dotenv
+SAVARIX_ADMIN_PATH=kjsdahfkjheruwq939201u1asd91
+TENANCY_CENTRAL_DOMAINS="127.0.0.1,localhost,savirix.localhost,savarix.com"
+```
+
+- If `SAVARIX_ADMIN_PATH` differs, either update it to the desired secret or use the value you find in your browser URL.
+- If you want the central Laravel app to respond on `savarix.com`, ensure that host is present in `TENANCY_CENTRAL_DOMAINS`.
+
+Save the file before moving on.
+
+## 2) Confirm Laravel registered the admin login route
+Run on the same host where the Laravel app is deployed (SSH/Hostinger terminal or the Artisan tool):
 
 ```bash
 php artisan route:list | grep admin.login
@@ -14,7 +27,7 @@ A healthy output will show the secret URI and `admin.login` name, e.g. `GET|HEAD
 - If the path still contains an extra prefix (for example `savarix-admin/kjsdah.../login`), see the next section and remove any outer prefixing.
 - If nothing shows up, the admin block is not being loaded on this app/host; double-check you are on the central Laravel domain rather than the marketing frontend.
 
-## 2) Verify the route block uses only the secret prefix
+## 3) Verify the route block uses only the secret prefix
 The admin routes should live in `routes/web.php` with a single dynamic prefix and no outer `Route::prefix('savarix-admin')` wrapper:
 
 ```php
@@ -41,7 +54,7 @@ Route::prefix($secretAdminPath)->group(function () {
 });
 ```
 
-After edits, clear caches to refresh the route list:
+After edits, clear caches to refresh the route list (run these on the same host where the app is served):
 
 ```bash
 php artisan config:clear
@@ -49,9 +62,9 @@ php artisan route:clear
 php artisan route:list | grep admin.login
 ```
 
-The URI should now be just your secret path plus `/login` (for example `kjsdahfkjheruwq939201u1asd91/login`).
+You should see the URI as only your secret path plus `/login` (for example `kjsdahfkjheruwq939201u1asd91/login`). If nothing is returned, the admin routes are not registered on that host.
 
-## 3) Confirm you are on the central Laravel domain
+## 4) Confirm you are on the central Laravel domain
 With tenancy + marketing separation, the central Laravel app may run on a different host than the marketing frontend. Clues from `.env.example`:
 
 - `MARKETING_DOMAINS=savarix.com` (marketing/Next.js)
@@ -67,9 +80,9 @@ php artisan config:clear
 php artisan route:clear
 ```
 
-## 4) Quick checklist
-1. `php artisan route:list | grep admin.login`
-2. Ensure only the secret prefix block exists in `routes/web.php`
-3. Set `SAVARIX_ADMIN_PATH` in the server `.env`
+## 5) Quick checklist
+1. Validate `SAVARIX_ADMIN_PATH` and `TENANCY_CENTRAL_DOMAINS` in the deployed `.env`
+2. `php artisan route:list | grep admin.login`
+3. Ensure only the secret prefix block exists in `routes/web.php`
 4. Ensure the request is hitting a domain listed in `TENANCY_CENTRAL_DOMAINS`
 5. Clear caches and retest the secret path on the central domain
