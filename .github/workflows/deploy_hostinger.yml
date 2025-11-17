@@ -9,6 +9,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HOSTINGER_HOST: ${{ secrets.HOSTINGER_SSH_HOST || secrets.HOSTINGER_FTP_HOST }}
+      HOSTINGER_PORT: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
+      HOSTINGER_USER: ${{ secrets.HOSTINGER_SSH_USER || secrets.HOSTINGER_FTP_USERNAME }}
+      HOSTINGER_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
 
     steps:
       - name: Checkout repository
@@ -17,10 +22,10 @@ jobs:
       - name: Deploy to Hostinger via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          server: ${{ secrets.HOSTINGER_SSH_HOST }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          ssh_private_key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          server: ${{ env.HOSTINGER_HOST }}
+          port: ${{ env.HOSTINGER_PORT }}
+          username: ${{ env.HOSTINGER_USER }}
+          ssh_private_key: ${{ env.HOSTINGER_KEY }}
           local_path: "./"
           remote_path: "/home/u753768407/domains/savarix.com/laravel_app"
           delete_remote_files: false
@@ -29,10 +34,10 @@ jobs:
       - name: Run deploy script on Hostinger (SSH)
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.HOSTINGER_SSH_HOST }}
-          port: ${{ secrets.HOSTINGER_SSH_PORT }}
-          username: ${{ secrets.HOSTINGER_SSH_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          host: ${{ env.HOSTINGER_HOST }}
+          port: ${{ env.HOSTINGER_PORT }}
+          username: ${{ env.HOSTINGER_USER }}
+          key: ${{ env.HOSTINGER_KEY }}
           script: |
             cd /home/u753768407/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
