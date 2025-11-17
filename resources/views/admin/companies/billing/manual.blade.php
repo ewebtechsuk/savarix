@@ -22,7 +22,7 @@
     <div class="mt-6 p-4 bg-gray-100 rounded">
         <h2 class="font-bold mb-2">Bank Transfer Details</h2>
         <p>Bank: Example Bank</p>
-        <p>Account Name: Savirix Ltd</p>
+        <p>Account Name: Savarix Ltd</p>
         <p>Sort Code: 12-34-56</p>
         <p>Account Number: 12345678</p>
         <p>Reference: [Company Name or Invoice]</p>

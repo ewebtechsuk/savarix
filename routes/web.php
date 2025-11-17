@@ -34,7 +34,6 @@ Route::group(['middleware' => 'guest'], function () {
 });
 
 // Secret Savarix admin path (set in .env as SAVARIX_ADMIN_PATH)
-// Note: keep this group unwrapped by any other prefix to avoid double paths.
 $secretAdminPath = env('SAVARIX_ADMIN_PATH', 'savarix-admin');
 
 Route::prefix($secretAdminPath)->group(function () {
