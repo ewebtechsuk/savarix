@@ -327,6 +327,7 @@ class PropertyController extends Controller
     protected function geocodeAddress(string $address): ?array
     {
         $response = Http::withHeaders([
+            // Nominatim requires a User-Agent header for API access
             'User-Agent' => 'Savarix',
         ])->get('https://nominatim.openstreetmap.org/search', [
             'q' => $address,
