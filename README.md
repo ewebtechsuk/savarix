@@ -76,6 +76,10 @@ Use a comma- or whitespace-separated list for `TENANCY_CENTRAL_DOMAINS`, or supp
 
 Update the variable in each environment (`.env`, GitHub Actions secrets, Hostinger control panel, etc.) so tenancy middleware resolves the central application correctly. Local developers can follow `docs/local_subdomain_setup.txt` for guidance on mapping subdomains via `/etc/hosts`.
 
+### Admin secret path troubleshooting
+
+If the owner admin login unexpectedly 404s, use the playbook in `docs/admin-route-troubleshooting.md` to confirm the route registration, ensure the secret prefix is not double-applied, and verify you are hitting a domain listed in `TENANCY_CENTRAL_DOMAINS`.
+
 
 ### Identity verification (Onfido)
 
