@@ -22,11 +22,18 @@ class AgencyController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+        ]);
+
         Agency::create([
-            'name' => $request->input('name'),
-            'slug' => Str::slug($request->input('name')),
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
+            'name' => $data['name'],
+            'slug' => Str::slug($data['name']),
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'status' => 'active',
         ]);
 
         return back();
@@ -39,7 +46,14 @@ class AgencyController extends Controller
 
     public function update(Request $request, Agency $agency): RedirectResponse
     {
-        $agency->update($request->all());
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', 'in:active,suspended,trial'],
+        ]);
+
+        $agency->update($data);
 
         return back();
     }

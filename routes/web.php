@@ -38,6 +38,7 @@ Route::prefix('savarix-admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 
     Route::middleware(['auth', 'owner'])->group(function () {
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
         Route::get('/agencies', [AdminAgencyController::class, 'index'])->name('admin.agencies.index');

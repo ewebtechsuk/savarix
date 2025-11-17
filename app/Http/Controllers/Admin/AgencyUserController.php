@@ -24,11 +24,18 @@ class AgencyUserController extends Controller
 
     public function store(Request $request, Agency $agency): RedirectResponse
     {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', 'in:agency_admin,agent'],
+        ]);
+
         User::create([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => Hash::make($request->input('password')),
-            'role' => $request->input('role', 'agent'),
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => $data['role'],
             'agency_id' => $agency->id,
         ]);
 
@@ -37,6 +44,10 @@ class AgencyUserController extends Controller
 
     public function destroy(Agency $agency, User $user): RedirectResponse
     {
+        if ($user->agency_id !== $agency->id) {
+            abort(404);
+        }
+
         $user->delete();
 
         return back();
