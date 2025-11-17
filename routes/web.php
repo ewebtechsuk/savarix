@@ -13,6 +13,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceRequestController;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LandlordDashboardController;
@@ -155,3 +156,12 @@ Route::group([
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/mail-test', function () {
+    Mail::raw('Test email from Savarix', function ($message) {
+        $message->to('yourpersonalemail@example.com')
+                ->subject('Savarix Test Email');
+    });
+
+    return 'Mail sent';
+});
