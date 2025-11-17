@@ -159,7 +159,7 @@ require __DIR__.'/auth.php';
 
 Route::get('/mail-test', function () {
     Mail::raw('Test email from Savarix', function ($message) {
-        $message->to('yourpersonalemail@example.com')
+        $message->to('savarix.dev@gmail.com')
                 ->subject('Savarix Test Email');
     });
 
