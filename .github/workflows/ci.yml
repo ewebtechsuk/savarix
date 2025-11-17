@@ -39,9 +39,6 @@ jobs:
           mkdir -p database
           touch database/database.sqlite
 
-      - name: Generate application key
-        run: php artisan key:generate --force
-
       - name: Run migrations
         run: |
           php artisan migrate --no-interaction --force
