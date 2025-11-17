@@ -20,7 +20,20 @@ use App\Http\Controllers\LandlordDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VerificationController;
 
-Route::get('/', HomeController::class)->name('marketing.home');
+Route::get('/', function () {
+    // If this is a tenant / agent domain (tenancy initialised),
+    // send users to the right place based on auth status.
+    if (function_exists('tenant') && tenant()) {
+        if (auth()->check()) {
+            return redirect()->route('dashboard');
+        }
+
+        return redirect()->route('login');
+    }
+
+    // Non-tenant / marketing domain: keep the existing homepage behaviour.
+    return app(HomeController::class)(request());
+})->name('marketing.home');
 
 Route::group(['middleware' => 'guest'], function () {
     Route::get('/onboarding/register', [OnboardingController::class, 'showRegistrationForm'])
