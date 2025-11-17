@@ -1,212 +1,125 @@
 # Hostinger deployment guide
 
-This document covers everything needed to deploy the Laravel application to Hostinger and recover from the most common runtime failures (for example, HTTP 500 errors). Follow the sections in order the first time you configure a new environment, then refer back to the troubleshooting checklist whenever something goes wrong after a deploy.
+Aktonz production runs from the Laravel application checked out on Hostinger at
+`/home/u753768407/domains/savarix.com/laravel_app`. The domain
+`aktonz.savarix.com` points at the companion document root
+`/home/u753768407/domains/savarix.com/public_html`, which simply mirrors the
+Laravel `public/` folder and bootstraps the framework that lives one directory
+up. The old static workflow that SCP’d a `dist/` folder to Hostinger has been
+retired; all deployments now happen from SSH by pulling the git repository and
+running `scripts/hostinger_manual_sync.sh`.
 
-## Prerequisites
-
-Before touching GitHub or Hostinger make sure you have:
-
-- A Hostinger shared hosting or cloud account with the target domain added.
-- FTP (or SFTP) credentials that can read and write the site directory.
-- SSH access enabled in hPanel so you can run the deployment script from the server shell.
-- A GitHub repository with the application code. The `main` branch should contain the version you want online.
-
-Once those basics are in place continue with the steps below.
-
-## 1. Configure GitHub secrets for the workflow
-
-GitHub automatically runs the **Deploy to Hostinger** workflow when commits land on `main`. The job uploads the built application to Hostinger by using standard FTP/FTPS/SFTP credentials that are stored as repository secrets. When those secrets are absent or empty the deployment job fails during the pre-upload cleanup step with an error similar to:
+## Server layout recap
 
 ```
-Missing required environment variable FTP_CLEANUP_HOST. Populate the repository secret HOSTINGER_FTP_HOST (or FTP_SERVER) with the FTP hostname shown in Hostinger's hPanel under Websites → Manage → FTP Accounts.
+/home/u753768407
+└── domains/savarix.com
+    ├── laravel_app          # Git clone that contains artisan, vendor/, etc.
+    ├── laravel_app_core     # Legacy directory (renamed to *_backup_* during syncs)
+    └── public_html          # Document root for aktonz.savarix.com
 ```
 
-To fix the failure you must add the Hostinger connection details to the repository's secrets (or organisation level variables). The workflow looks for the following values, preferring the `HOSTINGER_` names but accepting the legacy `FTP_` names as a fallback:
+Keep `public_html` as the hPanel document root for the Aktonz subdomain. The
+manual sync script copies the freshly-built `public/` assets into that folder and
+rewrites `public_html/index.php` so it requires the `../laravel_app/` bootstrap
+files.
 
-| Secret/variable | Purpose | Where to find it in Hostinger |
-| --- | --- | --- |
-| `HOSTINGER_FTP_HOST` (or `FTP_SERVER`/`FTP_HOST`) | FTP hostname used by the deployment and cleanup scripts. | Log in to [hPanel](https://hpanel.hostinger.com/) → **Websites** → **Manage** for the correct site → **Files → FTP Accounts**. Copy the host **without** the `ftp://` prefix shown in hPanel (for example, `darkorange-chinchilla-918430.hostingersite.com`). |
-| `HOSTINGER_FTP_USERNAME` (or `HOSTINGER_FTP_USER`/`FTP_USERNAME`/`FTP_USER`) | FTP username that has access to the deployment directory. | Same FTP Accounts page in hPanel. Use the username column or create a new FTP account if needed. |
-| `HOSTINGER_FTP_PASSWORD` (or `HOSTINGER_FTP_PASS`/`FTP_PASSWORD`/`FTP_PASS`) | Password for the FTP user. | Either copy the password you set when creating the FTP account or click **Change account password** on the FTP Accounts page to generate a new one. |
-| `HOSTINGER_FTP_TARGET_DIR` (or `FTP_TARGET_DIR`) | Remote directory to upload into. | On Hostinger shared hosting this is usually `public_html/` (include the trailing slash). Adjust if your application lives in a subdirectory. |
-| `HOSTINGER_FTP_PROTOCOL` (or `FTP_PROTOCOL`) | Connection protocol. | Hostinger supports `ftps` (explicit TLS) for most plans. Use `sftp` only if you enabled SSH access and created an SFTP account. Leave blank to default to `ftps`. The cleanup script runs only for FTP/FTPS uploads. |
-| `HOSTINGER_FTP_PORT` (or `FTP_PORT`) | Port for the selected protocol. | Hostinger uses port 21 for FTP/FTPS and 22 for SFTP. Set this only if Hostinger support instructs you to use a different port. |
+## Manual deployment workflow
 
-Add each item as a **Repository secret** (Settings → Secrets and variables → Actions → *New repository secret*). Organisation owners can also define them as organisation secrets or variables if the same credentials are shared across multiple repositories.
+Run the following checklist whenever you want to refresh production:
 
-If you have the hPanel FTP details open (like in the screenshot the team shared), copy each field straight into GitHub:
-
-1. Open your repository on GitHub and navigate to **Settings → Secrets and variables → Actions → New repository secret**.
-2. Add a secret named **`HOSTINGER_FTP_HOST`** using the value from the **FTP Hostname** field (for example `darkorange-chinchilla-918430.hostingersite.com`). Make sure you copy *only* the host—remove any `ftp://` prefix.
-3. Add **`HOSTINGER_FTP_USERNAME`** with the username shown in the FTP list (`u1234567`, etc.).
-4. Add **`HOSTINGER_FTP_PASSWORD`**. If you do not have it, click **Change password** in hPanel, set a new password, and paste that fresh value into the secret immediately.
-5. Add **`HOSTINGER_FTP_TARGET_DIR`** with the **Directory**/root path from hPanel (`public_html/`, `domains/example.com/public_html/`, etc.). Keep the trailing `/` so uploads land in the correct folder.
-6. Add **`HOSTINGER_FTP_PROTOCOL`** and set it to `ftps` unless Hostinger instructed you to use plain FTP (`ftp`) or you specifically configured SFTP access (`sftp`).
-7. (Optional) Add **`HOSTINGER_FTP_PORT`** if Hostinger support gave you a non-standard port. Otherwise leave it unset so the workflow falls back to `21` for FTP/FTPS or `22` for SFTP.
-
-After you add each secret, rerun the **Deploy to Hostinger** workflow. The `Resolve deployment configuration` job will surface any remaining missing values; when all four required secrets are present (`HOSTINGER_FTP_HOST`, `HOSTINGER_FTP_USERNAME`, `HOSTINGER_FTP_PASSWORD`, and `HOSTINGER_FTP_TARGET_DIR`), the deploy job proceeds and the cleanup step connects successfully. The cleanup helper prints a masked summary like:
-
-```
-Connected to Hostinger FTP cleanup target: host=dar**************com protocol=FTPS port=21 directory=/public_html
-```
-
-Use that log line to confirm the workflow is using the hostname you just configured (the first and last few characters remain visible for easy verification). You do **not** need to create a separate `FTP_CLEANUP_HOST` secret—the workflow derives it automatically from the host secret.
-
-## 2. Prepare the Hostinger server once
-
-Run these steps the first time you bring a Hostinger environment online:
-
-1. Enable SSH access in hPanel (Websites → Manage → Advanced → SSH Access) and note the SSH username/host.
-2. Connect over SSH and move to the directory where the application should live:
+1. SSH into Hostinger on port `65002` using the Aktonz account and alias PHP to
+   the PHP 8.4 binary so Composer and Artisan use the right interpreter:
 
    ```bash
-   ssh <user>@<host>
-   cd ~/domains/<your-domain>/public_html
-   ```
-
-3. Ensure the directory is empty before cloning. If you already deployed the project manually, back up your files first.
-4. Clone the repository or download the latest release:
-
-   ```bash
-   git clone -b main https://github.com/ewebtechsuk/savirix.git .
-   ```
-
-5. Make the deployment script executable:
-
-   ```bash
-   chmod +x deploy_hostinger.sh
-   ```
-
-6. Verify PHP and Composer are available. Hostinger provides them globally but you can check with `php -v` and `composer -V`.
-
-Once this initial setup is complete you only need to pull and re-run the deployment script on subsequent releases.
-
-## 3. Run the deployment script on Hostinger
-
-From the project root on the Hostinger server run:
-
-```bash
-bash deploy_hostinger.sh
-```
-
-The script handles the full production refresh:
-
-- Pulls the latest `main` branch (or clones the repository if missing).
-- Installs Composer dependencies with `--no-dev --optimize-autoloader`.
-- Copies `.env.example` to `.env` the first time and reminds you to edit it.
-- Generates an `APP_KEY` if the key is empty.
-- Clears cached configuration/routes/views.
-- Runs database migrations with `--force`.
-- Fixes permissions on `storage` and `bootstrap/cache`.
-
-Re-run the script after each deployment or whenever the site behaves unexpectedly—it is idempotent and safe to execute multiple times.
-
-## 4. Verify the deployment
-
-After the script completes:
-
-1. Visit the production URL in a browser to confirm the homepage loads.
-2. Tail the Laravel log to make sure no fresh exceptions are being thrown:
-
-   ```bash
-   tail -f storage/logs/laravel.log
-   ```
-
-3. If you see new errors, capture the stack trace for debugging. Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to stop tailing once you are done.
-
-## 5. Troubleshooting HTTP 500 errors
-
-If the public site is still returning an HTTP 500 error after a deploy, walk through this checklist:
-
-1. **Validate the document root layout** – the deployment workflow uploads into `public_html/.deploy-sftp/` and the follow-up flatten step moves the files into `public_html/`. If a failed run leaves either `.deploy-sftp/` or a stray `dist/` folder behind, clean them up manually:
-
-   ```bash
-   ssh -p 65002 <user>@<host>
-   cd ~/domains/<your-domain>/public_html
-   mv .deploy-sftp/* . 2>/dev/null || true
-   rm -rf .deploy-sftp
-   if [ -d dist ]; then mv dist/* . && rmdir dist; fi
-   ls -la
-   ```
-
-   The listing should show your built `index.html` and asset directories directly inside `public_html/`.
-
-2. **Inspect the Laravel log on Hostinger** – set `APP_DEBUG=true` in `.env` temporarily if you need detailed error pages, then tail the latest stack trace while reproducing the error:
-
-   ```bash
-   tail -n 50 storage/logs/laravel.log
-   ```
-
-   Remember to revert `APP_DEBUG=false` afterwards.
-
-3. **Fix storage permissions** – Laravel must be able to write to `storage/` and `bootstrap/cache/`. Reset ownership and permissions with:
-
-   ```bash
-   chown -R u753768407:www-data storage bootstrap/cache
-   find storage bootstrap/cache -type d -exec chmod 755 {} \;
-   find storage bootstrap/cache -type f -exec chmod 644 {} \;
-   ```
-
-   Replace `www-data` with the PHP-FPM user configured on your Hostinger plan if it differs.
-
-4. **Regenerate caches and confirm the `APP_KEY`** – make sure the application key is populated (run `php artisan tinker` then `config('app.key')` to double-check) and clear any cached configuration:
-
-   ```bash
-   php artisan config:clear
-   php artisan route:clear
-   php artisan view:clear
-   php artisan config:cache
-   ```
-
-5. **Re-run the deployment script** – `bash deploy_hostinger.sh` reinstalls Composer dependencies, ensures `.env` exists, generates an `APP_KEY` when missing, clears caches, runs database migrations with `--force`, and fixes `storage/` permissions. Running it after each pull keeps the application bootable. When you prefer to execute the steps manually, run:
-
-   ```bash
-   composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
-   php artisan migrate --force
-   php artisan optimize:clear
-   chmod -R 775 storage bootstrap/cache
-   ```
-
-6. **Confirm dependencies shipped with the build** – verify `vendor/` exists and contains the Composer autoloader. If not, rerun the script or the `composer install` command above.
-
-7. **Rebuild front-end assets if applicable** – if the issue is limited to missing compiled assets, run `npm ci && npm run build` locally and commit the generated files if they are supposed to be tracked, or configure the workflow to upload the `dist/` output.
-
-8. **Escalate with context** – when the problem persists, share the log snippet, the commands you ran, and the time of the failure. That information drastically reduces the time-to-fix.
-
-Following these steps resolves the majority of HTTP 500 issues encountered after deploying this project to Hostinger.
-
-## 6. Manual Aktonz refresh script (fallback)
-
-Most production updates are handled automatically through GitHub Actions or by running `deploy_hostinger.sh`. When either of
-those options is unavailable you can fall back to the **Aktonz manual sync script** that mirrors the on-server repository into
-`public_html/`, rewrites `index.php` to reference `laravel_app/`, and refreshes all caches.
-
-1. SSH into the Aktonz Hostinger account (`ssh u753768407@<host>`) and switch to the Laravel application directory:
-
-   ```bash
+   ssh -p 65002 u753768407@<host>
    alias php='/opt/alt/php84/usr/bin/php'
+   ```
+
+2. Move into the Laravel checkout and fast-forward `master` so it matches
+   GitHub:
+
+   ```bash
    cd /home/u753768407/domains/savarix.com/laravel_app
    git fetch origin master
    git checkout master
    git pull --ff-only origin master
    ```
 
-2. Run the refreshed manual sync script:
+3. Run the manual sync script. It is safe to execute multiple times and only
+   needs elevated privileges when changing permissions inside `public_html/`:
 
    ```bash
    bash scripts/hostinger_manual_sync.sh
    ```
 
-3. The helper performs the full checklist the team previously executed by hand:
-   - Creates a timestamped backup of `laravel_app_core/` if it still exists.
-   - Syncs the Git repository in `/home/u753768407/domains/savarix.com/laravel_app` from the `master` branch.
-   - Resets `public_html/`, copies `public/` assets, and rewrites the document root `index.php` to load `../laravel_app/`.
-   - Runs `/opt/alt/php84/usr/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader`, applies `php artisan migrate --force`, refreshes caches, and enforces permissions.
-   - Reminds you to double-check the hPanel document root and optionally prune the backup once the site is verified.
+4. Confirm the app booted correctly by visiting
+   https://aktonz.savarix.com/login, running `php artisan tenants:list`, and
+   verifying `php artisan users:list --tenant=aktonz --json` still returns the
+   admin (`info@aktonz.com`). Tail the production log as needed:
 
-4. Visit `https://aktonz.savarix.com/login` when the script finishes to confirm the tenant portal loads correctly. Keep the
-backup directory until the site has been stable for a while (`rm -rf /home/u753768407/domains/savarix.com/laravel_app_core_backup_*`).
+   ```bash
+   tail -f /home/u753768407/domains/savarix.com/laravel_app/storage/logs/laravel.log
+   ```
 
-The script lives at [`scripts/hostinger_manual_sync.sh`](../../scripts/hostinger_manual_sync.sh) so it is versioned alongside
-the rest of the deployment tooling.
+## What `scripts/hostinger_manual_sync.sh` does
 
+The helper script mirrors the manual steps the team previously ran by hand. Each
+section logs its progress so you can see which step failed:
+
+1. **Sanity checks** – verifies that `laravel_app/` and `public_html/` exist
+   before doing any work and prints the PHP/Composer binaries that will be used.
+2. **Legacy backup** – moves any lingering `laravel_app_core` directory to
+   `laravel_app_core_backup_YYYYMMDD_HHMM`.
+3. **Git sync** – fetches from `origin`, checks out the `master` branch, warns if
+   the remote URL is not `git@github.com:ewebtechsuk/savarix.git`, and pulls with
+   `--ff-only`.
+4. **Composer install** – optionally runs `scripts/composer-token.php`, then
+   executes `/opt/alt/php84/usr/bin/php /usr/local/bin/composer install
+   --no-dev --optimize-autoloader --no-interaction --prefer-dist`. Failures are
+   logged as warnings so you can rerun the step manually if needed.
+5. **Environment enforcement** – copies `.env.example` to `.env` if the file is
+   missing and ensures the keys `APP_ENV=production`,
+   `APP_URL=https://aktonz.savarix.com`, and `TENANT_DOMAIN=aktonz.savarix.com`
+   exist via the `update_env_value` helper.
+6. **Artisan maintenance** – runs the usual production commands (`key:generate`,
+   `migrate --force --no-interaction`, `config:cache`, `route:cache`,
+   `view:cache`, `optimize`). Each command is wrapped in `run_or_warn` so the
+   script keeps going even if a cache step fails.
+7. **Document root refresh** – removes everything inside `public_html/` except
+   `aktonz/`, `.well-known`, and `.ftpquota`, copies `public/` into place, and
+   rewrites `public_html/index.php` so it loads the framework from
+   `../laravel_app/`.
+8. **Permissions** – resets ownership to `u753768407`, applies `775` to
+   `storage/` and `bootstrap/cache/`, and tightens `public_html/` to `755`.
+9. **Summary** – prints the paths in use and reminds you to confirm hPanel’s
+   document root, run `php artisan tenants:list`, and inspect the Aktonz users on
+   the server.
+
+The script avoids destructive operations and can be re-run immediately after a
+failure to complete the remaining steps.
+
+## Troubleshooting checklist
+
+If the site still fails after a sync:
+
+1. **Validate the document root** – ensure `aktonz.savarix.com` points to
+   `/home/u753768407/domains/savarix.com/public_html` and that `index.php` loads
+   `../laravel_app/vendor/autoload.php` and `../laravel_app/bootstrap/app.php`.
+2. **Inspect Laravel logs** – tail the most recent file under
+   `storage/logs/` while reproducing the error.
+3. **Re-run migrations** – `php artisan migrate --force` catches schema drift.
+4. **Clear caches** – `php artisan config:clear`, `route:clear`, `view:clear`,
+   then re-run the manual sync script.
+5. **Fix permissions** – ensure `storage/` and `bootstrap/cache/` remain writable
+   by the Hostinger user.
+6. **Verify tenants** – `php artisan tenants:list` and
+   `php artisan users:list --tenant=aktonz` should show the expected data.
+
+## Deprecated static workflow
+
+`.github/workflows/deploy-hostinger.yml` previously built a static Vite bundle
+and uploaded it via `appleboy/scp-action`. That job timed out consistently and no
+longer reflects the production architecture, so it has been restricted to manual
+runs only. Do not re-enable it for Aktonz—the Laravel deployment plus
+`hostinger_manual_sync.sh` is the supported path going forward.
