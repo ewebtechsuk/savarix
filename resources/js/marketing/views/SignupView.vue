@@ -1,7 +1,7 @@
 <template>
     <div class="signup">
         <section class="signup-hero">
-            <h1>Start your Savirix trial</h1>
+            <h1>Start your Savarix trial</h1>
             <p>Provision an agency sandbox instantly, invite your team, and experience the automated onboarding + KYC flow.</p>
         </section>
         <TrialSignupForm />

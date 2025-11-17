@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-header">Tenant Directory</div>
                 <div class="card-body">
-                    <p>The following tenants are currently registered in Savirix:</p>
+                    <p>The following tenants are currently registered in Savarix:</p>
                     <ul class="list-unstyled">
                         @forelse ($tenants as $tenant)
                             <li class="mb-3">

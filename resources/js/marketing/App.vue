@@ -3,7 +3,7 @@
         <header class="app-header">
             <div class="app-header__inner">
                 <router-link class="brand" to="/" @click="trackNav('logo')">
-                    Savirix
+                    Savarix
                 </router-link>
                 <nav class="primary-nav">
                     <button class="nav-link" type="button" @click="scrollTo('solutions')">Solutions</button>
@@ -23,17 +23,17 @@
         <footer class="app-footer">
             <div class="app-footer__inner">
                 <div>
-                    <strong>Savirix</strong>
+                    <strong>Savarix</strong>
                     <p>Automation platform for ambitious property teams.</p>
                 </div>
                 <div class="footer-links">
                     <router-link to="/" @click="trackNav('footer_home')">Home</router-link>
                     <router-link to="/signup" @click="trackNav('footer_signup')">Start trial</router-link>
                     <router-link to="/aktonz/login" @click="trackNav('footer_tenant_login')">Tenant login</router-link>
-                    <a href="mailto:sales@savirix.com" @click="trackNav('footer_email')">Contact</a>
+                    <a href="mailto:sales@savarix.com" @click="trackNav('footer_email')">Contact</a>
                 </div>
             </div>
-            <p class="app-footer__note">&copy; {{ new Date().getFullYear() }} Savirix. All rights reserved.</p>
+            <p class="app-footer__note">&copy; {{ new Date().getFullYear() }} Savarix. All rights reserved.</p>
         </footer>
     </div>
 </template>
