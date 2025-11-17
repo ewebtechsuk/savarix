@@ -6,12 +6,11 @@ use App\Models\User;
 
 class DashboardTest extends TestCase
 {
-    public function testLoginPageLoads(): void
+    public function test_marketing_domain_does_not_expose_login_page(): void
     {
         $response = $this->get('/login');
-        $response->assertStatus(200)
-            ->assertSee('Login');
 
+        $response->assertNotFound();
     }
 
     public function testDashboardRequiresAuthentication(): void
