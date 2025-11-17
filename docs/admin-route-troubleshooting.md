@@ -54,7 +54,7 @@ Route::prefix($secretAdminPath)->group(function () {
 });
 ```
 
-After edits, clear caches to refresh the route list:
+After edits, clear caches to refresh the route list (run these on the same host where the app is served):
 
 ```bash
 php artisan config:clear
@@ -62,7 +62,7 @@ php artisan route:clear
 php artisan route:list | grep admin.login
 ```
 
-The URI should now be just your secret path plus `/login` (for example `kjsdahfkjheruwq939201u1asd91/login`).
+You should see the URI as only your secret path plus `/login` (for example `kjsdahfkjheruwq939201u1asd91/login`). If nothing is returned, the admin routes are not registered on that host.
 
 ## 4) Confirm you are on the central Laravel domain
 With tenancy + marketing separation, the central Laravel app may run on a different host than the marketing frontend. Clues from `.env.example`:
