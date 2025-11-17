@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-cd /home/u75788407/laravel_app
+cd /home/u753768407/domains/savarix.com/laravel_app
 
 # Ensure composer.phar is available
 if [ ! -f composer.phar ]; then
