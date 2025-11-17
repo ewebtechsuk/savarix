@@ -1,0 +1,48 @@
+name: Deploy to Hostinger (Savarix Laravel)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          server: ${{ secrets.HOSTINGER_SSH_HOST }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          ssh_private_key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          local_path: "./"
+          remote_path: "/home/u75788407/laravel_app"
+          delete_remote_files: false
+          exclude: |
+            .git*
+            .github/
+            node_modules/
+            vendor/
+            storage/
+            tests/
+            public_html/
+            *.log
+            *.md
+            docs/
+
+      - name: Run deploy script on Hostinger (SSH)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd /home/u75788407/laravel_app
+            bash deploy/deploy_hostinger.sh
