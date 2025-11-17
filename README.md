@@ -80,6 +80,18 @@ Update the variable in each environment (`.env`, GitHub Actions secrets, Hosting
 
 If the owner admin login unexpectedly 404s, use the playbook in `docs/admin-route-troubleshooting.md` to confirm the route registration, ensure the secret prefix is not double-applied, and verify you are hitting a domain listed in `TENANCY_CENTRAL_DOMAINS`.
 
+#### Quick admin login sanity check command
+
+Run the dedicated Artisan helper to print the relevant environment values, show the `admin.login` route entries, and give you the exact URL to try:
+
+```bash
+php artisan config:clear
+php artisan route:clear
+php artisan savarix:check-admin-login
+```
+
+The output lists `APP_URL`, `SAVARIX_ADMIN_PATH`, and `TENANCY_CENTRAL_DOMAINS`, then displays the `admin.login` routes. If a match is found, the summary includes the fully qualified login URL to paste into your browser. Use the same steps on Hostinger (with the production `.env`) to confirm the deployed configuration and route registration before debugging further.
+
 
 ### Identity verification (Onfido)
 
