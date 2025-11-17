@@ -108,57 +108,26 @@ Run `npm run build:marketing` to compile the standalone marketing microsite. The
 
 ## Deploying to Hostinger
 
-Pushes to `main` automatically trigger `.github/workflows/deploy-hostinger.yml`, which builds production assets and uploads the
-application to your Hostinger account. Configure the following repository secrets before enabling the workflow (either alias
-column may be used):
+Aktonz production now runs entirely from the Laravel app stored in
+`/home/u753768407/domains/savarix.com/laravel_app`. The legacy
+`.github/workflows/deploy-hostinger.yml` workflow that pushed a static `dist/`
+bundle via `appleboy/scp-action` has been disabled and exists only for
+historical reference. The canonical deployment path is the on-server git clone
+plus `scripts/hostinger_manual_sync.sh`.
 
-| Secret (choose one name per row) | Required | Description |
-| --- | --- | --- |
-| `HOSTINGER_FTP_HOST` **or** `HOSTINGER_FTP_SERVER` **or** `FTP_SERVER` **or** `FTP_HOST` | ✅ | Hostname of your Hostinger FTP/SFTP server (omit the `ftp://` prefix shown in hPanel). |
-| `HOSTINGER_FTP_USERNAME` **or** `HOSTINGER_FTP_USER` **or** `FTP_USERNAME` **or** `FTP_USER` | ✅ | Username that has write access to the deployment directory. |
-| `HOSTINGER_FTP_PASSWORD` **or** `HOSTINGER_FTP_PASS` **or** `FTP_PASSWORD` **or** `FTP_PASS` | ✅ | Password or app token for the account above. |
+Refer to [docs/deployment/hostinger.md](docs/deployment/hostinger.md) for a full
+playbook. The short version:
 
-| `HOSTINGER_FTP_TARGET_DIR` **or** `FTP_TARGET_DIR` | ✅ | Remote path to your Laravel application's root (for example `domains/example.com/public_html/`). |
-| `HOSTINGER_FTP_PORT` **or** `FTP_PORT` | ❌ | Override the default port (`21`). The workflow falls back to `22` when the protocol is set to SFTP. |
-| `HOSTINGER_FTP_PROTOCOL` **or** `FTP_PROTOCOL` | ❌ | Transfer protocol (`ftps` by default). Accepts `ftp`, `ftps`, or `sftp` (case-insensitive). The cleanup script runs only for FTP/FTPS uploads and logs the resolved host/protocol/port so you can confirm the right secret values are in use. |
+1. SSH into Hostinger (port `65002`) as `u753768407` and alias PHP to the PHP 8.4
+   binary if desired:
 
-Always populate these secrets with the real values from your Hostinger control panel—placeholders such as `***`,
-`your.hostinger.server`, or `ftp.example.com` will be rejected before any connection attempt. The workflow fails fast with a
-clear error message when any required secret is missing so you can correct the configuration before an upload attempt.
+   ```bash
+   ssh -p 65002 u753768407@<host>
+   alias php='/opt/alt/php84/usr/bin/php'
+   ```
 
-For screenshots, a step-by-step checklist that matches the Hostinger FTP screen, guidance on whether you need extra secrets, and troubleshooting tips for HTTP 500 errors after deploys, see [docs/deployment/hostinger.md](docs/deployment/hostinger.md).
-
-After each deploy, SSH into the server and verify that `public_html/` contains the built site's `index.html` and asset folders directly in the directory root. The deployment workflow temporarily stages files inside `.deploy-sftp/`, then the follow-up `Flatten deployment folder` step moves the contents into `public_html/` and removes both the staging directory and any stray `dist/` wrapper so the web root stays clean. If you still see either folder after a run, rerun the workflow and check the deployment logs for the flatten step.
-
-> **Composer access tokens:** If Composer warns about missing GitHub authentication while resolving dependencies, add a
-> `GITHUB_TOKEN` repository secret (or set it as an Actions variable). The workflow automatically picks it up so private
-> packages can be installed during the build.
-
-
-- **FTP/FTPS** deployments run through [`SamKirkland/FTP-Deploy-Action`](https://github.com/SamKirkland/FTP-Deploy-Action), which
-  keeps a `.ftp-deploy-sync-state.json` file on the server to synchronise only changed files between runs.
-- **SFTP** deployments automatically stage a scrubbed copy of the repository (matching the FTP exclude rules) and upload it with
-  [`appleboy/scp-action`](https://github.com/appleboy/scp-action). Because SFTP uploads cannot reference the sync state file,
-  deletions need to be handled manually on the server if files are removed from version control.
-
-> **Tip:** Non-sensitive settings such as host, protocol, or target directory may be stored in GitHub Actions _variables_ as well
-> as secrets—the workflow checks both contexts. Keep credentials (username/password) in secrets for security. Regardless of
-> where you store the values, trim whitespace and use `ftp`, `ftps`, or `sftp` for the protocol. The deploy step normalises
-> inputs like `SFTP://` automatically.
-
-
-After the workflow finishes, the state file `.ftp-deploy-sync-state.json` stored on the server keeps future deployments fast by
-syncing only changed files. Clean up any old log files or caches in `storage/` directly on the server if required—the workflow
-omits them from uploads.
-
-> **Hostinger tip:** If your shared plan does not expose a global `composer` command, SSH into the server and run `./deploy_hostinger.sh` from the project root after each pull. The script now bootstraps a local `composer.phar`, installs dependencies, and clears the caches so the public site won't fall back to a generic HTTP 500 error.
-
-### Production deployment workflow (Hostinger)
-
-When GitHub Actions is unavailable you can deploy the Aktonz tenant directly from SSH by following this checklist:
-
-1. SSH into Hostinger as `u753768407` and alias PHP if desired (for example `alias php='/opt/alt/php84/usr/bin/php'`).
-2. Move to the application directory and sync the production branch:
+2. Move to the Laravel app directory and sync `master` so the working copy
+   matches GitHub:
 
    ```bash
    cd /home/u753768407/domains/savarix.com/laravel_app
@@ -167,15 +136,26 @@ When GitHub Actions is unavailable you can deploy the Aktonz tenant directly fro
    git pull --ff-only origin master
    ```
 
-3. Run the scripted refresh:
+3. Run the manual sync helper to refresh Composer dependencies, caches, and the
+   document root mirror:
 
    ```bash
    bash scripts/hostinger_manual_sync.sh
    ```
 
-   The helper backs up any remaining `laravel_app_core` directory, installs Composer dependencies with `/opt/alt/php84/usr/bin/php`, runs `php artisan migrate --force`, rewrites `public_html/index.php`, and keeps `.env` values such as `APP_URL=https://aktonz.savarix.com` in sync. The script accepts overrides via environment variables (`APP_DIR`, `DOCUMENT_ROOT`, `PHP_BIN`, etc.) if Hostinger changes their layout.
+   The script validates the Hostinger directory layout, backs up any
+   `laravel_app_core` directory to a timestamped `_backup_YYYYMMDD_HHMM`
+   folder, installs dependencies with `/opt/alt/php84/usr/bin/php` and
+   `/usr/local/bin/composer`, ensures `.env` contains
+   `APP_ENV=production`, `APP_URL=https://aktonz.savarix.com`, and
+   `TENANT_DOMAIN=aktonz.savarix.com`, runs the usual artisan cache/migration
+   commands, mirrors `public/` into `public_html/`, rewrites
+   `public_html/index.php` to bootstrap `../laravel_app/`, and resets
+   permissions.
 
-4. Once the script finishes, verify the site by tailing `storage/logs/laravel.log` and hitting https://aktonz.savarix.com/login in a browser.
+4. Visit https://aktonz.savarix.com/login and tail
+   `/home/u753768407/domains/savarix.com/laravel_app/storage/logs/laravel.log`
+   after each run to confirm the tenant boots cleanly.
 
 ### Tenant and user inspection commands
 

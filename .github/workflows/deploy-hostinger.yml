@@ -1,8 +1,9 @@
-name: Mirror GitHub Pages build to Hostinger
+name: Mirror GitHub Pages build to Hostinger (legacy static deploy)
 
+# This workflow intentionally no longer runs on pushes. Aktonz production is served
+# directly from the Laravel app in laravel_app/, so the static deploy is disabled
+# but retained for reference.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
