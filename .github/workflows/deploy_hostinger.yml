@@ -47,7 +47,7 @@ jobs:
           server: ${{ env.HOSTINGER_HOST }}
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
-          ssh_private_key: ${{ env.HOSTINGER_KEY }}
+          ssh_private_key: ${{ steps.prepare-key.outputs.key }}
           local_path: "./"
           remote_path: "/home/u753768407/domains/savarix.com/laravel_app"
           delete_remote_files: false
@@ -62,7 +62,7 @@ jobs:
           host: ${{ env.HOSTINGER_HOST }}
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
-          key: ${{ env.HOSTINGER_KEY }}
+          key: ${{ steps.prepare-key.outputs.key }}
           script: |
             cd /home/u753768407/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
