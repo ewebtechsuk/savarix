@@ -19,17 +19,92 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Show deployment context
+        run: |
+          echo "Deploying commit: ${{ github.sha }}" \
+               "from ref: ${{ github.ref }}" \
+               "on event: ${{ github.event_name }}"
+
+      - name: Validate required Hostinger secrets
+        run: |
+          missing=0
+          for var in HOSTINGER_HOST HOSTINGER_PORT HOSTINGER_USER HOSTINGER_KEY; do
+            if [ -z "${!var}" ]; then
+              echo "::error title=Missing secret::${var} is not set. Check repository secrets."
+              missing=1
+            else
+              echo "${var} is set."
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Missing required secrets; stopping before deployment."
+            exit 1
+          fi
+
+      - name: Normalize Hostinger SSH key
+        id: prepare-key
+        run: |
+          set -euo pipefail
+
+          # Normalize the secret by converting literal \n sequences into real newlines
+          # so that both single-line and multiline secrets are supported.
+          KEY_CONTENT=$(printf '%s' "${HOSTINGER_KEY}" | sed 's/\\n/\n/g')
+
+          # Detect whether the secret is already PEM-formatted or base64-encoded.
+          if echo "$KEY_CONTENT" | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
+            printf "%s\n" "$KEY_CONTENT" > hostinger_key.pem
+          else
+            # Try to base64 decode; if it fails, fall back to writing the raw content.
+            if echo "$KEY_CONTENT" | base64 -d > hostinger_key.pem 2>/tmp/key_decode.log; then
+              echo "Secret looked base64-encoded; decoded to hostinger_key.pem"
+            else
+              echo "Base64 decode failed, writing raw content" >&2
+              printf "%s\n" "$KEY_CONTENT" > hostinger_key.pem
+            fi
+          fi
+
+          chmod 600 hostinger_key.pem
+
+          # Validate the key format early so downstream steps don't fail mysteriously.
+          if ! ssh-keygen -yf hostinger_key.pem >/dev/null 2>&1; then
+            echo "::error title=Invalid SSH key::HOSTINGER_KEY is not a valid private key after normalization." >&2
+            exit 1
+          fi
+
+          echo "Normalized SSH key size: $(wc -c < hostinger_key.pem) bytes"
+
+          echo "SSH key written to hostinger_key.pem"
+
+          # Expose the normalized key as an output for actions that expect inline key text.
+          {
+            echo "key<<EOF"
+            cat hostinger_key.pem
+            echo "EOF"
+            echo "key-path=hostinger_key.pem"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Assert normalized key is available
+        run: |
+          if [ -z "${{ steps.prepare-key.outputs.key }}" ]; then
+            echo "::error title=SSH key missing::Normalized SSH key output is empty. Check prepare-key step." >&2
+            exit 1
+          fi
+          echo "Normalized SSH key output is present."
+
       - name: Deploy to Hostinger via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
           server: ${{ env.HOSTINGER_HOST }}
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
-          ssh_private_key: ${{ env.HOSTINGER_KEY }}
+          ssh_private_key: ${{ steps.prepare-key.outputs.key }}
           local_path: "./"
           remote_path: "/home/u753768407/domains/savarix.com/laravel_app"
           delete_remote_files: false
           sftp_only: true
+
+      - name: Confirm files deployed via SFTP
+        run: echo "SFTP deploy step completed; proceeding to remote deploy script."
 
       - name: Run deploy script on Hostinger (SSH)
         uses: appleboy/ssh-action@v1.0.0
@@ -37,7 +112,7 @@ jobs:
           host: ${{ env.HOSTINGER_HOST }}
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
-          key: ${{ env.HOSTINGER_KEY }}
+          key: ${{ steps.prepare-key.outputs.key }}
           script: |
             cd /home/u753768407/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
