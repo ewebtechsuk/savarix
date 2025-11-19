@@ -33,15 +33,19 @@ Route::group(['middleware' => 'guest'], function () {
         ->name('onboarding.register.store');
 });
 
-// Secret Savarix admin path (set in .env as SAVARIX_ADMIN_PATH)
-$secretAdminPath = env('SAVARIX_ADMIN_PATH', 'savarix-admin');
+// Simple test to confirm Laravel is handling this request
+Route::get('/test-admin-path', function () {
+    return 'admin-routes-ok';
+});
+
+// Secret Savarix owner admin routes (hidden URL prefix)
+$secretAdminPath = 'kjsdahfkjheruwq939201u1asd91'; // DO NOT expose this publicly
 
 Route::prefix($secretAdminPath)->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 
     Route::middleware(['auth', 'owner'])->group(function () {
-        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
         Route::get('/agencies', [AdminAgencyController::class, 'index'])->name('admin.agencies.index');
