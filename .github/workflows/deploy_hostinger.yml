@@ -41,32 +41,6 @@ jobs:
             exit 1
           fi
 
-      - name: Normalize Hostinger SSH key
-        id: prepare-key
-        run: |
-          set -euo pipefail
-
-          KEY_CONTENT="${HOSTINGER_KEY}"
-
-          # Detect whether the secret is already PEM-formatted or base64-encoded.
-          if echo "$KEY_CONTENT" | grep -q "-----BEGIN .*PRIVATE KEY-----"; then
-            printf "%s\n" "$KEY_CONTENT" > hostinger_key.pem
-          else
-            echo "$KEY_CONTENT" | base64 -d > hostinger_key.pem
-          fi
-
-          chmod 600 hostinger_key.pem
-
-          echo "SSH key written to hostinger_key.pem"
-
-          # Expose the normalized key as an output for actions that expect inline key text.
-          {
-            echo "key<<'EOF'"
-            cat hostinger_key.pem
-            echo "EOF"
-            echo "key-path=hostinger_key.pem"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Deploy to Hostinger via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
