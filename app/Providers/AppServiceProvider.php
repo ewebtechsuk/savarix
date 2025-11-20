@@ -10,6 +10,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -70,6 +71,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(ModelChangeRecorder::class);
 
+        $this->normalizeSqliteConnectionPaths();
+
         if ($this->app->environment('testing')) {
             $databasePath = database_path('testing.sqlite');
 
@@ -81,6 +84,61 @@ class AppServiceProvider extends ServiceProvider
                 'database.default' => 'sqlite',
                 'database.connections.sqlite.database' => $databasePath,
             ]);
+        }
+
+        $this->ensureSqliteDatabaseFilesExist();
+    }
+
+    protected function normalizeSqliteConnectionPaths(): void
+    {
+        $connections = config('database.connections', []);
+
+        foreach ($connections as $name => $connection) {
+            if (($connection['driver'] ?? null) !== 'sqlite') {
+                continue;
+            }
+
+            $database = $connection['database'] ?? null;
+
+            if (! is_string($database) || $database === '' || $database === ':memory:') {
+                continue;
+            }
+
+            $resolvedPath = Str::startsWith($database, [DIRECTORY_SEPARATOR, '\\'])
+                || preg_match('/^[A-Za-z]:\\\\/', $database) === 1
+                ? $database
+                : base_path($database);
+
+            if ($resolvedPath !== $database) {
+                config(["database.connections.{$name}.database" => $resolvedPath]);
+            }
+        }
+    }
+
+    protected function ensureSqliteDatabaseFilesExist(): void
+    {
+        $connections = config('database.connections', []);
+
+        foreach ($connections as $connection) {
+            if (($connection['driver'] ?? null) !== 'sqlite') {
+                continue;
+            }
+
+            $database = $connection['database'] ?? null;
+
+            if (! is_string($database) || $database === '' || $database === ':memory:') {
+                continue;
+            }
+
+            $directory = dirname($database);
+
+            if (! is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            if (! file_exists($database)) {
+                touch($database);
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Str;
+
 return [
 
     /*
@@ -48,7 +50,20 @@ return [
 
         'sqlite' => [
             'driver' => 'sqlite',
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'database' => value(function () {
+                $configuredPath = env('DB_DATABASE');
+
+                if (is_string($configuredPath) && $configuredPath !== '') {
+                    if (Str::startsWith($configuredPath, [DIRECTORY_SEPARATOR, '\\'])
+                        || preg_match('/^[A-Za-z]:\\\\/', $configuredPath) === 1) {
+                        return $configuredPath;
+                    }
+
+                    return base_path($configuredPath);
+                }
+
+                return database_path('database.sqlite');
+            }),
             'prefix' => '',
         ],
 
