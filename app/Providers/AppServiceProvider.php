@@ -86,7 +86,9 @@ class AppServiceProvider extends ServiceProvider
             ]);
         }
 
-        $this->ensureSqliteDatabaseFilesExist();
+        if ($this->app->environment('local', 'testing')) {
+            $this->ensureSqliteDatabaseFilesExist();
+        }
     }
 
     protected function normalizeSqliteConnectionPaths(): void
