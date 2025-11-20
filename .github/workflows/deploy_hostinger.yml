@@ -47,8 +47,11 @@ jobs:
           set -euo pipefail
 
           # Normalize the secret by converting literal \n sequences into real newlines
-          # so that both single-line and multiline secrets are supported.
-          KEY_CONTENT=$(printf '%s' "${HOSTINGER_KEY}" | sed 's/\\n/\n/g')
+          # so that both single-line and multiline secrets are supported, and strip any
+          # Windows carriage returns that can corrupt the PEM format.
+          KEY_CONTENT=$(printf '%s' "${HOSTINGER_KEY}" \
+            | sed 's/\\n/\n/g' \
+            | tr -d '\r')
 
           # Detect whether the secret is already PEM-formatted or base64-encoded.
           if echo "$KEY_CONTENT" | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
