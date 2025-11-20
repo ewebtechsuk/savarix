@@ -21,12 +21,14 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (Auth::attempt($credentials)) {
-            if (Auth::user()->isOwner()) {
+        $adminGuard = Auth::guard('web');
+
+        if ($adminGuard->attempt($credentials)) {
+            if ($adminGuard->user()->isOwner()) {
                 return redirect()->route('admin.dashboard');
             }
 
-            Auth::logout();
+            $adminGuard->logout();
         }
 
         return back()->withErrors(['email' => 'Invalid credentials']);

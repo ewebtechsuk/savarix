@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ListUsers::class,
         \App\Console\Commands\TestCommand::class,
         \App\Console\Commands\SavirixCheckAdminLogin::class,
+        \App\Console\Commands\SavarixCreateAdmin::class,
     ];
 
     protected function schedule(Schedule $schedule)

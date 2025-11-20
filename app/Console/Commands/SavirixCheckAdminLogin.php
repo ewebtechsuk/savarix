@@ -2,9 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Throwable;
 
 class SavirixCheckAdminLogin extends Command
 {
@@ -14,12 +17,31 @@ class SavirixCheckAdminLogin extends Command
 
     public function handle(): int
     {
+        $defaultGuard = config('auth.defaults.guard');
+        $adminProvider = config("auth.guards.{$defaultGuard}.provider");
+        $providerConfig = config("auth.providers.{$adminProvider}");
+        $centralConnection = config('tenancy.database.central_connection');
+        $databaseDefault = config('database.default');
+
         $appUrl = config('app.url') ?? env('APP_URL');
         $adminPath = env('SAVARIX_ADMIN_PATH', 'savarix-admin');
         $centralDomains = config('tenancy.central_domains') ?? env('TENANCY_CENTRAL_DOMAINS');
 
         $this->info('APP_URL: ' . ($appUrl ?? ''));
         $this->info('SAVARIX_ADMIN_PATH: ' . ($adminPath ?: 'savarix-admin'));
+        $this->info("Auth default guard: {$defaultGuard}");
+        $this->info("Auth provider for {$defaultGuard}: {$adminProvider}");
+        $this->info('Auth provider driver: ' . ($providerConfig['driver'] ?? ''));    
+        $this->info('Auth provider model/table: ' . ($providerConfig['model'] ?? $providerConfig['table'] ?? 'unknown'));
+        $this->info("database.default: {$databaseDefault}");
+        $this->info("tenancy.database.central_connection: {$centralConnection}");
+        $this->line('--- central DB credentials (env) ---');
+        $this->line('DB_CONNECTION=' . env('DB_CONNECTION'));
+        $this->line('DB_DATABASE=' . env('DB_DATABASE'));
+        $this->line('DB_USERNAME=' . env('DB_USERNAME'));
+
+        $this->info('--- Central admin users (role owner or is_admin=1) ---');
+        $this->displayAdminUsers();
 
         if (is_array($centralDomains)) {
             $domainsDisplay = implode(', ', $centralDomains);
@@ -57,5 +79,57 @@ class SavirixCheckAdminLogin extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    protected function displayAdminUsers(): void
+    {
+        try {
+            $admins = User::query()
+                ->where(fn ($query) => $query->where('role', 'owner')->orWhere('is_admin', true))
+                ->select(['id', 'name', 'email', 'password'])
+                ->get()
+                ->map(function (User $user) {
+                    $hashInfo = $this->describePasswordHash($user->password);
+
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'connection' => $user->getConnectionName() ?? config('database.default'),
+                        'has_password_hash' => $hashInfo['valid'] ? 'yes' : 'no',
+                        'hash_algo' => $hashInfo['algo'],
+                    ];
+                });
+
+            if ($admins->isEmpty()) {
+                $this->warn('No admin/owner users found in the central users table.');
+
+                return;
+            }
+
+            $this->table(['id', 'name', 'email', 'connection', 'has_password_hash', 'hash_algo'], $admins->toArray());
+        } catch (Throwable $e) {
+            $this->error('Failed to query admin users: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * @return array{valid: bool, algo: string}
+     */
+    protected function describePasswordHash(?string $password): array
+    {
+        if (! $password) {
+            return ['valid' => false, 'algo' => 'missing'];
+        }
+
+        $info = password_get_info($password);
+        $isValid = ($info['algo'] ?? 0) !== 0 || Str::startsWith($password, '$2y$');
+        $algo = $info['algoName'] ?? 'unknown';
+
+        if (! $isValid && Hash::needsRehash($password) === false) {
+            $isValid = true;
+        }
+
+        return ['valid' => $isValid, 'algo' => $algo];
     }
 }
