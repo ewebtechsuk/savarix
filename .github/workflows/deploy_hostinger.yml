@@ -14,6 +14,7 @@ jobs:
       HOSTINGER_PORT: ${{ secrets.HOSTINGER_SSH_PORT || 65002 }}
       HOSTINGER_USER: ${{ secrets.HOSTINGER_SSH_USER || secrets.HOSTINGER_FTP_USERNAME }}
       HOSTINGER_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+      HOSTINGER_PASSWORD: ${{ secrets.HOSTINGER_PASSWORD || '' }}
 
     steps:
       - name: Checkout repository
@@ -96,16 +97,28 @@ jobs:
 
       - name: Upload code to Hostinger via rsync over SSH
         run: |
+          set -euo pipefail
+
+          REMOTE_PATH="/home/${HOSTINGER_USER}/domains/savarix.com/laravel_app"
+          SSH_BASE_OPTS="-p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
+
+          if [ -n "${HOSTINGER_PASSWORD}" ]; then
+            sudo apt-get update -y
+            sudo apt-get install -y sshpass
+            echo "Using password authentication for rsync"
+            RSYNC_SSH="sshpass -p \"${HOSTINGER_PASSWORD}\" ssh ${SSH_BASE_OPTS} -o PreferredAuthentications=password,keyboard-interactive"
+          else
+            echo "Using SSH key authentication for rsync"
+            RSYNC_SSH="ssh -i ${{ steps.prepare-key.outputs.key-path }} ${SSH_BASE_OPTS}"
+          fi
+
           rsync -az --omit-dir-times --no-perms --no-owner --no-group \
             --exclude='.git/' \
-            -e "ssh -i ${{ steps.prepare-key.outputs.key-path }} -p $HOSTINGER_PORT -o StrictHostKeyChecking=no" \
-            ./ "${HOSTINGER_USER}@${HOSTINGER_HOST}:/home/u753768407/domains/savarix.com/laravel_app"
+            -e "${RSYNC_SSH}" \
+            ./ "${HOSTINGER_USER}@${HOSTINGER_HOST}:${REMOTE_PATH}"
 
       - name: Confirm files synced to Hostinger
         run: echo "Rsync upload completed; proceeding to remote deploy script."
-
-      - name: Confirm files deployed via SFTP
-        run: echo "SFTP deploy step completed; proceeding to remote deploy script."
 
       - name: Run deploy script on Hostinger (SSH)
         uses: appleboy/ssh-action@v1.0.0
@@ -114,6 +127,20 @@ jobs:
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
           key_path: ${{ steps.prepare-key.outputs.key-path }}
+          password: ${{ env.HOSTINGER_PASSWORD }}
           script: |
-            cd /home/u753768407/domains/savarix.com/laravel_app
+            cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
+            bash deploy/deploy_hostinger.sh
+        if: env.HOSTINGER_PASSWORD == ''
+
+      - name: Run deploy script on Hostinger (SSH, password)
+        uses: appleboy/ssh-action@v1.0.0
+        if: env.HOSTINGER_PASSWORD != ''
+        with:
+          host: ${{ env.HOSTINGER_HOST }}
+          port: ${{ env.HOSTINGER_PORT }}
+          username: ${{ env.HOSTINGER_USER }}
+          password: ${{ env.HOSTINGER_PASSWORD }}
+          script: |
+            cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
