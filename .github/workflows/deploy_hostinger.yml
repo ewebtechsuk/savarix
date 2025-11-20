@@ -43,7 +43,23 @@ jobs:
           REMOTE_PATH="/home/${HOSTINGER_USER}/domains/savarix.com/laravel_app"
           SSH_OPTS="-p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no"
 
-          RSYNC_SSH="sshpass -p \"${HOSTINGER_PASSWORD}\" ssh ${SSH_OPTS} -o PreferredAuthentications=password"
+          echo "Uploading code to ${HOSTINGER_USER}@${HOSTINGER_HOST}:${REMOTE_PATH}"
+
+          # Write password to a temp file to avoid shell quoting issues
+          PASSFILE=hostinger_pass.txt
+          # printf avoids adding an extra newline
+          printf '%s' "${HOSTINGER_PASSWORD}" > "${PASSFILE}"
+          chmod 600 "${PASSFILE}"
+
+          # Quick SSH test – this will fail fast if auth is wrong
+          sshpass -f "${PASSFILE}" ssh ${SSH_OPTS} \
+            -o PreferredAuthentications=password \
+            "${HOSTINGER_USER}@${HOSTINGER_HOST}" "echo 'SSH auth OK from GitHub runner'" || {
+            echo "::error title=SSH auth failed::Unable to authenticate to Hostinger with provided credentials."
+            exit 1
+          }
+
+          RSYNC_SSH="sshpass -f ${PASSFILE} ssh ${SSH_OPTS} -o PreferredAuthentications=password"
 
           rsync -az --omit-dir-times --no-perms --no-owner --no-group \
             --exclude='.git/' \
