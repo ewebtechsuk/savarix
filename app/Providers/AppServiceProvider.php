@@ -71,8 +71,6 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(ModelChangeRecorder::class);
 
-        $this->normalizeSqliteConnectionPaths();
-
         if ($this->app->environment('testing')) {
             $databasePath = database_path('testing.sqlite');
 
@@ -86,8 +84,12 @@ class AppServiceProvider extends ServiceProvider
             ]);
         }
 
-        if ($this->app->environment('local', 'testing')) {
-            $this->ensureSqliteDatabaseFilesExist();
+        if (config('database.default') === 'sqlite') {
+            $this->normalizeSqliteConnectionPaths();
+
+            if ($this->app->environment('local', 'testing')) {
+                $this->ensureSqliteDatabaseFilesExist();
+            }
         }
     }
 
