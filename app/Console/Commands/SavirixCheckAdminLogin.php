@@ -5,7 +5,9 @@ namespace App\Console\Commands;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -39,6 +41,9 @@ class SavirixCheckAdminLogin extends Command
         $this->line('DB_CONNECTION=' . env('DB_CONNECTION'));
         $this->line('DB_DATABASE=' . env('DB_DATABASE'));
         $this->line('DB_USERNAME=' . env('DB_USERNAME'));
+
+        $this->info('--- Central DB connectivity check ---');
+        $this->checkCentralDatabase($centralConnection);
 
         $this->info('--- Central admin users (role owner or is_admin=1) ---');
         $this->displayAdminUsers();
@@ -79,6 +84,27 @@ class SavirixCheckAdminLogin extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    protected function checkCentralDatabase(string $centralConnection): void
+    {
+        $connectionName = $centralConnection ?: config('database.default');
+
+        try {
+            $connection = DB::connection($connectionName);
+            $connection->select('select 1');
+
+            $this->info("Central DB connection '{$connectionName}' OK (select 1).");
+            $this->line('Database name: ' . $connection->getDatabaseName());
+        } catch (Throwable $e) {
+            $this->error("Central DB connection failed for '{$connectionName}': " . $e->getMessage());
+            $this->warn("If you see SQLSTATE[HY000] [1045] for user '" . env('DB_USERNAME') . "', fix MySQL privileges and ensure the password in .env matches.");
+
+            Log::error('savarix:check-admin-login DB connectivity failure', [
+                'connection' => $connectionName,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
     protected function displayAdminUsers(): void

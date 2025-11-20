@@ -9,6 +9,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -21,14 +23,25 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
+        Auth::shouldUse('web');
         $adminGuard = Auth::guard('web');
 
-        if ($adminGuard->attempt($credentials)) {
-            if ($adminGuard->user()->isOwner()) {
-                return redirect()->route('admin.dashboard');
-            }
+        try {
+            if ($adminGuard->attempt($credentials)) {
+                if ($adminGuard->user()->isOwner()) {
+                    return redirect()->route('admin.dashboard');
+                }
 
-            $adminGuard->logout();
+                $adminGuard->logout();
+            }
+        } catch (Throwable $exception) {
+            Log::error('Admin login failed', [
+                'message' => $exception->getMessage(),
+                'connection' => config('database.default'),
+                'central_connection' => config('tenancy.database.central_connection'),
+            ]);
+
+            return back()->withErrors(['email' => 'Invalid credentials']);
         }
 
         return back()->withErrors(['email' => 'Invalid credentials']);

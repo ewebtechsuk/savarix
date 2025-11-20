@@ -92,6 +92,14 @@ php artisan savarix:check-admin-login
 
 The output lists `APP_URL`, `SAVARIX_ADMIN_PATH`, and `TENANCY_CENTRAL_DOMAINS`, then displays the `admin.login` routes. If a match is found, the summary includes the fully qualified login URL to paste into your browser. Use the same steps on Hostinger (with the production `.env`) to confirm the deployed configuration and route registration before debugging further.
 
+### Landlord admin login (central/owner portal)
+
+- URL pattern: `{APP_URL}/{SAVARIX_ADMIN_PATH}/login` (for example `https://savarix.com/kjsdahfkjheruwq939201u1asd91/login`).
+- Create or reset the landlord owner account on the central database: `php artisan savarix:create-admin --force --email=admin@savarix.com --password=SavarixAdmin123!`.
+- Sanity-check the environment and connectivity: `php artisan savarix:check-admin-login`.
+- Production `.env` should point the central connection at MySQL (for Hostinger: `DB_CONNECTION=mysql`, `DB_DATABASE=ressapp_db`, `DB_USERNAME=shah_ressapp`, `DB_PASSWORD=<your password>`).
+- If you see `SQLSTATE[HY000] [1045] Access denied for user 'shah_ressapp'@'127.0.0.1'`, fix the MySQL user on the host (grant privileges to `ressapp_db` and ensure the password matches `.env`), then re-run the check command.
+
 
 ### Identity verification (Onfido)
 

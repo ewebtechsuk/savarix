@@ -39,7 +39,7 @@ Route::get('/test-admin-path', function () {
 });
 
 // Secret Savarix owner admin routes (hidden URL prefix)
-$secretAdminPath = 'kjsdahfkjheruwq939201u1asd91'; // DO NOT expose this publicly
+$secretAdminPath = env('SAVARIX_ADMIN_PATH', 'savarix-admin'); // DO NOT expose this publicly
 
 Route::prefix($secretAdminPath)->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
