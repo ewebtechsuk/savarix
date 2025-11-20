@@ -51,15 +51,15 @@ jobs:
           printf '%s' "${HOSTINGER_PASSWORD}" > "${PASSFILE}"
           chmod 600 "${PASSFILE}"
 
-          # Quick SSH test – this will fail fast if auth is wrong
+          # Quick SSH test – allows password or keyboard-interactive, disables pubkey
           sshpass -f "${PASSFILE}" ssh ${SSH_OPTS} \
-            -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no \
             "${HOSTINGER_USER}@${HOSTINGER_HOST}" "echo 'SSH auth OK from GitHub runner'" || {
             echo "::error title=SSH auth failed::Unable to authenticate to Hostinger with provided credentials."
             exit 1
           }
 
-          RSYNC_SSH="sshpass -f ${PASSFILE} ssh ${SSH_OPTS} -o PreferredAuthentications=password"
+          RSYNC_SSH="sshpass -f ${PASSFILE} ssh ${SSH_OPTS} -o PubkeyAuthentication=no"
 
           rsync -az --omit-dir-times --no-perms --no-owner --no-group \
             --exclude='.git/' \
