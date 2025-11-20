@@ -94,17 +94,15 @@ jobs:
           fi
           echo "Normalized SSH key output is present."
 
-      - name: Deploy to Hostinger via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          server: ${{ env.HOSTINGER_HOST }}
-          port: ${{ env.HOSTINGER_PORT }}
-          username: ${{ env.HOSTINGER_USER }}
-          ssh_private_key: ${{ steps.prepare-key.outputs.key }}
-          local_path: "./"
-          remote_path: "/home/u753768407/domains/savarix.com/laravel_app"
-          delete_remote_files: false
-          sftp_only: true
+      - name: Upload code to Hostinger via rsync over SSH
+        run: |
+          rsync -az --omit-dir-times --no-perms --no-owner --no-group \
+            --exclude='.git/' \
+            -e "ssh -i ${{ steps.prepare-key.outputs.key-path }} -p $HOSTINGER_PORT -o StrictHostKeyChecking=no" \
+            ./ "${HOSTINGER_USER}@${HOSTINGER_HOST}:/home/u753768407/domains/savarix.com/laravel_app"
+
+      - name: Confirm files synced to Hostinger
+        run: echo "Rsync upload completed; proceeding to remote deploy script."
 
       - name: Confirm files deployed via SFTP
         run: echo "SFTP deploy step completed; proceeding to remote deploy script."
@@ -115,7 +113,7 @@ jobs:
           host: ${{ env.HOSTINGER_HOST }}
           port: ${{ env.HOSTINGER_PORT }}
           username: ${{ env.HOSTINGER_USER }}
-          key: ${{ steps.prepare-key.outputs.key }}
+          key_path: ${{ steps.prepare-key.outputs.key-path }}
           script: |
             cd /home/u753768407/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
