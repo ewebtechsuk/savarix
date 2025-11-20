@@ -51,7 +51,7 @@ jobs:
           KEY_CONTENT=$(printf '%s' "${HOSTINGER_KEY}" | sed 's/\\n/\n/g')
 
           # Detect whether the secret is already PEM-formatted or base64-encoded.
-          if echo "$KEY_CONTENT" | grep -q "-----BEGIN .*PRIVATE KEY-----"; then
+          if echo "$KEY_CONTENT" | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
             printf "%s\n" "$KEY_CONTENT" > hostinger_key.pem
           else
             # Try to base64 decode; if it fails, fall back to writing the raw content.
@@ -77,7 +77,7 @@ jobs:
 
           # Expose the normalized key as an output for actions that expect inline key text.
           {
-            echo "key<<'EOF'"
+            echo "key<<EOF"
             cat hostinger_key.pem
             echo "EOF"
             echo "key-path=hostinger_key.pem"
