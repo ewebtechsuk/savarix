@@ -9,6 +9,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -22,6 +23,10 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->only('email', 'password');
+
+        $centralConnection = config('tenancy.database.central_connection', config('database.default'));
+        config(['database.default' => $centralConnection]);
+        DB::setDefaultConnection($centralConnection);
 
         Auth::shouldUse('web');
         $adminGuard = Auth::guard('web');

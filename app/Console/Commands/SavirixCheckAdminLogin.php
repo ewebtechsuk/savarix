@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -109,8 +110,10 @@ class SavirixCheckAdminLogin extends Command
 
     protected function displayAdminUsers(): void
     {
+        $connection = config('tenancy.database.central_connection', config('database.default'));
+
         try {
-            $admins = User::query()
+            $admins = User::on($connection)
                 ->where(fn ($query) => $query->where('role', 'owner')->orWhere('is_admin', true))
                 ->select(['id', 'name', 'email', 'password'])
                 ->get()
@@ -134,6 +137,14 @@ class SavirixCheckAdminLogin extends Command
             }
 
             $this->table(['id', 'name', 'email', 'connection', 'has_password_hash', 'hash_algo'], $admins->toArray());
+        } catch (QueryException $e) {
+            if ($e->getCode() === '42S22') {
+                $this->error('Missing admin columns on central.users (run php artisan migrate --force on the central DB).');
+
+                return;
+            }
+
+            throw $e;
         } catch (Throwable $e) {
             $this->error('Failed to query admin users: ' . $e->getMessage());
         }
