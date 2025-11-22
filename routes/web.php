@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Agent\ContactController as AgentContactController;
+use App\Http\Controllers\Agent\DashboardController as AgentDashboardController;
+use App\Http\Controllers\Agent\DocumentController as AgentDocumentController;
+use App\Http\Controllers\Agent\PropertyController as AgentPropertyController;
+use App\Http\Controllers\Agent\TaskController as AgentTaskController;
 use App\Http\Controllers\Admin\AgencyController as AdminAgencyController;
 use App\Http\Controllers\Admin\AgencyUserController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -189,10 +194,15 @@ Route::group([
 });
 
 Route::group([
-    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent'],
+    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'auth:tenant', 'role:Agent'],
     'prefix' => 'agent',
     'as' => 'agent.',
 ], function () {
+    Route::get('/', [AgentDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/properties', [AgentPropertyController::class, 'index'])->name('properties.index');
+    Route::get('/contacts', [AgentContactController::class, 'index'])->name('contacts.index');
+    Route::get('/tasks', [AgentTaskController::class, 'index'])->name('tasks.index');
+    Route::get('/documents', [AgentDocumentController::class, 'index'])->name('documents.index');
     Route::resource('inspections', InspectionController::class);
 });
 
