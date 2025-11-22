@@ -122,7 +122,7 @@ return [
     |
     */
 
-    'cookie' => 'laravel_session',
+    'cookie' => env('SESSION_COOKIE', 'savarix_session'),
 
     /*
     |--------------------------------------------------------------------------
@@ -149,27 +149,34 @@ return [
     */
 
     'domain' => (function () {
-        $sessionDomain = env('SESSION_DOMAIN');
+        $configuredDomain = env('SESSION_DOMAIN');
+        $baseDomain = env('SESSION_BASE_DOMAIN');
 
-        if ($sessionDomain === null || $sessionDomain === '') {
-            $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
-            $sessionDomain = $appUrlHost ?: null;
-        }
+        $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
+        $hostFromEnv = $configuredDomain ?: $baseDomain ?: $appUrlHost;
 
-        if (! $sessionDomain) {
+        if (! $hostFromEnv) {
             return null;
         }
 
-        $sessionDomain = ltrim($sessionDomain, '.');
+        $normalizedHost = ltrim($hostFromEnv, '.');
 
-        $isHostOnly = $sessionDomain === 'localhost'
-            || filter_var($sessionDomain, FILTER_VALIDATE_IP);
+        $isHostOnly = $normalizedHost === 'localhost'
+            || filter_var($normalizedHost, FILTER_VALIDATE_IP);
 
-        if ($isHostOnly) {
-            return $sessionDomain;
+        if (! $configuredDomain && ! $baseDomain && ! $isHostOnly) {
+            $parts = explode('.', $normalizedHost);
+
+            if (count($parts) > 2) {
+                $normalizedHost = implode('.', array_slice($parts, -2));
+            }
         }
 
-        return '.' . $sessionDomain;
+        if ($isHostOnly) {
+            return $normalizedHost;
+        }
+
+        return '.' . $normalizedHost;
     })(),
 
     /*
@@ -198,6 +205,15 @@ return [
 
     'http_only' => true,
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    'same_site' => (function () {
+        $sameSite = strtolower((string) env('SESSION_SAME_SITE', 'lax')) ?: 'lax';
+
+        if ($sameSite === 'none' && ! env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production')) {
+            // Browsers require secure cookies when SameSite=None.
+            $sameSite = 'lax';
+        }
+
+        return $sameSite;
+    })(),
 
 ];

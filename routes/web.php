@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AgencyController as AdminAgencyController;
 use App\Http\Controllers\Admin\AgencyUserController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Auth\MagicLoginController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -42,12 +43,12 @@ Route::get('/test-admin-path', function () {
 $secretAdminPath = env('SAVARIX_ADMIN_PATH', 'savarix-admin'); // DO NOT expose this publicly
 
 Route::prefix($secretAdminPath)->group(function () {
-    Route::middleware('guest')->group(function () {
+    Route::middleware('guest:web')->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
         Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
     });
 
-    Route::middleware(['auth', 'owner'])->group(function () {
+    Route::middleware(['auth:web', 'owner'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
@@ -67,6 +68,11 @@ Route::prefix($secretAdminPath)->group(function () {
         Route::get('/agencies/{agency}/users', [AgencyUserController::class, 'index'])->name('admin.agencies.users.index');
         Route::post('/agencies/{agency}/users', [AgencyUserController::class, 'store'])->name('admin.agencies.users.store');
         Route::delete('/agencies/{agency}/users/{user}', [AgencyUserController::class, 'destroy'])->name('admin.agencies.users.destroy');
+    });
+
+    Route::middleware('auth:web')->group(function () {
+        Route::post('/impersonation/stop', [ImpersonationController::class, 'stop'])
+            ->name('admin.impersonation.stop');
     });
 });
 

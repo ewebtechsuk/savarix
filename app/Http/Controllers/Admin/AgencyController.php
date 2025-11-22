@@ -99,7 +99,7 @@ class AgencyController extends Controller
         }
     }
 
-    public function impersonate(Agency $agency): RedirectResponse
+    public function impersonate(Request $request, Agency $agency): RedirectResponse
     {
         try {
             $agencyAdmin = $agency->users()
@@ -113,7 +113,9 @@ class AgencyController extends Controller
         }
 
         $ownerId = Auth::id();
-        session([
+        $session = $request->session();
+
+        $session->put([
             'impersonating' => true,
             'impersonator_id' => $ownerId,
             'impersonated_agency_id' => $agency->id,
@@ -122,6 +124,8 @@ class AgencyController extends Controller
 
         Auth::shouldUse('web');
         Auth::guard('web')->login($agencyAdmin);
+
+        $session->regenerate();
 
         try {
             $dashboardUrl = $agency->tenantDashboardUrl();

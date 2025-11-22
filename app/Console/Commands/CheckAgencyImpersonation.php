@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\Agency;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class CheckAgencyImpersonation extends Command
 {
@@ -30,6 +31,9 @@ class CheckAgencyImpersonation extends Command
 
         $this->info("Agency: {$agency->name} (ID: {$agency->id})");
         $this->line('Domain: ' . ($agency->domain ?? 'not set'));
+
+        $schema = Schema::connection(config('tenancy.database.central_connection', config('database.default')));
+        $this->line('agencies.domain column present: ' . ($schema->hasColumn('agencies', 'domain') ? 'yes' : 'no'));
 
         $dashboardUrl = $agency->tenantDashboardUrl();
         $this->line('Tenant dashboard URL: ' . ($dashboardUrl ?? 'missing domain'));
