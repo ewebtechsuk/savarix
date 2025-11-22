@@ -148,7 +148,20 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN', null),
+    'domain' => (function () {
+        $sessionDomain = env('SESSION_DOMAIN');
+
+        if ($sessionDomain === null || $sessionDomain === '') {
+            $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
+            $sessionDomain = $appUrlHost ?: null;
+        }
+
+        if (! $sessionDomain) {
+            return null;
+        }
+
+        return str_starts_with($sessionDomain, '.') ? $sessionDomain : '.' . $sessionDomain;
+    })(),
 
     /*
     |--------------------------------------------------------------------------
@@ -161,7 +174,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', false),
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -175,5 +188,7 @@ return [
     */
 
     'http_only' => true,
+
+    'same_site' => env('SESSION_SAME_SITE', 'lax'),
 
 ];

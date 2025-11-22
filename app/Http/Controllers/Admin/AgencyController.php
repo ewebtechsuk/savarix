@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Agency;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AgencyController extends Controller
@@ -28,6 +30,7 @@ class AgencyController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'domain' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'in:active,suspended,trial'],
         ]);
 
         Agency::create([
@@ -36,7 +39,7 @@ class AgencyController extends Controller
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
             'domain' => $data['domain'] ?? null,
-            'status' => 'active',
+            'status' => $data['status'] ?? 'active',
         ]);
 
         return back();
@@ -71,40 +74,78 @@ class AgencyController extends Controller
 
     public function openTenant(Agency $agency): RedirectResponse
     {
-        if (! $agency->domain) {
-            return redirect()->away(config('app.url'));
+        try {
+            $dashboardUrl = $agency->tenantDashboardUrl();
+
+            if (! $dashboardUrl) {
+                Log::warning('Tenant open attempt without domain', ['agency_id' => $agency->id]);
+
+                return back()->with('error', 'Set a domain (e.g. aktonz.savarix.com) to open the tenant app.');
+            }
+
+            Log::info('Redirecting to tenant dashboard', [
+                'agency_id' => $agency->id,
+                'dashboard_url' => $dashboardUrl,
+            ]);
+
+            return redirect()->away($dashboardUrl);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to redirect to tenant dashboard', [
+                'agency_id' => $agency->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return back()->with('error', 'Unable to build tenant dashboard URL.');
         }
-
-        $domain = trim($agency->domain);
-
-        if (! str_starts_with($domain, 'http://') && ! str_starts_with($domain, 'https://')) {
-            $domain = 'https://' . $domain;
-        }
-
-        return redirect()->away(rtrim($domain, '/') . '/dashboard');
     }
 
     public function impersonate(Agency $agency): RedirectResponse
     {
-        $agencyAdmin = $agency->users()
-            ->where('role', 'agency_admin')
-            ->orderBy('id')
-            ->firstOrFail();
+        try {
+            $agencyAdmin = $agency->users()
+                ->where('role', 'agency_admin')
+                ->orderBy('id')
+                ->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            Log::warning('Agency admin not found for impersonation', ['agency_id' => $agency->id]);
+
+            return back()->with('error', 'No agency admin user exists for this agency.');
+        }
 
         $ownerId = Auth::id();
         session([
             'impersonating' => true,
             'impersonator_id' => $ownerId,
+            'impersonated_agency_id' => $agency->id,
+            'impersonated_user_id' => $agencyAdmin->id,
         ]);
 
+        Auth::shouldUse('web');
         Auth::guard('web')->login($agencyAdmin);
 
-        $domain = $agency->domain ?: parse_url(config('app.url'), PHP_URL_HOST);
+        try {
+            $dashboardUrl = $agency->tenantDashboardUrl();
 
-        if (! str_starts_with($domain, 'http://') && ! str_starts_with($domain, 'https://')) {
-            $domain = 'https://' . $domain;
+            if (! $dashboardUrl) {
+                Log::warning('Impersonation redirect missing domain', ['agency_id' => $agency->id]);
+
+                return back()->with('error', 'Set a domain on the agency before impersonating.');
+            }
+
+            Log::info('Impersonation login redirecting to tenant', [
+                'agency_id' => $agency->id,
+                'impersonated_user_id' => $agencyAdmin->id,
+                'dashboard_url' => $dashboardUrl,
+            ]);
+
+            return redirect()->away($dashboardUrl);
+        } catch (\Throwable $exception) {
+            Log::error('Failed to redirect after impersonation', [
+                'agency_id' => $agency->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return back()->with('error', 'Unable to redirect into the tenant app.');
         }
-
-        return redirect()->away(rtrim($domain, '/') . '/dashboard');
     }
 }
