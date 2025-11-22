@@ -22,9 +22,9 @@ Agencies
                 <input type="text" placeholder="Search agencies by name or email…" class="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-yellow-400 focus:outline-none">
             </div>
             <div class="flex items-center gap-2 text-sm">
-                <button class="px-3 py-1 rounded-full bg-gray-900 text-gray-200 border border-gray-700">All</button>
-                <button class="px-3 py-1 rounded-full bg-gray-700 text-gray-100 border border-gray-600">Active</button>
-                <button class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Suspended</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-900 text-gray-200 border border-gray-700">All</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-700 text-gray-100 border border-gray-600">Active</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Suspended</button>
             </div>
         </div>
 
@@ -76,7 +76,7 @@ Agencies
                 <p class="text-xs uppercase tracking-wide text-gray-400">Add agency</p>
                 <h2 class="text-xl font-semibold text-white">Create new agency</h2>
             </div>
-            <button onclick="closeModal('new-agency-modal')" class="text-gray-400 hover:text-white">
+            <button type="button" onclick="closeModal('new-agency-modal')" class="text-gray-400 hover:text-white" aria-label="Close new agency modal">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
@@ -85,26 +85,26 @@ Agencies
         <form method="POST" action="{{ route('admin.agencies.store') }}" class="space-y-4">
             @csrf
             <div>
-                <label class="text-xs uppercase tracking-wide text-gray-400">Agency Name</label>
-                <input name="name" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                <label for="agency-name" class="text-xs uppercase tracking-wide text-gray-400">Agency Name</label>
+                <input id="agency-name" name="name" placeholder="Enter the agency's name" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label class="text-xs uppercase tracking-wide text-gray-400">Contact Email</label>
-                    <input name="email" type="email" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                    <label for="agency-email" class="text-xs uppercase tracking-wide text-gray-400">Contact Email</label>
+                    <input id="agency-email" name="email" type="email" placeholder="owner@example.com" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
                 </div>
                 <div>
-                    <label class="text-xs uppercase tracking-wide text-gray-400">Phone</label>
-                    <input name="phone" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                    <label for="agency-phone" class="text-xs uppercase tracking-wide text-gray-400">Phone</label>
+                    <input id="agency-phone" name="phone" placeholder="e.g. +1 555 123 4567" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
                 </div>
             </div>
             <div>
-                <label class="text-xs uppercase tracking-wide text-gray-400">Domain (optional)</label>
-                <input name="domain" placeholder="aktonz.savarix.com" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                <label for="agency-domain" class="text-xs uppercase tracking-wide text-gray-400">Domain (optional)</label>
+                <input id="agency-domain" name="domain" placeholder="aktonz.savarix.com" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
             </div>
             <div>
-                <label class="text-xs uppercase tracking-wide text-gray-400">Status</label>
-                <select name="status" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                <label for="agency-status" class="text-xs uppercase tracking-wide text-gray-400">Status</label>
+                <select id="agency-status" name="status" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
                 </select>

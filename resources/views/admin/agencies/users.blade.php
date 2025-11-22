@@ -17,10 +17,10 @@ Agencies / {{ $agency->name }} / Users
     <div class="rounded-2xl bg-gray-800 p-5 shadow-lg border border-gray-700 space-y-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-2 text-sm">
-                <button class="px-3 py-1 rounded-full bg-gray-900 text-gray-200 border border-gray-700">All</button>
-                <button class="px-3 py-1 rounded-full bg-gray-700 text-gray-100 border border-gray-600">Admins</button>
-                <button class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Negotiators</button>
-                <button class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Property Managers</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-900 text-gray-200 border border-gray-700">All</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-700 text-gray-100 border border-gray-600">Admins</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Negotiators</button>
+                <button type="button" class="px-3 py-1 rounded-full bg-gray-900 text-gray-400 border border-gray-800">Property Managers</button>
             </div>
             <div class="flex-1 lg:max-w-xs">
                 <input type="text" placeholder="Search users…" class="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-yellow-400 focus:outline-none">
@@ -79,7 +79,7 @@ Agencies / {{ $agency->name }} / Users
                 <p class="text-xs uppercase tracking-wide text-gray-400">Invite user</p>
                 <h2 class="text-xl font-semibold text-white">Add a new user</h2>
             </div>
-            <button onclick="closeModal('invite-user-modal')" class="text-gray-400 hover:text-white">
+            <button type="button" onclick="closeModal('invite-user-modal')" class="text-gray-400 hover:text-white" aria-label="Close invite user modal">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
@@ -88,17 +88,17 @@ Agencies / {{ $agency->name }} / Users
         <form method="POST" action="{{ route('admin.agencies.users.store', $agency->id) }}" class="space-y-4">
             @csrf
             <div>
-                <label class="text-xs uppercase tracking-wide text-gray-400">Name</label>
-                <input name="name" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                <label for="invite-name" class="text-xs uppercase tracking-wide text-gray-400">Name</label>
+                <input id="invite-name" name="name" placeholder="Enter the user's full name" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
             </div>
             <div>
-                <label class="text-xs uppercase tracking-wide text-gray-400">Email</label>
-                <input name="email" type="email" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                <label for="invite-email" class="text-xs uppercase tracking-wide text-gray-400">Email</label>
+                <input id="invite-email" name="email" type="email" placeholder="name@example.com" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                    <label class="text-xs uppercase tracking-wide text-gray-400">Role</label>
-                    <select name="role" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                    <label for="invite-role" class="text-xs uppercase tracking-wide text-gray-400">Role</label>
+                    <select id="invite-role" name="role" class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
                         <option value="agency_admin">Agency Admin</option>
                         <option value="agent">Negotiator</option>
                         <option value="property_manager">Property Manager</option>
@@ -106,12 +106,12 @@ Agencies / {{ $agency->name }} / Users
                     </select>
                 </div>
                 <div>
-                    <label class="text-xs uppercase tracking-wide text-gray-400">Temporary Password</label>
-                    <input name="password" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
+                    <label for="invite-password" class="text-xs uppercase tracking-wide text-gray-400">Temporary Password</label>
+                    <input id="invite-password" name="password" placeholder="Create a temporary password" required class="mt-2 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-yellow-400 focus:outline-none">
                 </div>
             </div>
             <div class="space-y-2">
-                <label class="text-xs uppercase tracking-wide text-gray-400">Delivery</label>
+                <p class="text-xs uppercase tracking-wide text-gray-400">Delivery</p>
                 <div class="flex items-center gap-2">
                     <input id="send-welcome" type="checkbox" class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-yellow-400 focus:ring-yellow-400" checked>
                     <label for="send-welcome" class="text-sm text-gray-200">Send welcome email with login link</label>

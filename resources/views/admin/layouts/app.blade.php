@@ -23,7 +23,7 @@
                         <p class="text-xs text-gray-400">Owner Admin</p>
                     </div>
                 </div>
-                <button onclick="toggleSidebar()" class="p-2 rounded-lg bg-gray-900 text-gray-300 hover:text-white">
+                <button type="button" onclick="toggleSidebar()" class="p-2 rounded-lg bg-gray-900 text-gray-300 hover:text-white" aria-label="Toggle sidebar">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6 6 10.5m0 0L10.5 15M6 10.5H21" />
                     </svg>
@@ -88,7 +88,7 @@
                     @endif
                 </div>
                 <div class="relative">
-                    <button id="user-menu-button" onclick="toggleUserMenu()" class="flex items-center gap-3 rounded-lg bg-gray-800 px-3 py-2 text-sm hover:bg-gray-700">
+                    <button type="button" id="user-menu-button" onclick="toggleUserMenu()" class="flex items-center gap-3 rounded-lg bg-gray-800 px-3 py-2 text-sm hover:bg-gray-700" aria-label="Toggle user menu">
                         <div class="text-right hidden sm:block">
                             <p class="font-semibold text-gray-100">{{ $adminUser?->name ?? 'Admin User' }}</p>
                             <p class="text-xs text-gray-400">{{ $adminUser?->email ?? 'admin@savarix.com' }}</p>
@@ -100,7 +100,7 @@
                     <div id="user-menu" class="absolute right-0 mt-2 w-48 rounded-lg bg-gray-800 border border-gray-700 shadow-xl hidden">
                         <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Menu</div>
                         <div class="border-t border-gray-700"></div>
-                        <button class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 disabled:text-gray-500" disabled>Switch to Agency</button>
+                        <button type="button" class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 disabled:text-gray-500" aria-label="Switch to agency (disabled)" disabled>Switch to Agency</button>
                         <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700">My Profile</a>
                         <form method="POST" action="{{ route('admin.logout') }}" class="border-t border-gray-700">
                             @csrf
