@@ -18,6 +18,12 @@ class RedirectIfAuthenticated
     public function handle($request, Closure $next, $guard = null)
     {
         if (Auth::guard($guard)->check()) {
+            $adminPath = trim(env('SAVARIX_ADMIN_PATH', 'savarix-admin'), '/');
+
+            if ($request->is($adminPath) || $request->is($adminPath.'/*')) {
+                return redirect()->route('admin.dashboard');
+            }
+
             return redirect('/dashboard');
         }
 

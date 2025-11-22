@@ -34,7 +34,7 @@
 
         <p class="text-center text-sm text-gray-600">
             {{ __('Already registered?') }}
-            <a href="{{ route('login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+            <a href="{{ route('admin.login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
                 {{ __('Login here') }}
             </a>
         </p>

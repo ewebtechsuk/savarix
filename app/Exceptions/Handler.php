@@ -62,11 +62,16 @@ class Handler extends ExceptionHandler
         }
 
         $guard = $exception->guards()[0] ?? null;
+        $adminPath = trim(env('SAVARIX_ADMIN_PATH', 'savarix-admin'), '/');
+
+        if ($request->is($adminPath) || $request->is($adminPath.'/*') || $guard === 'web') {
+            return redirect()->guest(route('admin.login'));
+        }
 
         if ($guard === 'tenant') {
             return redirect()->guest(route('tenant.login'));
         }
 
-        return redirect()->guest(route('login'));
+        return redirect()->guest(route('marketing.home'));
     }
 }

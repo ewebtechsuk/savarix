@@ -143,7 +143,7 @@
                             <a href="{{ url('/dashboard') }}">Dashboard</a>
                         @else
                             <span>You are not logged in.</span>
-                            <a href="{{ url('/login') }}">Log in</a>
+                            <a href="{{ route('admin.login') }}">Log in</a>
                             / <a href="{{ url('/register') }}">Register</a>
                         @endauth
                     </div>

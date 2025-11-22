@@ -9,9 +9,9 @@ use Tests\TestCase;
 
 class AktonzTenantLoginTest extends TestCase
 {
-    public function test_aktonz_admin_can_log_in_via_tenant_domain(): void
+    public function test_tenant_subdomain_does_not_expose_default_login(): void
     {
-        $tenant = Tenant::factory()->create([
+        Tenant::factory()->create([
             'id' => 'aktonz',
             'name' => 'Aktonz Estate Agents',
             'data' => [
@@ -21,31 +21,12 @@ class AktonzTenantLoginTest extends TestCase
                 'company_id' => '468173',
                 'domains' => ['aktonz.savarix.com'],
             ],
-        ]);
-
-        $tenant->domains()->create(['domain' => 'aktonz.savarix.com']);
-
-        $user = User::factory()->create([
-            'email' => 'info@aktonz.com',
-            'password' => Hash::make('AktonzTempPass123!'),
-            'is_admin' => true,
-        ]);
-
-        $session = $this->app['session'];
-        $session->start();
-        $token = $session->token();
+        ])->domains()->create(['domain' => 'aktonz.savarix.com']);
 
         $response = $this->withServerVariables([
             'HTTP_HOST' => 'aktonz.savarix.com',
-        ])->withSession(['_token' => $token])
-            ->from('https://aktonz.savarix.com/login')
-            ->post('https://aktonz.savarix.com/login', [
-                '_token' => $token,
-                'email' => 'info@aktonz.com',
-                'password' => 'AktonzTempPass123!',
-            ]);
+        ])->get('https://aktonz.savarix.com/login');
 
-        $response->assertRedirect('/dashboard');
-        $this->assertAuthenticatedAs($user, 'web');
+        $response->assertNotFound();
     }
 }
