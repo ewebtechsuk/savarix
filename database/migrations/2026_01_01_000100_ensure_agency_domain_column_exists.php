@@ -7,6 +7,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
+    private static bool $createdColumn = false;
+
     protected function connectionName(): string
     {
         return config('tenancy.database.central_connection', config('database.default'));
@@ -17,21 +19,27 @@ return new class extends Migration {
         $schema = Schema::connection($this->connectionName());
 
         if (! $schema->hasTable('agencies')) {
+            self::$createdColumn = false;
+
             return;
         }
 
-        $schema->table('agencies', function (Blueprint $table) use ($schema): void {
-            if (! $schema->hasColumn('agencies', 'domain')) {
+        $columnExisted = $schema->hasColumn('agencies', 'domain');
+
+        $schema->table('agencies', function (Blueprint $table) use ($columnExisted): void {
+            if (! $columnExisted) {
                 $table->string('domain')->nullable()->unique()->after('phone');
             }
         });
+
+        self::$createdColumn = ! $columnExisted;
     }
 
     public function down(): void
     {
         $schema = Schema::connection($this->connectionName());
 
-        if (! $schema->hasTable('agencies')) {
+        if (! self::$createdColumn || ! $schema->hasTable('agencies')) {
             return;
         }
 
