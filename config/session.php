@@ -122,7 +122,7 @@ return [
     |
     */
 
-    'cookie' => 'laravel_session',
+    'cookie' => env('SESSION_COOKIE', 'savarix_session'),
 
     /*
     |--------------------------------------------------------------------------
@@ -198,6 +198,6 @@ return [
 
     'http_only' => true,
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    'same_site' => strtolower(env('SESSION_SAME_SITE', 'lax')),
 
 ];
