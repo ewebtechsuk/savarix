@@ -53,9 +53,30 @@ Agencies
                             </td>
                             <td>{{ optional($agency->created_at)->format('d M Y') }}</td>
                             <td class="text-right space-x-2 whitespace-nowrap">
-                                <a href="{{ route('admin.agencies.show', $agency->id) }}" class="underline text-gray-100">View</a>
-                                <button class="underline text-gray-400" disabled>Impersonate</button>
-                                <button class="underline text-red-400" disabled>Disable</button>
+                                <a href="{{ route('admin.agencies.show', $agency->id) }}" class="underline text-gray-100">
+                                    View
+                                </a>
+
+                                @if($agency->domain)
+                                    <a href="{{ route('admin.agencies.open', $agency->id) }}" class="underline text-gray-100">
+                                        Open app
+                                    </a>
+
+                                    <form action="{{ route('admin.agencies.impersonate', $agency->id) }}"
+                                          method="POST"
+                                          class="inline">
+                                        @csrf
+                                        <button type="submit" class="underline text-gray-100">
+                                            Impersonate
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-gray-500 text-xs">Set domain to enable app</span>
+                                @endif
+
+                                <button type="button" class="underline text-red-400" disabled>
+                                    Disable
+                                </button>
                             </td>
                         </tr>
                     @empty

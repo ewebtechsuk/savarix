@@ -17,6 +17,7 @@ class Agency extends Model
         'slug',
         'email',
         'phone',
+        'domain',
         'status',
     ];
 

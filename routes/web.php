@@ -56,6 +56,12 @@ Route::prefix($secretAdminPath)->group(function () {
         Route::put('/agencies/{agency}', [AdminAgencyController::class, 'update'])->name('admin.agencies.update');
         Route::delete('/agencies/{agency}', [AdminAgencyController::class, 'destroy'])->name('admin.agencies.destroy');
 
+        Route::get('/agencies/{agency}/open', [AdminAgencyController::class, 'openTenant'])
+            ->name('admin.agencies.open');
+
+        Route::post('/agencies/{agency}/impersonate', [AdminAgencyController::class, 'impersonate'])
+            ->name('admin.agencies.impersonate');
+
         Route::get('/agencies/{agency}/users', [AgencyUserController::class, 'index'])->name('admin.agencies.users.index');
         Route::post('/agencies/{agency}/users', [AgencyUserController::class, 'store'])->name('admin.agencies.users.store');
         Route::delete('/agencies/{agency}/users/{user}', [AgencyUserController::class, 'destroy'])->name('admin.agencies.users.destroy');
