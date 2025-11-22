@@ -8,10 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('tenancies')) {
+            return;
+        }
+
         Schema::create('tenancies', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('property_id')->constrained('properties');
-            $table->foreignId('contact_id')->constrained('contacts');
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('property_id');
+            $table->unsignedBigInteger('contact_id');
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->decimal('rent', 12, 2);
@@ -20,6 +24,7 @@ return new class extends Migration
             $table->timestamps();
         });
     }
+
     public function down(): void
     {
         Schema::dropIfExists('tenancies');
