@@ -12,7 +12,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AgencyController extends Controller
 {
@@ -52,17 +54,58 @@ class AgencyController extends Controller
 
     public function update(Request $request, Agency $agency): RedirectResponse
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'domain' => ['nullable', 'string', 'max:255'],
-            'status' => ['required', 'in:active,suspended,trial'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'domain' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('agencies', 'domain')->ignore($agency->id),
+            ],
         ]);
 
-        $agency->update($data);
+        if (! empty($validated['domain'])) {
+            try {
+                $validated['domain'] = Agency::normalizeDomain($validated['domain']);
+            } catch (Throwable $exception) {
+                Log::warning('Failed to normalize agency domain', [
+                    'agency_id' => $agency->id,
+                    'raw_domain' => $validated['domain'],
+                    'message' => $exception->getMessage(),
+                ]);
 
-        return back();
+                return back()
+                    ->withInput()
+                    ->withErrors(['domain' => 'Unable to normalize that domain. Please check the format (e.g. aktonz.savarix.com).']);
+            }
+        }
+
+        try {
+            $agency->fill([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'domain' => $validated['domain'] ?? null,
+            ]);
+
+            $agency->save();
+        } catch (Throwable $exception) {
+            Log::error('Failed to update agency', [
+                'agency_id' => $agency->id,
+                'data' => $validated,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->withErrors(['general' => 'Unable to save changes right now. Please try again or contact support.']);
+        }
+
+        return redirect()
+            ->route('admin.agencies.show', $agency)
+            ->with('status', 'Agency details updated.');
     }
 
     public function destroy(Agency $agency): RedirectResponse

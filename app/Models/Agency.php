@@ -7,7 +7,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 class Agency extends Model
 {
@@ -27,31 +26,29 @@ class Agency extends Model
         $this->attributes['domain'] = self::normalizeDomain($domain);
     }
 
-    public static function normalizeDomain(?string $domain): ?string
+    public static function normalizeDomain(?string $value): ?string
     {
-        if ($domain === null) {
+        if ($value === null) {
             return null;
         }
 
-        $normalized = Str::of($domain)
-            ->lower()
-            ->trim()
-            ->replace(['http://', 'https://'], '')
-            ->trim('/')
-            ->toString();
+        $value = trim($value);
 
-        $host = parse_url('https://' . $normalized, PHP_URL_HOST) ?: $normalized;
-
-        return $host ?: null;
-    }
-
-    public static function forceHttpsDomain(string $domain): string
-    {
-        if (str_starts_with($domain, 'http://') || str_starts_with($domain, 'https://')) {
-            return preg_replace('#^http://#', 'https://', $domain);
+        if ($value === '') {
+            return null;
         }
 
-        return 'https://' . $domain;
+        if (! str_starts_with(strtolower($value), 'http://') && ! str_starts_with(strtolower($value), 'https://')) {
+            $value = 'https://' . $value;
+        }
+
+        $host = parse_url($value, PHP_URL_HOST) ?: null;
+
+        if (! $host) {
+            return null;
+        }
+
+        return strtolower(rtrim($host, '/'));
     }
 
     public function tenantDashboardUrl(): ?string
@@ -60,7 +57,13 @@ class Agency extends Model
             return null;
         }
 
-        return rtrim(self::forceHttpsDomain($this->domain), '/') . '/dashboard';
+        $host = static::normalizeDomain($this->domain);
+
+        if (! $host) {
+            return null;
+        }
+
+        return 'https://' . $host . '/dashboard';
     }
 
     public function users(): HasMany
