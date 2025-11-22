@@ -123,6 +123,11 @@ return [
     */
 
     'cookie' => env('SESSION_COOKIE', 'savarix_session'),
+    /*
+     | For production, set SESSION_DOMAIN to the cookie domain (e.g. .savarix.com) or
+     | SESSION_BASE_DOMAIN to the apex domain (e.g. savarix.com). If neither is set,
+     | the host from APP_URL will be used.
+     */
 
     /*
     |--------------------------------------------------------------------------
@@ -152,6 +157,11 @@ return [
         $sessionDomain = env('SESSION_DOMAIN');
 
         if ($sessionDomain === null || $sessionDomain === '') {
+            $baseDomain = env('SESSION_BASE_DOMAIN');
+            $sessionDomain = $baseDomain ?: null;
+        }
+
+        if ($sessionDomain === null || $sessionDomain === '') {
             $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
             $sessionDomain = $appUrlHost ?: null;
         }
@@ -169,7 +179,9 @@ return [
             return $sessionDomain;
         }
 
-        return '.' . $sessionDomain;
+        return str_starts_with($sessionDomain, '.')
+            ? $sessionDomain
+            : '.'.$sessionDomain;
     })(),
 
     /*
@@ -198,6 +210,15 @@ return [
 
     'http_only' => true,
 
-    'same_site' => strtolower(env('SESSION_SAME_SITE', 'lax')),
+    'same_site' => (function () {
+        $sameSite = strtolower(env('SESSION_SAME_SITE', 'lax'));
+        $secure = env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production');
+
+        if ($sameSite === 'none' && ! $secure) {
+            return 'lax';
+        }
+
+        return $sameSite;
+    })(),
 
 ];

@@ -46,6 +46,26 @@ class OwnerAdminAuthenticationTest extends TestCase
         $this->assertStringNotContainsString('/login', $response->headers->get('Location'));
     }
 
+    public function test_owner_login_sets_session_cookie(): void
+    {
+        $loginPath = '/' . $this->adminPath() . '/login';
+        $dashboardPath = '/' . $this->adminPath() . '/dashboard';
+
+        $owner = User::factory()->create([
+            'email' => 'owner@example.com',
+            'password' => Hash::make('SavarixPass123!'),
+            'role' => 'owner',
+        ]);
+
+        $response = $this->post($loginPath, [
+            'email' => $owner->email,
+            'password' => 'SavarixPass123!',
+        ]);
+
+        $response->assertRedirect($dashboardPath);
+        $response->assertCookie(config('session.cookie', 'savarix_session'));
+    }
+
     public function test_authenticated_owner_is_redirected_from_login_form(): void
     {
         $loginPath = '/' . $this->adminPath() . '/login';

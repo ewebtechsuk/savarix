@@ -19,6 +19,13 @@ class AuthController extends Controller
     {
         $guard = Auth::guard('web');
 
+        Log::info('Admin login form rendered', [
+            'guard' => 'web',
+            'authenticated' => $guard->check(),
+            'user_id' => $guard->user()?->id,
+            'user_role' => $guard->user()?->role,
+        ]);
+
         if ($guard->check()) {
             if ($guard->user()?->isOwner()) {
                 return redirect()->route('admin.dashboard');
@@ -47,11 +54,25 @@ class AuthController extends Controller
             if ($adminGuard->attempt($credentials)) {
                 $request->session()->regenerate();
 
-                if ($adminGuard->user()->isOwner()) {
+                $user = $adminGuard->user();
+
+                Log::info('Admin login successful', [
+                    'user_id' => $user?->id,
+                    'email' => $user?->email,
+                    'role' => $user?->role,
+                    'connection' => config('database.default'),
+                ]);
+
+                if ($user && $user->isOwner()) {
                     return redirect()->route('admin.dashboard');
                 }
 
                 $adminGuard->logout();
+                Log::warning('Admin login rejected: user is not owner', [
+                    'user_id' => $user?->id,
+                    'email' => $user?->email,
+                    'role' => $user?->role,
+                ]);
             }
         } catch (Throwable $exception) {
             Log::error('Admin login failed', [
@@ -62,6 +83,11 @@ class AuthController extends Controller
 
             return back()->withErrors(['email' => 'Invalid credentials']);
         }
+
+        Log::warning('Admin login attempt unsuccessful', [
+            'email' => $credentials['email'] ?? null,
+            'connection' => config('database.default'),
+        ]);
 
         return back()->withErrors(['email' => 'Invalid credentials']);
     }
