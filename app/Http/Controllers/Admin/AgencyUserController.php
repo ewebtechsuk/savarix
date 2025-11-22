@@ -28,7 +28,7 @@ class AgencyUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'in:agency_admin,agent'],
+            'role' => ['required', 'in:agency_admin,agent,property_manager,viewer'],
         ]);
 
         User::create([
