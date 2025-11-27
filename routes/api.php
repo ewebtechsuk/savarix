@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\WebhookApiController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Api\ContactApiController;
+use App\Http\Controllers\Api\ApplicantController;
 use App\Http\Controllers\Api\MarketingLeadController;
 use App\Http\Controllers\Api\MarketingAnalyticsController;
 
@@ -29,6 +30,7 @@ Route::group([
     Route::resource('tenancies', TenancyApiController::class, ['except' => ['create', 'edit']]);
     Route::resource('payments', PaymentApiController::class, ['except' => ['create', 'edit']]);
     Route::resource('contacts', ContactApiController::class, ['except' => ['create', 'edit']]);
+    Route::resource('applicants', ApplicantController::class, ['except' => ['create', 'edit']]);
     Route::resource('webhooks', WebhookApiController::class, ['only' => ['index', 'store', 'destroy']]);
     Route::apiResource('integrations', PartnerIntegrationController::class);
     Route::get('dashboard/unified', [DashboardApiController::class, 'unified'])

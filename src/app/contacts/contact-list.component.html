@@ -1,0 +1,74 @@
+<section class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="h4 mb-1">Contacts</h2>
+            <p class="text-muted mb-0">Manage applicant records and view their details.</p>
+        </div>
+        <button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">Clear filters</button>
+    </div>
+
+    <form class="row g-3 mb-3" (ngSubmit)="onSearch()">
+        <div class="col-md-6">
+            <label class="form-label" for="search">Search</label>
+            <input
+                id="search"
+                name="search"
+                class="form-control"
+                type="search"
+                placeholder="Search by name, email, or phone"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="searchTerm.set($event)"
+            />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="status">Status</label>
+            <select
+                id="status"
+                name="status"
+                class="form-select"
+                [ngModel]="statusFilter()"
+                (ngModelChange)="statusFilter.set($event || null)"
+            >
+                <option [ngValue]="null">All statuses</option>
+                <option value="new">New</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" type="submit">Search</button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="loading()">
+                    <td colspan="4" class="text-center">Loading contacts...</td>
+                </tr>
+                <tr *ngIf="!loading() && !showingResults()">
+                    <td colspan="4" class="text-center text-muted">No contacts found.</td>
+                </tr>
+                <tr
+                    *ngFor="let contact of contacts()"
+                    class="cursor-pointer"
+                    (click)="goToContact(contact)"
+                    role="button"
+                >
+                    <td>{{ contact.name }}</td>
+                    <td>{{ contact.email || '—' }}</td>
+                    <td>{{ contact.phone || '—' }}</td>
+                    <td>{{ contact.status || '—' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
