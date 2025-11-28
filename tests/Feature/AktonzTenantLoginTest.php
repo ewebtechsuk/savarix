@@ -27,6 +27,7 @@ class AktonzTenantLoginTest extends TestCase
             'HTTP_HOST' => 'aktonz.savarix.com',
         ])->get('https://aktonz.savarix.com/login');
 
-        $response->assertNotFound();
+        $response->assertOk()
+            ->assertSee('Login');
     }
 }
