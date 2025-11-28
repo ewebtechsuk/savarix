@@ -144,6 +144,26 @@ class AgencyController extends Controller
 
     public function impersonate(Request $request, Agency $agency): RedirectResponse
     {
+        if (! Auth::guard('web')->user()?->isOwner()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('admin.login')
+                ->withErrors(['email' => 'You are not authorised to impersonate agencies.']);
+        }
+
+        $dashboardUrl = $agency->tenantDashboardUrl();
+
+        if (! $dashboardUrl) {
+            Log::warning('Impersonation redirect missing domain', [
+                'agency_id' => $agency->id,
+            ]);
+
+            return back()->with('error', 'Agency does not have a valid tenant domain configured.');
+        }
+
         // Find the agency admin to impersonate
         try {
             $agencyAdmin = $agency->users()
@@ -175,17 +195,6 @@ class AgencyController extends Controller
 
         // Regenerate the session ID so the impersonation token is bound to a fresh cookie
         $session->regenerate();
-
-        // Build the tenant dashboard URL from the agency domain
-        $dashboardUrl = $agency->tenantDashboardUrl();
-
-        if (! $dashboardUrl) {
-            Log::warning('Impersonation redirect missing domain', [
-                'agency_id' => $agency->id,
-            ]);
-
-            return back()->with('error', 'Agency does not have a valid tenant domain configured.');
-        }
 
         Log::info('Impersonation login redirecting to tenant', [
             'agency_id' => $agency->id,
