@@ -2,6 +2,8 @@
 
 Use these steps on the Hostinger SSH shell to restore the Laravel app with PHP 8.3, reinstall Composer dependencies, and sync tenancy data. Commands assume the project lives at `~/domains/savarix.com/laravel_app` and you are running them from that directory unless noted otherwise.
 
+See also: [Hostinger public_html routing fix](hostinger-public-html-routing.md).
+
 ## 0) Switch to the project directory
 
 ```bash

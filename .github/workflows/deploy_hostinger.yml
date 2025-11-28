@@ -79,6 +79,17 @@ jobs:
             cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
             bash deploy/deploy_hostinger.sh
 
+      - name: Ensure public_html points to Laravel public directory
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.HOSTINGER_HOST }}
+          port: ${{ env.HOSTINGER_PORT }}
+          username: ${{ env.HOSTINGER_USER }}
+          password: ${{ env.HOSTINGER_PASSWORD }}
+          script: |
+            cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
+            bash scripts/hostinger-ensure-public-html-symlink.sh
+
       - name: Sync tenancy domains after deploy (idempotent)
         uses: appleboy/ssh-action@v1.0.0
         with:
