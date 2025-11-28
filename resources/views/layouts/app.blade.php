@@ -12,7 +12,18 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @php
+            // Tenancy serves dashboards from tenant domains; use Vite when the manifest is
+            // available and fall back to the compiled public assets to guarantee styling.
+            $viteManifestExists = file_exists(public_path('build/manifest.json'));
+        @endphp
+
+        @if ($viteManifestExists)
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @else
+            <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+            <script src="{{ asset('js/app.js') }}" defer></script>
+        @endif
 
         @stack('styles')
     </head>
@@ -32,7 +43,7 @@
             <!-- Page Content -->
             <main class="flex-1 py-6">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    @yield('content')
+                    {{ $slot }}
                 </div>
             </main>
 
