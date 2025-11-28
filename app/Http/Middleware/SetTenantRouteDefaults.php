@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -14,6 +15,13 @@ class SetTenantRouteDefaults
         $host = $request->getHost();
         $centralDomains = $this->centralDomains();
         $tenant = null;
+
+        if (in_array($host, $centralDomains, true)) {
+            Log::info('Request host treated as central domain', [
+                'host' => $host,
+                'central_domains' => $centralDomains,
+            ]);
+        }
 
         foreach ($centralDomains as $centralDomain) {
             $tenant = $this->extractTenantFromHost($host, $centralDomain);
@@ -34,6 +42,18 @@ class SetTenantRouteDefaults
                         break;
                     }
                 }
+            }
+        }
+
+        if ($tenant === null && (! function_exists('tenancy') || ! tenancy()->initialized)) {
+            $tenantLikeHost = $this->hostLooksLikeTenant($host, $centralDomains);
+
+            if ($tenantLikeHost !== null) {
+                Log::info('No tenant resolved for tenant-like host', [
+                    'host' => $host,
+                    'central_domains' => $centralDomains,
+                    'reason' => 'InitializeTenancyByDomain likely did not find a matching domain.',
+                ]);
             }
         }
 
@@ -67,6 +87,23 @@ class SetTenantRouteDefaults
         }
 
         return array_values(array_unique($domains));
+    }
+
+    private function hostLooksLikeTenant(string $host, array $centralDomains): ?string
+    {
+        foreach ($centralDomains as $centralDomain) {
+            if (! is_string($centralDomain) || $centralDomain === '') {
+                continue;
+            }
+
+            $suffix = '.' . ltrim($centralDomain, '.');
+
+            if (Str::endsWith($host, $suffix) && $host !== $centralDomain) {
+                return Str::beforeLast($host, $suffix);
+            }
+        }
+
+        return null;
     }
 
     private function extractTenantFromHost(string $host, string $centralDomain): ?string

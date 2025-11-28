@@ -24,6 +24,8 @@ if (! is_array($centralDomainsFromEnv)) {
     $centralDomainsFromEnv = [];
 }
 
+// Tenancy central domains should list only the hosts that serve the central app (e.g. savarix.com, localhost).
+// Tenant subdomains such as aktonz.savarix.com must not appear here, otherwise tenancy will treat them as central and abort.
 $defaultCentralDomains = ['127.0.0.1', 'localhost', 'savirix.localhost'];
 $appUrlHost = parse_url(env('APP_URL', ''), PHP_URL_HOST);
 
@@ -31,9 +33,21 @@ if (is_string($appUrlHost) && $appUrlHost !== '') {
     $defaultCentralDomains[] = $appUrlHost;
 }
 
-$centralDomains = array_values(array_unique(
+$centralDomains = array_values(array_unique(array_filter(array_map(
+    static function ($value): string {
+        if (! is_string($value)) {
+            return '';
+        }
+
+        // Normalise each configured value to a bare host (scheme-less, trimmed).
+        $host = parse_url(trim($value), PHP_URL_HOST);
+
+        return is_string($host) && $host !== ''
+            ? $host
+            : trim($value);
+    },
     $centralDomainsFromEnv !== [] ? $centralDomainsFromEnv : $defaultCentralDomains
-));
+))));
 
 return [
     'tenant_model' => Tenant::class,
