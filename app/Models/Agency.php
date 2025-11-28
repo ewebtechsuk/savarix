@@ -21,6 +21,17 @@ class Agency extends Model
         'status',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Agency $agency): void {
+            if ($agency->domain === null) {
+                return;
+            }
+
+            app(\App\Services\TenantDomainSynchronizer::class)->syncForAgency($agency);
+        });
+    }
+
     public function setDomainAttribute(?string $domain): void
     {
         $this->attributes['domain'] = self::normalizeDomain($domain);

@@ -24,6 +24,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\FixAktonzTenantData::class,
         \App\Console\Commands\ListTenants::class,
         \App\Console\Commands\ListUsers::class,
+        \App\Console\Commands\Savarix\DiagnoseTenancyDomains::class,
         \App\Console\Commands\TestCommand::class,
         \App\Console\Commands\SavirixCheckAdminLogin::class,
         \App\Console\Commands\SavarixCreateAdmin::class,
