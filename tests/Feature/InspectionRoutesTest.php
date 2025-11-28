@@ -28,6 +28,7 @@ class InspectionRoutesTest extends TestCase
 
         $this->actingAs($user);
         $this->bypassTenantRouteMiddleware();
+        $this->useTenantDomain();
 
         $response = $this->get(route('inspections.index'));
 
@@ -41,6 +42,7 @@ class InspectionRoutesTest extends TestCase
 
         $this->actingAs($user);
         $this->bypassTenantRouteMiddleware();
+        $this->useTenantDomain();
 
         $response = $this->get(route('agent.inspections.index'));
 

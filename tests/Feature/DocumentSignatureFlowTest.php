@@ -16,6 +16,7 @@ class DocumentSignatureFlowTest extends TestCase
     public function test_document_signature_flow_updates_status_and_allows_download(): void
     {
         $this->withoutMiddleware();
+        $this->useTenantDomain();
 
         Config::set('services.hellosign.endpoint', 'https://api.hellosign.test');
         Config::set('services.hellosign.key', 'test-token');

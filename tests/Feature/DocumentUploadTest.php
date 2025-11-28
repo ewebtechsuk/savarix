@@ -13,6 +13,7 @@ class DocumentUploadTest extends TestCase
     public function test_upload_persists_documentable_columns(): void
     {
         $this->withoutMiddleware();
+        $this->useTenantDomain();
 
         Storage::fake('public');
 

@@ -109,7 +109,7 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
 });
 
 // Tenant routes (aktonz.savirix.com, etc.)
-Route::group(['middleware' => ['auth', 'tenancy', 'role:Tenant']], function () {
+Route::group(['middleware' => ['auth', 'tenancy', 'preventAccessFromCentralDomains', 'setTenantRouteDefaults', 'role:Tenant']], function () {
     Route::resource('properties', PropertyController::class);
     Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
     Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
@@ -161,7 +161,7 @@ Route::group(['prefix' => 'tenant'], function () {
     });
 });
 
-Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Tenant']], function () {
+Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'setTenantRouteDefaults', 'role:Tenant']], function () {
     Route::group(['prefix' => 'onboarding'], function () {
         Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
         Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
@@ -189,7 +189,7 @@ Route::group([
 });
 
 Route::group([
-    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent'],
+    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'setTenantRouteDefaults', 'role:Agent'],
     'prefix' => 'agent',
     'as' => 'agent.',
 ], function () {
