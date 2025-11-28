@@ -12,7 +12,13 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @php($hasManifest = file_exists(public_path('build/manifest.json')))
+        @if($hasManifest)
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @else
+            <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+            <script src="{{ asset('js/app.js') }}" defer></script>
+        @endif
 
         @stack('styles')
     </head>
@@ -30,9 +36,10 @@
             @endisset
 
             <!-- Page Content -->
+            @php($sectionContent = trim($__env->yieldContent('content')))
             <main class="flex-1 py-6">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    @yield('content')
+                    {!! $sectionContent !== '' ? $sectionContent : ($slot ?? '') !!}
                 </div>
             </main>
 
