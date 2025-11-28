@@ -11,7 +11,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     @php($hasManifest = file_exists(public_path('build/manifest.json')))
-    @if($hasManifest)
+    @if ($hasManifest)
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
         <link rel="stylesheet" href="{{ asset('css/app.css') }}">

@@ -71,9 +71,11 @@ Route::prefix($secretAdminPath)->group(function () {
 });
 
 // Single dashboard route for route('dashboard')
-Route::group(['middleware' => ['auth', 'verified']], function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains']], function () {
+    Route::group(['middleware' => ['auth', 'verified']], function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
+    });
 });
 
 

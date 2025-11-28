@@ -13,7 +13,7 @@
 
         <!-- Scripts -->
         @php($hasManifest = file_exists(public_path('build/manifest.json')))
-        @if($hasManifest)
+        @if ($hasManifest)
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @else
             <link rel="stylesheet" href="{{ asset('css/app.css') }}">
@@ -35,11 +35,11 @@
                 </header>
             @endisset
 
+            @php($slot = $slot ?? $__env->yieldContent('content'))
             <!-- Page Content -->
-            @php($sectionContent = trim($__env->yieldContent('content')))
             <main class="flex-1 py-6">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {!! $sectionContent !== '' ? $sectionContent : ($slot ?? '') !!}
+                    {{ $slot }}
                 </div>
             </main>
 
