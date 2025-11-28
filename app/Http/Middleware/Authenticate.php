@@ -23,12 +23,16 @@ class Authenticate extends Middleware
         if ($request->is($adminPath) || $request->is($adminPath.'/*') || $request->routeIs('admin.*')) {
             return route('admin.login');
         }
-        
+
+        if ($request->is('tenant') || $request->is('tenant/*') || $request->routeIs('tenant.*')) {
+            return route('tenant.login');
+        }
+
         $host = $request->getHost();
         $marketingHost = parse_url(config('app.url'), PHP_URL_HOST);
 
         if ($marketingHost && $host !== $marketingHost) {
-            return route('tenant.login');
+            return route('login');
         }
 
         return route('marketing.home');
