@@ -17,14 +17,58 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantPortalController;
+use App\Services\TenancyHealthReporter;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LandlordDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VerificationController;
+use Stancl\Tenancy\Database\Models\Domain;
 
 Route::get('/', HomeController::class)->name('marketing.home');
+
+Route::get('/__health/tenancy', function (Request $request, TenancyHealthReporter $reporter) {
+    $summary = $reporter->summary();
+    $response = [
+        'app_url' => $summary['app_url'],
+        'central_domains' => $summary['central_domains'],
+        'tenants_count' => $summary['tenants_count'],
+        'domains_count' => $summary['domains_count'],
+    ];
+
+    if ($request->filled('host')) {
+        $response['host_check'] = $reporter->inspectHost((string) $request->query('host'));
+    }
+
+    return response()->json($response);
+})->middleware(['restrictToCentralDomains', 'auth', 'role:Admin|Landlord'])->name('tenancy.health');
+
+Route::get('/__tenancy-debug', function (Request $request) {
+    $centralDomains = config('tenancy.central_domains', []);
+    $route = $request->route();
+    $tenancyInitialized = function_exists('tenancy') && tenancy()->initialized;
+    $tenantId = $tenancyInitialized ? optional(tenancy()->tenant)->getTenantKey() : null;
+    $routeName = method_exists($route, 'getName') ? $route?->getName() : null;
+    $domainRecord = Domain::query()
+        ->where('domain', $request->getHost())
+        ->first(['id', 'tenant_id', 'domain']);
+    $defaults = method_exists(url(), 'getDefaultParameters') ? url()->getDefaultParameters() : [];
+
+    return response()->json([
+        'host' => $request->getHost(),
+        'path' => $request->getPathInfo(),
+        'full_url' => $request->fullUrl(),
+        'is_central' => is_array($centralDomains) && in_array($request->getHost(), $centralDomains, true),
+        'central_domains' => $centralDomains,
+        'tenancy_initialized' => $tenancyInitialized,
+        'tenant_id' => $tenantId,
+        'route_name' => $routeName,
+        'domain_record' => $domainRecord,
+        'url_defaults' => $defaults['tenant'] ?? null,
+    ]);
+})->middleware(['auth', 'tenancyDebugAccess'])->name('tenancy.debug');
 
 Route::group(['middleware' => 'guest'], function () {
     Route::get('/onboarding/register', [OnboardingController::class, 'showRegistrationForm'])

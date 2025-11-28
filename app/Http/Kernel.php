@@ -23,6 +23,7 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
+            \App\Http\Middleware\LogRequestHost::class,
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
@@ -62,5 +63,7 @@ class Kernel extends HttpKernel
         'owner' => \App\Http\Middleware\EnsureOwner::class,
         'restrictToCentralDomains' => \App\Http\Middleware\RestrictToCentralDomains::class,
         'setTenantRouteDefaults' => \App\Http\Middleware\SetTenantRouteDefaults::class,
+        'logRequestHost' => \App\Http\Middleware\LogRequestHost::class,
+        'tenancyDebugAccess' => \App\Http\Middleware\TenancyDebugAccess::class,
     ];
 }
