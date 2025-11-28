@@ -2,30 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Http\Middleware;
 
-use Illuminate\Contracts\View\View;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class TenantDashboardController extends Controller
+class LogTenantRequest
 {
-    public function index(Request $request): View
+    public function handle(Request $request, Closure $next)
     {
         if (app()->environment('production')) {
             $tenant = tenancy()->tenant;
 
-            Log::info('Tenant dashboard loaded', [
+            Log::info('Tenant HTTP initialized', [
                 'host' => $request->getHost(),
+                'tenant_initialized' => tenancy()->initialized,
                 'tenant_id' => $tenant?->getTenantKey(),
                 'tenant_domain' => $tenant?->domains()->first()?->domain,
                 'tenant_data_agency_id' => $tenant?->getAttribute('agency_id') ?? $tenant?->data['agency_id'] ?? null,
-                'user_id' => $request->user()?->getAuthIdentifier(),
             ]);
         }
 
-        return view('dashboard', [
-            'user' => $request->user(),
-        ]);
+        return $next($request);
     }
 }

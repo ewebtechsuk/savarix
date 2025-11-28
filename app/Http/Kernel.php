@@ -61,5 +61,6 @@ class Kernel extends HttpKernel
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         'owner' => \App\Http\Middleware\EnsureOwner::class,
         'restrictToCentralDomains' => \App\Http\Middleware\RestrictToCentralDomains::class,
+        'logTenantRequest' => \App\Http\Middleware\LogTenantRequest::class,
     ];
 }

@@ -15,6 +15,7 @@ use App\Http\Controllers\Landing\HomeController;
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantPortalController;
 use Illuminate\Support\Facades\Mail;
@@ -23,6 +24,15 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LandlordDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\VerificationController;
+
+$centralDomain = parse_url(config('app.url'), PHP_URL_HOST);
+
+if (! $centralDomain) {
+    $centralDomain = collect(config('tenancy.central_domains', []))
+        ->first(static fn ($domain) => is_string($domain) && str_contains($domain, '.'));
+}
+
+$centralDomain ??= 'localhost';
 
 Route::get('/', HomeController::class)->name('marketing.home');
 
@@ -70,8 +80,78 @@ Route::prefix($secretAdminPath)->group(function () {
     });
 });
 
-// Single dashboard route for route('dashboard')
-Route::group(['middleware' => ['auth', 'verified']], function () {
+// Tenant-facing routes (aktonz.savarix.com, etc.)
+Route::domain('{tenant}.'.$centralDomain)->group(function () {
+    Route::middleware(['tenancy', 'preventAccessFromCentralDomains', 'logTenantRequest'])->group(function () {
+        Route::middleware('auth')->group(function () {
+            Route::get('/dashboard', [TenantDashboardController::class, 'index'])
+                ->name('tenant.web.dashboard');
+        });
+
+        Route::group(['middleware' => ['auth', 'role:Tenant']], function () {
+            Route::resource('properties', PropertyController::class);
+            Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
+            Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
+            Route::post('contacts/bulk', [ContactController::class, 'bulk'])->name('contacts.bulk');
+            Route::post('contacts/{contact}/notes', [ContactController::class, 'addNote'])->name('contacts.addNote');
+            Route::delete('contacts/{contact}/notes/{note}', [ContactController::class, 'deleteNote'])->name('contacts.notes.destroy');
+            Route::put('contacts/{contact}/notes/{note}', [ContactController::class, 'updateNote'])->name('contacts.notes.update');
+            Route::patch('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiUpdateNote'])->name('contacts.notes.inline.update');
+            Route::delete('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiDeleteNote'])->name('contacts.notes.inline.destroy');
+
+            Route::post('contacts/{contact}/communications', [ContactController::class, 'addCommunication'])->name('contacts.addCommunication');
+            Route::delete('contacts/{contact}/communications/{communication}', [ContactController::class, 'deleteCommunication'])->name('contacts.communications.destroy');
+            Route::put('contacts/{contact}/communications/{communication}', [ContactController::class, 'updateCommunication'])->name('contacts.communications.update');
+            Route::patch('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiUpdateCommunication'])->name('contacts.communications.inline.update');
+            Route::delete('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiDeleteCommunication'])->name('contacts.communications.inline.destroy');
+
+            Route::post('contacts/{contact}/viewings', [ContactController::class, 'addViewing'])->name('contacts.addViewing');
+            Route::delete('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'deleteViewing'])->name('contacts.viewings.destroy');
+            Route::put('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'updateViewing'])->name('contacts.viewings.update');
+            Route::patch('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiUpdateViewing'])->name('contacts.viewings.inline.update');
+            Route::delete('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiDeleteViewing'])->name('contacts.viewings.inline.destroy');
+
+            Route::post('contacts/{contact}/assign-property', [ContactController::class, 'assignProperty'])->name('contacts.assignProperty');
+
+            Route::resource('contacts', ContactController::class);
+
+            Route::post('properties/{property}/assign-landlord', [PropertyController::class, 'assignLandlord'])->name('properties.assignLandlord');
+            Route::resource('diary', DiaryController::class);
+            Route::resource('accounts', AccountController::class);
+            Route::resource('inspections', InspectionController::class);
+            Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
+            Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+            Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+            Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+            Route::get('/documents/{document}/download/signed', [DocumentController::class, 'downloadSigned'])->name('documents.downloadSigned');
+            Route::get('maintenance/create', [MaintenanceRequestController::class, 'create'])->name('maintenance.create');
+            Route::post('maintenance', [MaintenanceRequestController::class, 'store'])->name('maintenance.store');
+        });
+
+        Route::group(['middleware' => ['auth', 'role:Tenant'], 'prefix' => 'onboarding'], function () {
+            Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
+            Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
+        });
+
+        Route::group(['middleware' => ['auth', 'role:Tenant']], function () {
+            Route::get('/tenancies/{tenancy}/payments/create', [PaymentController::class, 'create'])
+                ->name('payments.create');
+            Route::post('/tenancies/{tenancy}/payments', [PaymentController::class, 'store'])
+                ->name('payments.store');
+        });
+
+        Route::group([
+            'middleware' => ['auth', 'role:Agent'],
+            'prefix' => 'agent',
+            'as' => 'agent.',
+        ], function () {
+            Route::resource('inspections', InspectionController::class);
+        });
+    });
+});
+
+// Single dashboard route for route('dashboard') on central domain
+Route::group(['middleware' => ['auth', 'verified'], 'domain' => $centralDomain], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 });
@@ -108,47 +188,6 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
     Route::put('/maintenance/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance.update');
 });
 
-// Tenant routes (aktonz.savirix.com, etc.)
-Route::group(['middleware' => ['auth', 'tenancy', 'role:Tenant']], function () {
-    Route::resource('properties', PropertyController::class);
-    Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
-    Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
-    Route::post('contacts/bulk', [ContactController::class, 'bulk'])->name('contacts.bulk');
-    Route::post('contacts/{contact}/notes', [ContactController::class, 'addNote'])->name('contacts.addNote');
-    Route::delete('contacts/{contact}/notes/{note}', [ContactController::class, 'deleteNote'])->name('contacts.notes.destroy');
-    Route::put('contacts/{contact}/notes/{note}', [ContactController::class, 'updateNote'])->name('contacts.notes.update');
-    Route::patch('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiUpdateNote'])->name('contacts.notes.inline.update');
-    Route::delete('contacts/{contact}/notes/{note}/inline', [ContactController::class, 'apiDeleteNote'])->name('contacts.notes.inline.destroy');
-
-    Route::post('contacts/{contact}/communications', [ContactController::class, 'addCommunication'])->name('contacts.addCommunication');
-    Route::delete('contacts/{contact}/communications/{communication}', [ContactController::class, 'deleteCommunication'])->name('contacts.communications.destroy');
-    Route::put('contacts/{contact}/communications/{communication}', [ContactController::class, 'updateCommunication'])->name('contacts.communications.update');
-    Route::patch('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiUpdateCommunication'])->name('contacts.communications.inline.update');
-    Route::delete('contacts/{contact}/communications/{communication}/inline', [ContactController::class, 'apiDeleteCommunication'])->name('contacts.communications.inline.destroy');
-
-    Route::post('contacts/{contact}/viewings', [ContactController::class, 'addViewing'])->name('contacts.addViewing');
-    Route::delete('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'deleteViewing'])->name('contacts.viewings.destroy');
-    Route::put('contacts/{contact}/viewings/{viewing}', [ContactController::class, 'updateViewing'])->name('contacts.viewings.update');
-    Route::patch('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiUpdateViewing'])->name('contacts.viewings.inline.update');
-    Route::delete('contacts/{contact}/viewings/{viewing}/inline', [ContactController::class, 'apiDeleteViewing'])->name('contacts.viewings.inline.destroy');
-
-    Route::post('contacts/{contact}/assign-property', [ContactController::class, 'assignProperty'])->name('contacts.assignProperty');
-
-    Route::resource('contacts', ContactController::class);
-
-    Route::post('properties/{property}/assign-landlord', [PropertyController::class, 'assignLandlord'])->name('properties.assignLandlord');
-    Route::resource('diary', DiaryController::class);
-    Route::resource('accounts', AccountController::class);
-    Route::resource('inspections', InspectionController::class);
-    Route::resource('workflows', \App\Http\Controllers\WorkflowController::class);
-    Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
-    Route::post('/documents/{document}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
-    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
-    Route::get('/documents/{document}/download/signed', [DocumentController::class, 'downloadSigned'])->name('documents.downloadSigned');
-    Route::get('maintenance/create', [MaintenanceRequestController::class, 'create'])->name('maintenance.create');
-    Route::post('maintenance', [MaintenanceRequestController::class, 'store'])->name('maintenance.store');
-});
-
 Route::get('/magic-login/{token}', [MagicLoginController::class, 'login'])->name('magic.login');
 
 Route::group(['prefix' => 'tenant'], function () {
@@ -159,18 +198,6 @@ Route::group(['prefix' => 'tenant'], function () {
         Route::get('dashboard', [TenantPortalController::class, 'dashboard'])
             ->name('tenant.dashboard');
     });
-});
-
-Route::group(['middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Tenant']], function () {
-    Route::group(['prefix' => 'onboarding'], function () {
-        Route::get('verification/start', [VerificationController::class, 'start'])->name('verification.start');
-        Route::get('verification/status', [VerificationController::class, 'status'])->name('verification.status');
-    });
-
-    Route::get('/tenancies/{tenancy}/payments/create', [PaymentController::class, 'create'])
-        ->name('payments.create');
-    Route::post('/tenancies/{tenancy}/payments', [PaymentController::class, 'store'])
-        ->name('payments.store');
 });
 
 Route::post('/stripe/webhook', [PaymentController::class, 'webhook'])->name('stripe.webhook');
@@ -186,14 +213,6 @@ Route::group([
         ->name('dashboard');
 
     Route::resource('tenants', TenantController::class);
-});
-
-Route::group([
-    'middleware' => ['tenancy', 'preventAccessFromCentralDomains', 'role:Agent'],
-    'prefix' => 'agent',
-    'as' => 'agent.',
-], function () {
-    Route::resource('inspections', InspectionController::class);
 });
 
 require __DIR__.'/auth.php';
