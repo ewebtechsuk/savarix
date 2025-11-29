@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ContactViewing;
 use App\Models\Offer;
 use App\Models\Property;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'active_listings' => Property::where('status', 'available')->count(),
             'upcoming_viewings' => $viewings->count(),
             'pending_offers' => Offer::where('status', 'pending')->count(),
-            'active_tenancies' => Tenancy::where('status', 'active')->count(),
+            'active_tenancies' => SavarixTenancy::where('status', 'active')->count(),
         ];
 
         $quickActions = [

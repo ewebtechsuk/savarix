@@ -7,7 +7,7 @@ use App\Models\PartnerIntegration;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\PropertyPortals;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use Carbon\Carbon;
 
 class UnifiedAgencyDashboardService
@@ -50,7 +50,7 @@ class UnifiedAgencyDashboardService
 
     protected function summariseLettings(): array
     {
-        $tenancies = Tenancy::query();
+        $tenancies = SavarixTenancy::query();
 
         $statusBreakdown = (clone $tenancies)
             ->select('status')

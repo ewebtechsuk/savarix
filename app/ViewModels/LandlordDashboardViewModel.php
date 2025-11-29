@@ -8,7 +8,7 @@ use App\Models\Landlord;
 use App\Models\MaintenanceRequest;
 use App\Models\Payment;
 use App\Models\Property;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -43,7 +43,7 @@ class LandlordDashboardViewModel
             ->orderBy('title')
             ->get();
 
-        $tenancies = Tenancy::query()
+        $tenancies = SavarixTenancy::query()
             ->with(['property', 'contact'])
             ->when($properties->isNotEmpty(), function ($query) use ($properties) {
                 $query->whereIn('property_id', $properties->pluck('id'));

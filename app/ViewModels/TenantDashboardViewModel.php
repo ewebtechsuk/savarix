@@ -5,7 +5,7 @@ namespace App\ViewModels;
 use App\Models\ContactCommunication;
 use App\Models\MaintenanceRequest;
 use App\Models\Payment;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use App\Models\Tenant;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -23,7 +23,7 @@ class TenantDashboardViewModel
 
     public static function fromTenant(Tenant $tenant): self
     {
-        $tenancies = Tenancy::query()
+        $tenancies = SavarixTenancy::query()
             ->with(['property', 'contact'])
             ->whereHas('property', function ($query) use ($tenant) {
                 $query->where('tenant_id', $tenant->getKey());

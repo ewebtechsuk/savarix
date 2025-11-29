@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use App\Http\Resources\TenancyResource;
 use Illuminate\Http\Request;
 
@@ -11,7 +11,7 @@ class TenancyApiController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Tenancy::query();
+        $query = SavarixTenancy::query();
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
@@ -30,16 +30,16 @@ class TenancyApiController extends Controller
             'status' => 'required|string',
             'notes' => 'nullable|string',
         ]);
-        $tenancy = Tenancy::create($validated);
+        $tenancy = SavarixTenancy::create($validated);
         return new TenancyResource($tenancy);
     }
 
-    public function show(Tenancy $tenancy)
+    public function show(SavarixTenancy $tenancy)
     {
         return new TenancyResource($tenancy);
     }
 
-    public function update(Request $request, Tenancy $tenancy)
+    public function update(Request $request, SavarixTenancy $tenancy)
     {
         $validated = $request->validate([
             'property_id' => 'sometimes|required|exists:properties,id',
@@ -54,7 +54,7 @@ class TenancyApiController extends Controller
         return new TenancyResource($tenancy);
     }
 
-    public function destroy(Tenancy $tenancy)
+    public function destroy(SavarixTenancy $tenancy)
     {
         $tenancy->delete();
         return response()->json(['message' => 'Deleted'], 204);

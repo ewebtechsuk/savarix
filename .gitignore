@@ -33,3 +33,4 @@ Thumbs.db
 *.tmp
 *.tar.gz
 /dist/
+public/build/

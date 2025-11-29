@@ -9,7 +9,6 @@ use App\Models\ContactNote;
 use App\Models\ContactCommunication;
 use App\Models\ContactViewing;
 use App\Models\Offer;
-use App\Models\Tenancy;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;

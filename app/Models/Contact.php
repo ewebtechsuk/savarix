@@ -59,7 +59,7 @@ class Contact extends Model
 
     public function tenancies()
     {
-        return $this->hasMany(Tenancy::class);
+        return $this->hasMany(SavarixTenancy::class, 'contact_id');
     }
 
     public function offers()

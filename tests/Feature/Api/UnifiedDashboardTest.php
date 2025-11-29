@@ -8,7 +8,7 @@ use App\Models\PartnerIntegration;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\PropertyPortals;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use App\Models\User;
 use Carbon\Carbon;
 use Laravel\Sanctum\Sanctum;
@@ -47,7 +47,7 @@ class UnifiedDashboardTest extends TestCase
 
         $tenantContact = Contact::factory()->create();
 
-        $tenancy = Tenancy::create([
+        $tenancy = SavarixTenancy::create([
             'property_id' => $property->id,
             'contact_id' => $tenantContact->id,
             'start_date' => Carbon::now()->subMonths(2),

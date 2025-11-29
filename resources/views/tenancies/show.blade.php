@@ -7,7 +7,7 @@
     <h5>Documents</h5>
     <form action="{{ route('documents.upload') }}" method="POST" enctype="multipart/form-data" class="mb-3">
         @csrf
-        <input type="hidden" name="documentable_type" value="App\\Models\\Tenancy">
+        <input type="hidden" name="documentable_type" value="App\\Models\\SavarixTenancy">
         <input type="hidden" name="documentable_id" value="{{ $tenancy->id }}">
         <div class="input-group">
             <input type="file" name="file" class="form-control" required>

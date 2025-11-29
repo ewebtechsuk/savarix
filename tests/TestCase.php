@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Http\Middleware\SetTenantRouteDefaults;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Artisan;
 
@@ -27,6 +28,8 @@ abstract class TestCase extends BaseTestCase
         if ($migrationResult !== 0) {
             throw new \RuntimeException('Failed to migrate testing database: ' . Artisan::output());
         }
+
+        $this->withoutMiddleware(VerifyCsrfToken::class);
     }
 
     protected function useTenantDomain(string $tenantDomain = 'aktonz.savarix.com', string $centralDomain = 'savarix.com'): void

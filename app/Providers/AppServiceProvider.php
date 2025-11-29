@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Property;
+use App\Models\SavarixTenancy;
 use App\Services\WorkflowEngine;
 use App\Support\AppKeyManager;
 use App\Support\ModelChangeRecorder;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->configureRateLimiting();
+
+        Relation::morphMap([
+            'tenancy' => SavarixTenancy::class,
+            'App\\Models\\Tenancy' => SavarixTenancy::class,
+        ]);
 
         $recorder = app(ModelChangeRecorder::class);
 

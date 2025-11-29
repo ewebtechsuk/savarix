@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Invoice;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +19,7 @@ class GenerateMonthlyInvoices implements ShouldQueue
     {
         $monthStart = Carbon::today()->startOfMonth();
 
-        Tenancy::where('status', 'active')->each(function (Tenancy $tenancy) use ($monthStart) {
+        SavarixTenancy::where('status', 'active')->each(function (SavarixTenancy $tenancy) use ($monthStart) {
             $exists = Invoice::where('tenancy_id', $tenancy->id)
                 ->whereDate('date', $monthStart)
                 ->exists();

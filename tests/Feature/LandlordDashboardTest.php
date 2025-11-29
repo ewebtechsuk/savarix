@@ -8,7 +8,7 @@ use App\Models\Landlord;
 use App\Models\MaintenanceRequest;
 use App\Models\Payment;
 use App\Models\Property;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
@@ -48,7 +48,7 @@ class LandlordDashboardTest extends TestCase
             'price' => 1500,
         ]);
 
-        $tenancy = Tenancy::create([
+        $tenancy = SavarixTenancy::create([
             'property_id' => $property->id,
             'contact_id' => $tenantContact->id,
             'start_date' => now()->subMonths(2),
@@ -96,7 +96,7 @@ class LandlordDashboardTest extends TestCase
             'price' => 950,
         ]);
 
-        $unrelatedTenancy = Tenancy::create([
+        $unrelatedTenancy = SavarixTenancy::create([
             'property_id' => $otherProperty->id,
             'contact_id' => $tenantContact->id,
             'start_date' => now()->subMonths(1),

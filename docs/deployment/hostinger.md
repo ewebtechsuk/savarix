@@ -24,6 +24,23 @@ manual sync script copies the freshly-built `public/` assets into that folder an
 rewrites `public_html/index.php` so it requires the `../laravel_app/` bootstrap
 files.
 
+## Automated GitHub Actions deploy
+
+The `deploy_hostinger.yml` workflow builds Vite with `base: '/build/'`, rsyncs the
+repository (excluding vendor/tests/docs/node_modules), and runs
+`deploy/deploy_hostinger.sh` on the server. The script now:
+
+- Verifies PHP 8.3+ is available at `/opt/alt/php83/usr/bin/php`.
+- Downloads `composer.phar` if missing and runs a `--no-dev` install.
+- Warns if `.env` is missing and refuses to continue without one.
+- Clears and rebuilds Laravel caches, runs migrations, and executes
+  `savarix:diagnose-tenancy-domains --sync` after deploy.
+- Enforces the `public_html -> laravel_app/public` symlink via
+  `scripts/hostinger-ensure-public-html-symlink.sh`.
+
+Assets under `public/build/` are no longer committed; they are produced during the
+GitHub Actions build and copied to Hostinger by rsync.
+
 ## Manual deployment workflow
 
 Run the following checklist whenever you want to refresh production:
@@ -46,8 +63,8 @@ Run the following checklist whenever you want to refresh production:
    git pull --ff-only origin master
    ```
 
-3. Run the manual sync script. It is safe to execute multiple times and only
-   needs elevated privileges when changing permissions inside `public_html/`:
+3. Run the manual sync script. It is safe to execute multiple times and now
+   enforces the `public_html` symlink instead of copying files:
 
    ```bash
    bash scripts/hostinger_manual_sync.sh
@@ -86,13 +103,14 @@ section logs its progress so you can see which step failed:
    `migrate --force --no-interaction`, `config:cache`, `route:cache`,
    `view:cache`, `optimize`). Each command is wrapped in `run_or_warn` so the
    script keeps going even if a cache step fails.
-7. **Document root refresh** – removes everything inside `public_html/` except
-   `aktonz/`, `.well-known`, and `.ftpquota`, copies `public/` into place, and
-   rewrites `public_html/index.php` so it loads the framework from
-   `../laravel_app/`.
+7. **public_html symlink** – uses `scripts/hostinger-ensure-public-html-symlink.sh`
+   to recreate `/home/${HOST_USER}/domains/savarix.com/public_html` as a symlink
+   that targets `laravel_app/public`.
 8. **Permissions** – resets ownership to `u753768407`, applies `775` to
    `storage/` and `bootstrap/cache/`, and tightens `public_html/` to `755`.
-9. **Summary** – prints the paths in use and reminds you to confirm hPanel’s
+9. **Domain sync** – runs `savarix:diagnose-tenancy-domains --sync` so newly
+   added tenants pick up their domains after deploys.
+10. **Summary** – prints the paths in use and reminds you to confirm hPanel’s
    document root, run `php artisan tenants:list`, and inspect the Aktonz users on
    the server.
 
@@ -115,6 +133,25 @@ If the site still fails after a sync:
    by the Hostinger user.
 6. **Verify tenants** – `php artisan tenants:list` and
    `php artisan users:list --tenant=aktonz` should show the expected data.
+
+## Onboarding new tenant domains
+
+1. Add the domain in Stancl tenancy (e.g., via `TenantDomainSynchronizer` or the
+   admin UI).
+2. In hPanel, point the new subdomain at
+   `/home/${HOSTINGER_USER}/domains/savarix.com/public_html`.
+3. Run `php artisan savarix:diagnose-tenancy-domains --sync` on the server (or
+   wait for the deploy workflow step) to mirror the new domain into the
+   application configuration.
+4. Hit `https://<new-subdomain>/__tenancy-debug` to confirm Laravel serves the
+   tenant rather than Hostinger’s default page.
+
+## PHP version reminders
+
+- Production uses `/opt/alt/php83/usr/bin/php`. Keep Hostinger’s “PHP Version”
+  selector on 8.3+ and ensure the CLI default matches.
+- If Composer fails with platform errors, confirm `$PHP_BIN` resolves to 8.3 and
+  rerun `deploy/deploy_hostinger.sh`.
 
 ## Deprecated static workflow
 

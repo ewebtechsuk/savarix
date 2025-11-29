@@ -7,7 +7,7 @@ use App\Models\ContactCommunication;
 use App\Models\MaintenanceRequest;
 use App\Models\Payment;
 use App\Models\Property;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
@@ -34,7 +34,7 @@ class TenantDashboardTest extends TestCase
             'price' => 1200,
         ]);
 
-        $tenancy = Tenancy::create([
+        $tenancy = SavarixTenancy::create([
             'property_id' => $property->id,
             'contact_id' => $contact->id,
             'start_date' => now()->subMonths(3),
@@ -81,7 +81,7 @@ class TenantDashboardTest extends TestCase
             'price' => 1100,
         ]);
 
-        $otherTenancy = Tenancy::create([
+        $otherTenancy = SavarixTenancy::create([
             'property_id' => $otherProperty->id,
             'contact_id' => $otherContact->id,
             'start_date' => now()->subMonths(5),

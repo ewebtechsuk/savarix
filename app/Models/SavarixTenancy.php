@@ -6,8 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class Tenancy extends Model
+class SavarixTenancy extends Model
 {
+    /**
+     * Keep the existing table name while avoiding collisions with Stancl Tenancy classes.
+     */
+    protected $table = 'tenancies';
+
     protected $fillable = [
         'property_id', 'contact_id', 'start_date', 'end_date', 'rent', 'status', 'notes'
     ];

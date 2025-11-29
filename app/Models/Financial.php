@@ -16,7 +16,7 @@ class Financial extends Model
     }
     public function tenancy()
     {
-        return $this->belongsTo(Tenancy::class);
+        return $this->belongsTo(SavarixTenancy::class, 'tenancy_id');
     }
     public function contact()
     {

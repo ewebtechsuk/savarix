@@ -50,23 +50,6 @@ update_env_value() {
     fi
 }
 
-clean_document_root() {
-    log "Removing existing files in $DOCUMENT_ROOT (preserving aktonz/, .well-known, and .ftpquota)"
-
-    shopt -s dotglob nullglob
-    for entry in "$DOCUMENT_ROOT"/* "$DOCUMENT_ROOT"/.[!.]* "$DOCUMENT_ROOT"/..?*; do
-        [ -e "$entry" ] || continue
-        base=$(basename "$entry")
-        case "$base" in
-            .|..|aktonz|.well-known|.ftpquota)
-                continue
-                ;;
-        esac
-        rm -rf "$entry"
-    done
-    shopt -u dotglob nullglob
-}
-
 log "== Step 1: Sanity checks =="
 if [ ! -d "$APP_DIR" ]; then
     echo "ERROR: $APP_DIR does not exist. Abort." >&2
@@ -138,20 +121,10 @@ run_or_warn "$PHP_BIN" artisan config:cache
 run_or_warn "$PHP_BIN" artisan route:cache
 run_or_warn "$PHP_BIN" artisan view:cache
 run_or_warn "$PHP_BIN" artisan optimize
+run_or_warn "$PHP_BIN" artisan savarix:diagnose-tenancy-domains --sync
 
-log "== Step 7: Refresh document root =="
-clean_document_root
-
-log "Copying public assets from $APP_DIR/public to $DOCUMENT_ROOT"
-run_or_warn cp -a "$APP_DIR/public/." "$DOCUMENT_ROOT/"
-
-INDEX_PHP="$DOCUMENT_ROOT/index.php"
-if [ ! -f "$INDEX_PHP" ]; then
-    warn "index.php not found in $DOCUMENT_ROOT."
-else
-    sed -i "s|require __DIR__.'/../vendor/autoload.php';|require __DIR__.'/../laravel_app/vendor/autoload.php';|" "$INDEX_PHP"
-    sed -i "s|\$app = require_once __DIR__.'/../bootstrap/app.php';|\$app = require_once __DIR__.'/../laravel_app/bootstrap/app.php';|" "$INDEX_PHP"
-fi
+log "== Step 7: Ensure public_html symlink =="
+BASE_DIR="$APP_DIR" HOSTINGER_PUBLIC_HTML="$DOCUMENT_ROOT" bash scripts/hostinger-ensure-public-html-symlink.sh
 
 log "== Step 8: Permissions =="
 run_or_warn chown -R "$HOST_USER":"$HOST_USER" "$APP_DIR" "$DOCUMENT_ROOT"

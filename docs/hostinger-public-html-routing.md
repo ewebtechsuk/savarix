@@ -18,6 +18,13 @@ rm -rf public_html
 ln -s /home/${HOSTINGER_USER}/domains/savarix.com/laravel_app/public public_html
 ```
 
+You can also run the helper script shipped in the repository (it is idempotent and safe to re-run):
+
+```bash
+cd /home/${HOSTINGER_USER}/domains/savarix.com/laravel_app
+BASE_DIR=$(pwd) bash scripts/hostinger-ensure-public-html-symlink.sh
+```
+
 ### ⚠️ Important safety warning
 
 * Only run `rm -rf public_html` **inside** `/home/${HOSTINGER_USER}/domains/savarix.com`.

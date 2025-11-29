@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Tenancy;
 
 class Payment extends Model
 {
@@ -16,6 +15,6 @@ class Payment extends Model
 
     public function tenancy()
     {
-        return $this->belongsTo(Tenancy::class);
+        return $this->belongsTo(SavarixTenancy::class, 'tenancy_id');
     }
 }

@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MarketingEvent;
 use App\Models\ContactViewing;
 use App\Models\Offer;
-use App\Models\Tenancy;
 use App\Services\ApplicantMatcher;
 
 class PropertyController extends Controller

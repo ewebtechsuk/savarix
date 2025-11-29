@@ -3,19 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
-use App\Models\Tenancy;
+use App\Models\SavarixTenancy;
 use Illuminate\Http\Request;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
 class PaymentController extends Controller
 {
-    public function create(Tenancy $tenancy)
+    public function create(SavarixTenancy $tenancy)
     {
         return view('payments.create', compact('tenancy'));
     }
 
-    public function store(Request $request, Tenancy $tenancy)
+    public function store(Request $request, SavarixTenancy $tenancy)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.5',

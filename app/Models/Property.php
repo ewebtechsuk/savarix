@@ -108,6 +108,6 @@ class Property extends Model
 
     public function tenancies(): HasMany
     {
-        return $this->hasMany(Tenancy::class);
+        return $this->hasMany(SavarixTenancy::class, 'property_id');
     }
 }
