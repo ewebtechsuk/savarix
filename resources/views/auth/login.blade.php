@@ -39,8 +39,8 @@
 
         <p class="text-center text-sm text-gray-600">
             {{ __("Don't have an account?") }}
-            <a href="{{ route('register') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
-                {{ __('Register here') }}
+            <a href="{{ route('agency.register') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+                {{ __('Create an agency account') }}
             </a>
         </p>
     </form>

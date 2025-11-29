@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AgencyController as AdminAgencyController;
 use App\Http\Controllers\Admin\AgencyUserController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Auth\AgencyRegisterController;
 use App\Http\Controllers\Auth\MagicLoginController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
@@ -75,6 +76,11 @@ Route::group(['middleware' => 'guest'], function () {
         ->name('onboarding.register');
     Route::post('/onboarding/register', [OnboardingController::class, 'register'])
         ->name('onboarding.register.store');
+
+    Route::get('/signup/estate-agent', [AgencyRegisterController::class, 'create'])
+        ->name('agency.register');
+
+    Route::post('/signup/estate-agent', [AgencyRegisterController::class, 'store']);
 });
 
 // Simple test to confirm Laravel is handling this request

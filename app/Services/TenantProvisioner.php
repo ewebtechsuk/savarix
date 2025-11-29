@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Support\CompanyIdGenerator;
 use Database\Seeders\TenantPortalUserSeeder;
 use Illuminate\Support\Arr;
@@ -145,6 +146,85 @@ class TenantProvisioner
         $host = $this->centralHost();
 
         return (string) Str::of($subdomain)->trim('.')->append('.' . $host);
+    }
+
+    /**
+     * Provision a new tenant from the public estate-agent signup form.
+     *
+     * This should:
+     * - create a new tenant / agency record using the existing tenant creation logic
+     * - attach the given $owner user as the tenant owner / admin
+     * - configure the primary domain as "{$subdomain}.savarix.com"
+     * - seed roles/permissions in the same way as CLI tenant provisioning
+     */
+    public function provisionFromSignup(
+        User $owner,
+        string $agencyName,
+        string $subdomain,
+        array $meta = []
+    ): Tenant {
+        $tenantData = array_filter([
+            'agency_size' => $meta['agency_size'] ?? null,
+            'phone' => $meta['phone'] ?? null,
+            'postcode' => $meta['postcode'] ?? null,
+        ], static fn ($value): bool => $value !== null && $value !== '');
+
+        $result = $this->provision([
+            'subdomain' => $subdomain,
+            'name' => $agencyName,
+            'company_name' => $agencyName,
+            'data' => $tenantData,
+        ]);
+
+        $tenant = $result->tenant();
+
+        if ($tenant === null) {
+            throw new RuntimeException('Tenant provisioning failed during signup.');
+        }
+
+        $primaryDomain = sprintf('%s.savarix.com', Str::slug(trim($subdomain, '.')));
+        $existingDomain = $tenant->domains()->first();
+
+        if ($existingDomain !== null) {
+            $existingDomain->update(['domain' => $primaryDomain]);
+        } else {
+            $tenant->domains()->create(['domain' => $primaryDomain]);
+        }
+
+        $this->runInTenantContext($tenant, function () use ($owner, $meta) {
+            $userModel = config('auth.providers.users.model');
+
+            if (! is_string($userModel) || $userModel === '') {
+                throw new RuntimeException('User model is not configured.');
+            }
+
+            $password = $meta['password'] ?? $owner->getAuthPassword();
+
+            $password = password_get_info($password)['algo'] === 0
+                ? Hash::make($password)
+                : $password;
+
+            $tenantUser = $userModel::query()->firstOrCreate(
+                ['email' => $owner->email],
+                [
+                    'name' => $owner->name,
+                    'password' => $password,
+                    'agency_id' => $owner->agency_id ?? null,
+                ],
+            );
+
+            $guard = config('permission.defaults.guard', 'web');
+            $assignableRoles = collect(['Admin', 'Tenant'])
+                ->filter(fn (string $role): bool => Role::query()->where('name', $role)->where('guard_name', $guard)->exists())
+                ->values()
+                ->all();
+
+            if ($assignableRoles !== []) {
+                $tenantUser->syncRoles($assignableRoles);
+            }
+        });
+
+        return $tenant;
     }
 
     protected function centralHost(): string
