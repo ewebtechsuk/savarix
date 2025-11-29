@@ -113,19 +113,22 @@ class TenantProvisioner
         $status = TenantProvisioningResult::STATUS_SUCCESS;
         $userPayload = Arr::get($payload, 'user');
 
-        if ($this->hasInitialUserData($userPayload)) {
-            try {
+        try {
+            if ($this->hasInitialUserData($userPayload)) {
                 $this->createInitialUser($tenant, $userPayload ?? []);
                 $messages[] = 'Initial user created.';
-            } catch (Throwable $exception) {
-                Log::warning('Initial tenant user could not be created.', [
-                    'tenant_id' => $tenant->getKey(),
-                    'exception' => $exception,
-                ]);
-
-                $errors[] = 'Initial user could not be created: ' . $exception->getMessage();
-                $status = TenantProvisioningResult::STATUS_PARTIAL;
+            } else {
+                $this->createDefaultAgencyOwner($tenant);
+                $messages[] = 'Default agency owner created.';
             }
+        } catch (Throwable $exception) {
+            Log::warning('Initial tenant user could not be created.', [
+                'tenant_id' => $tenant->getKey(),
+                'exception' => $exception,
+            ]);
+
+            $errors[] = 'Initial user could not be created: ' . $exception->getMessage();
+            $status = TenantProvisioningResult::STATUS_PARTIAL;
         }
 
         return match ($status) {
@@ -320,7 +323,10 @@ class TenantProvisioner
             ]);
 
             $guard = config('permission.defaults.guard', 'web');
-            $assignableRoles = collect(['Admin', 'Tenant'])
+            $requestedRoles = Arr::get($userPayload, 'roles');
+            $roles = is_array($requestedRoles) ? $requestedRoles : ['Admin', 'Landlord', 'Agent'];
+
+            $assignableRoles = collect($roles)
                 ->filter(function (string $role) use ($guard) {
                     return Role::query()->where('name', $role)->where('guard_name', $guard)->exists();
                 })
@@ -328,7 +334,38 @@ class TenantProvisioner
                 ->all();
 
             if ($assignableRoles !== []) {
-                $user->assignRole($assignableRoles);
+                $user->syncRoles($assignableRoles);
+            }
+        });
+    }
+
+    protected function createDefaultAgencyOwner(Tenant $tenant): void
+    {
+        $this->runInTenantContext($tenant, function () use ($tenant) {
+            $userModel = config('auth.providers.users.model');
+
+            if (!is_string($userModel) || $userModel === '') {
+                throw new RuntimeException('User model is not configured.');
+            }
+
+            $user = $userModel::firstOrCreate(
+                ['email' => sprintf('owner@%s.local', $tenant->getKey())],
+                [
+                    'name' => 'Agency Owner',
+                    'password' => Hash::make(env('DEFAULT_TENANT_OWNER_PASSWORD', Str::random(12))),
+                ],
+            );
+
+            $guard = config('permission.defaults.guard', 'web');
+            $roles = collect(['Admin', 'Landlord'])
+                ->filter(function (string $role) use ($guard) {
+                    return Role::query()->where('name', $role)->where('guard_name', $guard)->exists();
+                })
+                ->values()
+                ->all();
+
+            if ($roles !== []) {
+                $user->syncRoles($roles);
             }
         });
     }

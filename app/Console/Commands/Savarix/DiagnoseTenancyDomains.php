@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
 use Stancl\Tenancy\Database\Models\Domain;
+use Spatie\Permission\PermissionRegistrar;
 
 class DiagnoseTenancyDomains extends Command
 {
@@ -96,6 +97,8 @@ class DiagnoseTenancyDomains extends Command
             tenancy()->initialize($tenant);
 
             try {
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
+
                 $exitCode = Artisan::call('db:seed', [
                     '--class' => \Database\Seeders\Tenancy\TenantRolesAndPermissionsSeeder::class,
                     '--force' => true,
@@ -103,6 +106,8 @@ class DiagnoseTenancyDomains extends Command
 
                 if ($exitCode !== 0) {
                     $this->warn(sprintf('Seeder exited with code %d for tenant %s', $exitCode, $tenant->getKey()));
+                } else {
+                    $this->info(sprintf('Roles synced for tenant %s', $tenant->getKey()));
                 }
             } finally {
                 tenancy()->end();
