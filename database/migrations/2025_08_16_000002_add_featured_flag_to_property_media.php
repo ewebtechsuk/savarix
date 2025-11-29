@@ -9,14 +9,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('property_media', function (Blueprint $table) {
-            $table->boolean('is_featured')->default(false)->after('order');
+            if (! Schema::hasColumn('property_media', 'is_featured')) {
+                $column = $table->boolean('is_featured')->default(false);
+
+                if (Schema::hasColumn('property_media', 'order')) {
+                    $column->after('order');
+                }
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('property_media', function (Blueprint $table) {
-            $table->dropColumn('is_featured');
+            if (Schema::hasColumn('property_media', 'is_featured')) {
+                $table->dropColumn('is_featured');
+            }
         });
     }
 };
