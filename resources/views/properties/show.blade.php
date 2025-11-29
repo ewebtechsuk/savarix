@@ -147,11 +147,40 @@
                         </div>
                         <div class="tab-pane fade" id="offers" role="tabpanel">
                             <h5>Offers</h5>
-                            <p class="text-muted">No offers available.</p>
+                            @if($offers->isEmpty())
+                                <p class="text-muted">No offers available.</p>
+                            @else
+                                <ul class="list-group">
+                                    @foreach($offers as $offer)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-semibold">£{{ number_format($offer->amount, 2) }}</div>
+                                                <small class="text-muted">{{ $offer->contact->name ?? 'Unknown buyer' }}</small>
+                                                <div class="small text-muted">{{ optional($offer->offered_at)->format('j M Y H:i') ?? 'Awaiting timestamp' }}</div>
+                                            </div>
+                                            <span class="badge bg-info text-dark">{{ ucfirst($offer->status) }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="viewings" role="tabpanel">
                             <h5>Viewings</h5>
-                            <p class="text-muted">No viewings scheduled.</p>
+                            @if($viewings->isEmpty())
+                                <p class="text-muted">No viewings scheduled.</p>
+                            @else
+                                <ul class="list-group">
+                                    @foreach($viewings as $viewing)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-semibold">{{ optional($viewing->date)->format('j M Y H:i') }}</div>
+                                                <div class="small text-muted">With {{ $viewing->contact->name ?? 'Applicant' }}</div>
+                                            </div>
+                                            <span class="badge bg-success">Scheduled</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="management" role="tabpanel">
                             <h5>Management</h5>
@@ -284,6 +313,21 @@
                                                 <li class="mb-2"><strong>Schedule outreach</strong> — launch an email or SMS campaign to active applicants.</li>
                                                 <li class="mb-2"><strong>Verify portal feeds</strong> — confirm the listing is syndicated to every partner site.</li>
                                             </ul>
+                                            @if($matches->isNotEmpty())
+                                                <hr>
+                                                <h6 class="text-uppercase text-muted small mb-2">Applicant matches</h6>
+                                                <ul class="list-unstyled small mb-3">
+                                                    @foreach($matches as $match)
+                                                        <li class="mb-2 d-flex justify-content-between">
+                                                            <div>
+                                                                <div class="fw-semibold">{{ $match['applicant']->name }}</div>
+                                                                <div class="text-muted">£{{ number_format($match['applicant']->min_budget ?? 0) }} - £{{ number_format($match['applicant']->max_budget ?? 0) }}</div>
+                                                            </div>
+                                                            <span class="badge bg-primary">{{ $match['score'] }}%</span>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
                                             <a href="{{ route('properties.edit', $property) }}#marketing" class="btn btn-outline-primary btn-sm">Open marketing settings</a>
                                         </div>
                                     </div>

@@ -8,10 +8,13 @@ use App\Models\ContactTag;
 use App\Models\ContactNote;
 use App\Models\ContactCommunication;
 use App\Models\ContactViewing;
+use App\Models\Offer;
+use App\Models\Tenancy;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ContactController extends Controller
 {
@@ -153,7 +156,16 @@ class ContactController extends Controller
      */
     public function show(Contact $contact)
     {
-        $contact->load(['groups', 'tags', 'properties', 'notes', 'communications', 'viewings']);
+        $contact->load([
+            'groups',
+            'tags',
+            'properties',
+            'notes',
+            'communications',
+            'viewings.property',
+            'offers.property',
+            'tenancies.property',
+        ]);
         return view('contacts.show', compact('contact'));
     }
 
@@ -365,6 +377,19 @@ class ContactController extends Controller
                 abort(403, 'Property does not belong to this tenant.');
             }
         }
+
+        $requestedStart = Carbon::parse($request->date);
+        $conflict = $contact->viewings()
+            ->whereBetween('date', [$requestedStart->copy()->subMinutes(30), $requestedStart->copy()->addMinutes(30)])
+            ->exists();
+
+        if ($conflict) {
+            return redirect()
+                ->back()
+                ->withErrors(['date' => 'This viewing overlaps with another scheduled slot for this contact.'])
+                ->withInput();
+        }
+
         $contact->viewings()->create([
             'property_id' => $property->id,
             'date' => $request->date,

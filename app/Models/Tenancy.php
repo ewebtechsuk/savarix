@@ -12,6 +12,11 @@ class Tenancy extends Model
         'property_id', 'contact_id', 'start_date', 'end_date', 'rent', 'status', 'notes'
     ];
 
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
+
     protected $appends = ['tenant_contact_details', 'rent_amount'];
 
     public function property()

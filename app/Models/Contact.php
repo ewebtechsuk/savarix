@@ -56,4 +56,14 @@ class Contact extends Model
     {
         return $this->hasMany(ContactViewing::class);
     }
+
+    public function tenancies()
+    {
+        return $this->hasMany(Tenancy::class);
+    }
+
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
 }

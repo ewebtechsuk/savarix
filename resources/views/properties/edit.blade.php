@@ -152,6 +152,14 @@
                                 <div class="col-4 col-md-3">
                                     <div class="card">
                                         <img src="{{ asset('storage/' . $media->file_path) }}" class="card-img-top" alt="Media" style="height:120px;object-fit:cover;">
+                                        <div class="card-body p-2">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="radio" name="featured_media" value="{{ $media->id }}" @checked($media->is_featured)>
+                                                <label class="form-check-label">Featured image</label>
+                                            </div>
+                                            <label class="form-label small">Display order</label>
+                                            <input type="number" class="form-control form-control-sm" name="media_order[{{ $media->id }}]" value="{{ $media->order }}" min="0">
+                                        </div>
                                         <form action="{{ route('properties.media.destroy', [$property, $media]) }}" method="POST" onsubmit="return confirm('Delete this image?')">
                                             @csrf
                                             @method('DELETE')
@@ -197,6 +205,24 @@
                                 <div class="form-text">Last note on {{ isset($latestMarketingNote['recorded_at']) ? \Carbon\Carbon::parse($latestMarketingNote['recorded_at'])->format('j M Y H:i') : 'unknown date' }}: "{{ $latestMarketingNote['note'] ?? '—' }}"</div>
                             @endif
                         </div>
+                        @if($matches->isNotEmpty())
+                            <div class="mb-3">
+                                <h5>Applicant matches</h5>
+                                <p class="text-muted small">Ranked suggestions based on budget, bedrooms and location.</p>
+                                <ul class="list-group">
+                                    @foreach($matches as $match)
+                                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="fw-semibold">{{ $match['applicant']->name }}</div>
+                                                <div class="small text-muted">Budget £{{ number_format($match['applicant']->min_budget ?? 0) }} - £{{ number_format($match['applicant']->max_budget ?? 0) }}</div>
+                                                <div class="small text-muted">Prefers {{ $match['applicant']->preferred_bedrooms ?? 'n/a' }} beds · {{ $match['applicant']->preferred_city ?? 'Any city' }}</div>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ $match['score'] }}%</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <button type="submit" class="btn btn-warning">Update</button>
                         <a href="{{ route('properties.index') }}" class="btn btn-secondary">Cancel</a>
                     </form>

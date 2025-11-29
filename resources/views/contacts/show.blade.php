@@ -156,14 +156,45 @@
                         </div>
                         <div class="tab-pane fade" id="management" role="tabpanel">
                             <h5>Management</h5>
-                            <p class="text-muted">No management data available.</p>
+                            @if($contact->tenancies->isEmpty())
+                                <p class="text-muted">No tenancies linked to this contact.</p>
+                            @else
+                                <ul class="list-group">
+                                    @foreach($contact->tenancies as $tenancy)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-semibold">{{ $tenancy->property->title ?? 'Property #'.$tenancy->property_id }}</div>
+                                                <div class="small text-muted">{{ optional($tenancy->start_date)->toDateString() }} - {{ optional($tenancy->end_date)->toDateString() ?? 'ongoing' }}</div>
+                                            </div>
+                                            <span class="badge bg-success">{{ ucfirst($tenancy->status ?? 'active') }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="offers" role="tabpanel">
                             <h5>Offers</h5>
-                            <p class="text-muted">No offers for this contact.</p>
+                            @if($contact->offers->isEmpty())
+                                <p class="text-muted">No offers for this contact.</p>
+                            @else
+                                <ul class="list-group">
+                                    @foreach($contact->offers as $offer)
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="fw-semibold">£{{ number_format($offer->amount, 2) }} — {{ $offer->property->title ?? 'Property #'.$offer->property_id }}</div>
+                                                <div class="small text-muted">{{ optional($offer->offered_at)->format('j M Y H:i') ?? 'Pending timestamp' }}</div>
+                                            </div>
+                                            <span class="badge bg-info text-dark">{{ ucfirst($offer->status) }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                         <div class="tab-pane fade" id="viewings" role="tabpanel">
                             <h5>Viewings</h5>
+                            @if($errors->has('date'))
+                                <div class="alert alert-warning">{{ $errors->first('date') }}</div>
+                            @endif
                             <form action="{{ route('contacts.addViewing', $contact) }}" method="POST" class="mb-3">
                                 @csrf
                                 <div class="row g-2">
