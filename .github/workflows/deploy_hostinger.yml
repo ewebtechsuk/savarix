@@ -36,6 +36,22 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y sshpass
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install frontend dependencies and build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify built assets exist
+        run: |
+          ls -la public
+          ls -la public/build || (echo "public/build is missing after npm run build" && exit 1)
+
       - name: Upload code via rsync (password SSH)
         run: |
           set -euo pipefail
