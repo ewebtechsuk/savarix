@@ -4,6 +4,8 @@ Use these steps on the Hostinger SSH shell to restore the Laravel app with PHP 8
 
 See also: [Hostinger public_html routing fix](hostinger-public-html-routing.md).
 
+For observability and health checks, see [production-observability.md](./production-observability.md). Deploys now fail automatically if tenancy health breaks, and Sentry will tag errors per tenant/host/role for faster debugging.
+
 > Frontend assets (`public/build`) are built automatically by the GitHub Actions deploy workflow at [`.github/workflows/deploy_hostinger.yml`](../.github/workflows/deploy_hostinger.yml). Manual `npm run build` on Hostinger isn't normally required; if dashboards render unstyled, first check the workflow logs for the Vite build step.
 
 ## 0) Switch to the project directory

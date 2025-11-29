@@ -168,6 +168,8 @@ return [
             ? [Stancl\Tenancy\TenancyServiceProvider::class]
             : [],
         [
+            Sentry\Laravel\ServiceProvider::class,
+
             /*
              * Application Service Providers...
              */
@@ -177,6 +179,7 @@ return [
             App\Providers\EventServiceProvider::class,
             App\Providers\RouteServiceProvider::class,
             App\Providers\SanctumServiceProvider::class,
+            App\Providers\SentryTenantContextServiceProvider::class,
         ]
     ),
 

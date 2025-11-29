@@ -43,4 +43,4 @@ ln -s /home/${HOSTINGER_USER}/domains/savarix.com/laravel_app/public public_html
    * https://aktonz.savarix.com/__tenancy-debug
    * https://londoncapitalinvestments.savarix.com/__tenancy-debug
 
-If the symlink is correct and hPanel points to `public_html`, both URLs should respond with the Laravel tenancy debug payload.
+If the symlink is correct and hPanel points to `public_html`, both URLs should respond with the Laravel tenancy debug payload. See [production-observability.md](./production-observability.md) for how deploy-time health checks now fail on broken tenancy and how Sentry captures per-tenant errors automatically.

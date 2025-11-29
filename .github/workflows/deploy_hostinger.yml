@@ -116,3 +116,20 @@ jobs:
           script: |
             cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
             /opt/alt/php83/usr/bin/php artisan savarix:diagnose-tenancy-domains --sync
+
+      - name: Run tenancy CLI health checks
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.HOSTINGER_HOST }}
+          port: ${{ env.HOSTINGER_PORT }}
+          username: ${{ env.HOSTINGER_USER }}
+          password: ${{ env.HOSTINGER_PASSWORD }}
+          script: |
+            cd /home/${{ env.HOSTINGER_USER }}/domains/savarix.com/laravel_app
+            /opt/alt/php83/usr/bin/php artisan savarix:tenancy-health --host=aktonz.savarix.com
+            /opt/alt/php83/usr/bin/php artisan savarix:tenancy-health --host=londoncapitalinvestments.savarix.com
+
+      - name: Verify tenancy HTTP endpoints
+        run: |
+          curl -f https://savarix.com/__health/tenancy?host=aktonz.savarix.com
+          curl -f https://savarix.com/__health/tenancy?host=londoncapitalinvestments.savarix.com
