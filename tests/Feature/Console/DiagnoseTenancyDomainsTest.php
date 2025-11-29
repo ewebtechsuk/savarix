@@ -4,6 +4,7 @@ namespace Tests\Feature\Console;
 
 use App\Models\Agency;
 use App\Models\Tenant;
+use App\Services\TenantProvisioner;
 use Illuminate\Support\Facades\Artisan;
 use Stancl\Tenancy\Database\Models\Domain;
 use Tests\TestCase;
@@ -38,5 +39,38 @@ class DiagnoseTenancyDomainsTest extends TestCase
 
         $agency->refresh();
         $this->assertNotNull($agency->domain);
+    }
+
+    public function test_it_seeds_roles_for_each_tenant(): void
+    {
+        $provisioner = app(TenantProvisioner::class);
+
+        $result = $provisioner->provision([
+            'subdomain' => 'seed-tenant',
+            'name' => 'Seed Tenant',
+        ]);
+
+        $tenant = $result->tenant();
+        $this->assertNotNull($tenant);
+
+        tenancy()->initialize($tenant);
+
+        try {
+            // Remove permissions to verify reseeding works
+            \Spatie\Permission\Models\Permission::query()->delete();
+        } finally {
+            tenancy()->end();
+        }
+
+        Artisan::call('savarix:diagnose-tenancy-domains', ['--seed-roles' => true]);
+
+        tenancy()->initialize($tenant);
+
+        try {
+            $this->assertDatabaseHas('permissions', ['name' => 'properties.view']);
+            $this->assertDatabaseHas('roles', ['name' => 'Admin']);
+        } finally {
+            tenancy()->end();
+        }
     }
 }

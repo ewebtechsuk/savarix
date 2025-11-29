@@ -62,7 +62,7 @@ class TenantPortalUserSeeder extends Seeder
             ->all();
 
         if ($assignable !== []) {
-            $user->assignRole($assignable);
+            $user->syncRoles($assignable);
         }
     }
 }

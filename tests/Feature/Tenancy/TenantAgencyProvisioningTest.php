@@ -40,13 +40,15 @@ class TenantAgencyProvisioningTest extends TestCase
         try {
             $this->assertDatabaseHas('roles', ['name' => 'Admin']);
             $this->assertDatabaseHas('roles', ['name' => 'Tenant']);
-            $this->assertDatabaseHas('permissions', ['name' => 'view tenants']);
+            $this->assertDatabaseHas('permissions', ['name' => 'properties.view']);
 
             $owner = app(config('auth.providers.users.model'))::where('email', $ownerEmail)->first();
 
             $this->assertNotNull($owner, 'Owner user was not created');
             $this->assertTrue($owner->hasRole('Admin'));
             $this->assertTrue($owner->hasRole('Tenant'));
+            $this->assertTrue($owner->hasRole('Landlord'));
+            $this->assertTrue($owner->hasPermissionTo('properties.view'));
         } finally {
             tenancy()->end();
         }
