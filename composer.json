@@ -9,13 +9,15 @@
   "type": "project",
   "require": {
     "php": "^8.3",
-    "laravel/framework": "^11.0",
+    "laravel/framework": "11.46.0 as 10.0.0",
     "laravel/ui": "^4.6",
     "stancl/tenancy": "^3.9",
     "stripe/stripe-php": "^17.4",
     "laravel/tinker": "^2.10",
     "spatie/laravel-permission": "^6.0",
-    "laravel/sanctum": "^4.0"
+    "laravel/sanctum": "^4.0",
+    "symfony/psr-http-message-bridge": "7.0.0 as 2.1.999",
+    "sentry/sentry-laravel": "^3.9"
   },
   "require-dev": {
     "fakerphp/faker": "^1.21",
@@ -41,6 +43,9 @@
       "tests/TestCase.php"
     ]
   },
+  "provide": {
+    "illuminate/support": "10.0.0"
+  },
   "scripts": {
     "post-root-package-install": [
       "php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -61,7 +66,10 @@
   "config": {
     "preferred-install": "dist",
     "allow-plugins": {
-      "kylekatarnls/update-helper": true
+      "kylekatarnls/update-helper": true,
+      "php-http/discovery": true
     }
-  }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
