@@ -6,34 +6,34 @@
         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Active Listings</h3>
-                <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">+8.2%</span>
+                <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Live</span>
             </div>
-            <div class="mt-3 text-3xl font-semibold text-gray-900">128</div>
-            <p class="mt-1 text-sm text-gray-500">12 new this week</p>
+            <div class="mt-3 text-3xl font-semibold text-gray-900">{{ number_format($metrics['active_listings'] ?? 0) }}</div>
+            <p class="mt-1 text-sm text-gray-500">Published and available properties</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Upcoming Viewings</h3>
                 <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Today</span>
             </div>
-            <div class="mt-3 text-3xl font-semibold text-gray-900">24</div>
-            <p class="mt-1 text-sm text-gray-500">6 within the next 2 hours</p>
+            <div class="mt-3 text-3xl font-semibold text-gray-900">{{ number_format($metrics['upcoming_viewings'] ?? 0) }}</div>
+            <p class="mt-1 text-sm text-gray-500">Synced with today’s diary</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm font-medium text-gray-500">Offers Pending</h3>
-                <span class="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">5 awaiting docs</span>
+                <span class="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Awaiting action</span>
             </div>
-            <div class="mt-3 text-3xl font-semibold text-gray-900">18</div>
-            <p class="mt-1 text-sm text-gray-500">Average £552k</p>
+            <div class="mt-3 text-3xl font-semibold text-gray-900">{{ number_format($metrics['pending_offers'] ?? 0) }}</div>
+            <p class="mt-1 text-sm text-gray-500">Negotiations in progress</p>
         </div>
         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between">
-                <h3 class="text-sm font-medium text-gray-500">Revenue (MTD)</h3>
-                <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">On track</span>
+                <h3 class="text-sm font-medium text-gray-500">Active Tenancies</h3>
+                <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Lettings</span>
             </div>
-            <div class="mt-3 text-3xl font-semibold text-gray-900">£242,800</div>
-            <p class="mt-1 text-sm text-gray-500">£28,400 projected uplift</p>
+            <div class="mt-3 text-3xl font-semibold text-gray-900">{{ number_format($metrics['active_tenancies'] ?? 0) }}</div>
+            <p class="mt-1 text-sm text-gray-500">Live tenancies under management</p>
         </div>
     </div>
 
@@ -48,30 +48,20 @@
                     <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">View calendar</a>
                 </div>
                 <div class="divide-y">
-                    @foreach([
-                        ['time' => '09:30', 'property' => 'Oakwood Residences, Apt 12', 'client' => 'Emma Watson', 'agent' => 'Liam', 'status' => 'Confirmed'],
-                        ['time' => '11:00', 'property' => 'Riverside Quay, 3B', 'client' => 'James Carter', 'agent' => 'Ava', 'status' => 'New'],
-                        ['time' => '13:15', 'property' => 'Harbour View Townhouse', 'client' => 'Charlotte Lee', 'agent' => 'Ethan', 'status' => 'Follow-up'],
-                        ['time' => '16:45', 'property' => 'Maple Street Cottage', 'client' => 'Oliver Hughes', 'agent' => 'Sophia', 'status' => 'Confirmed'],
-                    ] as $viewing)
+                    @forelse($viewings as $viewing)
                         <div class="px-5 py-4 flex items-center justify-between">
                             <div class="flex items-start space-x-4">
-                                <div class="w-12 text-sm font-semibold text-indigo-600">{{ $viewing['time'] }}</div>
+                                <div class="w-16 text-sm font-semibold text-indigo-600">{{ optional($viewing->date)->format('H:i') }}</div>
                                 <div>
-                                    <div class="font-medium text-gray-900">{{ $viewing['property'] }}</div>
-                                    <p class="text-sm text-gray-500">{{ $viewing['client'] }} · Agent {{ $viewing['agent'] }}</p>
+                                    <div class="font-medium text-gray-900">{{ $viewing->property->title ?? 'Property #' . $viewing->property_id }}</div>
+                                    <p class="text-sm text-gray-500">{{ $viewing->contact->name ?? 'Applicant' }} · {{ optional($viewing->date)->format('j M') }}</p>
                                 </div>
                             </div>
-                            <span class="text-xs px-3 py-1 rounded-full {{
-                                match($viewing['status']) {
-                                    'Confirmed' => 'bg-green-50 text-green-700',
-                                    'New' => 'bg-indigo-50 text-indigo-700',
-                                    'Follow-up' => 'bg-amber-50 text-amber-700',
-                                    default => 'bg-gray-100 text-gray-600',
-                                }
-                            }}">{{ $viewing['status'] }}</span>
+                            <span class="text-xs px-3 py-1 rounded-full bg-green-50 text-green-700">Scheduled</span>
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="px-5 py-4 text-sm text-gray-500">No viewings scheduled for today.</div>
+                    @endforelse
                 </div>
             </div>
 
@@ -113,34 +103,15 @@
                     <p class="text-sm text-gray-500">Jump straight into the most common workflows.</p>
                 </div>
                 <div class="px-5 py-4 space-y-3">
-                    <a href="#" class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50">
-                        <div>
-                            <p class="font-medium text-gray-900">Add new listing</p>
-                            <p class="text-sm text-gray-500">Upload photos, set price and publish.</p>
-                        </div>
-                        <span class="text-indigo-600">→</span>
-                    </a>
-                    <a href="#" class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50">
-                        <div>
-                            <p class="font-medium text-gray-900">Schedule viewing</p>
-                            <p class="text-sm text-gray-500">Find the slot, notify the client.</p>
-                        </div>
-                        <span class="text-indigo-600">→</span>
-                    </a>
-                    <a href="#" class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50">
-                        <div>
-                            <p class="font-medium text-gray-900">Record offer</p>
-                            <p class="text-sm text-gray-500">Capture amount and conditions.</p>
-                        </div>
-                        <span class="text-indigo-600">→</span>
-                    </a>
-                    <a href="#" class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50">
-                        <div>
-                            <p class="font-medium text-gray-900">Send update email</p>
-                            <p class="text-sm text-gray-500">Automate status updates for vendors.</p>
-                        </div>
-                        <span class="text-indigo-600">→</span>
-                    </a>
+                    @foreach($quickActions as $action)
+                        <a href="{{ $action['href'] }}" class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ $action['label'] }}</p>
+                                <p class="text-sm text-gray-500">{{ $action['description'] }}</p>
+                            </div>
+                            <span class="text-indigo-600">→</span>
+                        </a>
+                    @endforeach
                 </div>
             </div>
 

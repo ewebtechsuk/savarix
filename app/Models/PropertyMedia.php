@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class PropertyMedia extends Model
 {
-    protected $fillable = ['property_id', 'file_path', 'type', 'order'];
+    protected $fillable = ['property_id', 'file_path', 'type', 'order', 'is_featured'];
+
+    protected $casts = [
+        'is_featured' => 'boolean',
+    ];
 
     public function property()
     {

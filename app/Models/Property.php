@@ -100,4 +100,14 @@ class Property extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
+
+    public function offers(): HasMany
+    {
+        return $this->hasMany(Offer::class);
+    }
+
+    public function tenancies(): HasMany
+    {
+        return $this->hasMany(Tenancy::class);
+    }
 }

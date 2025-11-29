@@ -10,9 +10,17 @@ use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Facades\Tenancy;
 use Illuminate\Support\Facades\Http;
 use App\Models\MarketingEvent;
+use App\Models\ContactViewing;
+use App\Models\Offer;
+use App\Models\Tenancy;
+use App\Services\ApplicantMatcher;
 
 class PropertyController extends Controller
 {
+    public function __construct(private ApplicantMatcher $applicantMatcher)
+    {
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -90,6 +98,9 @@ class PropertyController extends Controller
             'publish_to_portal' => 'boolean',
             'send_marketing_campaign' => 'boolean',
             'marketing_notes' => 'nullable|string',
+            'featured_media' => 'nullable|integer|exists:property_media,id',
+            'media_order' => 'nullable|array',
+            'media_order.*' => 'integer',
         ]);
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('properties', 'public');
@@ -131,16 +142,22 @@ class PropertyController extends Controller
 
         $property = Property::create($validated);
 
+        $featuredMediaCreated = false;
         if ($request->hasFile('media')) {
             $order = $property->media()->max('order') ?? 0;
             foreach ($request->file('media') as $file) {
                 $order++;
                 $path = Storage::disk('public')->putFile('property_media', $file);
-                $property->media()->create([
+                $media = $property->media()->create([
                     'file_path' => $path,
                     'type' => $file->getClientMimeType(),
                     'order' => $order,
                 ]);
+
+                if (! $featuredMediaCreated) {
+                    $media->update(['is_featured' => true]);
+                    $featuredMediaCreated = true;
+                }
             }
         }
 
@@ -196,7 +213,16 @@ class PropertyController extends Controller
         }
         $marketingStats['readiness'] = $checklistTotal > 0 ? (int) round(($completed / $checklistTotal) * 100) : 0;
 
-        return view('properties.show', compact('property', 'features', 'marketingEvents', 'marketingStats'));
+        $viewings = ContactViewing::with('contact')
+            ->where('property_id', $property->id)
+            ->orderBy('date')
+            ->get();
+
+        $offers = $property->offers()->with('contact')->orderByDesc('offered_at')->get();
+        $tenancies = $property->tenancies()->with('contact')->orderByDesc('start_date')->get();
+        $matches = $this->applicantMatcher->match($property);
+
+        return view('properties.show', compact('property', 'features', 'marketingEvents', 'marketingStats', 'viewings', 'offers', 'tenancies', 'matches'));
     }
 
     /**
@@ -213,7 +239,9 @@ class PropertyController extends Controller
             'Receptionist', 'Meeting Room and Conference Facilities'
         ];
         $selectedFeatures = $property->features()->pluck('name')->toArray();
-        return view('properties.edit', compact('property', 'featuresList', 'selectedFeatures'));
+        $matches = $this->applicantMatcher->match($property);
+
+        return view('properties.edit', compact('property', 'featuresList', 'selectedFeatures', 'matches'));
     }
 
     /**
@@ -277,11 +305,33 @@ class PropertyController extends Controller
             foreach ($request->file('media') as $file) {
                 $order++;
                 $path = Storage::disk('public')->putFile('property_media', $file);
-                $property->media()->create([
+                $media = $property->media()->create([
                     'file_path' => $path,
                     'type' => $file->getClientMimeType(),
                     'order' => $order,
                 ]);
+
+                if (! $property->media()->where('is_featured', true)->exists()) {
+                    $media->update(['is_featured' => true]);
+                }
+            }
+        }
+
+        foreach ($request->input('media_order', []) as $mediaId => $order) {
+            $media = $property->media()->whereKey($mediaId)->first();
+            if ($media) {
+                $media->update(['order' => (int) $order]);
+            }
+        }
+
+        $featuredMediaId = $request->input('featured_media');
+        if ($featuredMediaId && $property->media()->whereKey($featuredMediaId)->exists()) {
+            $property->media()->update(['is_featured' => false]);
+            $property->media()->whereKey($featuredMediaId)->update(['is_featured' => true]);
+        } elseif (! $property->media()->where('is_featured', true)->exists()) {
+            $firstMedia = $property->media()->orderBy('order')->first();
+            if ($firstMedia) {
+                $firstMedia->update(['is_featured' => true]);
             }
         }
 
