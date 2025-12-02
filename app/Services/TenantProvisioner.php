@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CompanyIdGenerator;
+use App\Support\AgencyRoles;
 use Database\Seeders\RolePermissionConfig;
 use Database\Seeders\TenantPortalUserSeeder;
 use Illuminate\Support\Arr;
@@ -216,7 +217,7 @@ class TenantProvisioner
             );
 
             $guard = config('permission.defaults.guard', 'web');
-            $assignableRoles = collect(['Admin', 'Tenant'])
+            $assignableRoles = collect(AgencyRoles::ownerAssignableRoles())
                 ->filter(fn (string $role): bool => Role::query()->where('name', $role)->where('guard_name', $guard)->exists())
                 ->values()
                 ->all();
@@ -442,7 +443,7 @@ class TenantProvisioner
     {
         $guard = RolePermissionConfig::guard();
 
-        return collect(['Admin', 'Tenant'])
+        return collect(AgencyRoles::ownerAssignableRoles())
             ->filter(fn (string $role): bool => Role::query()->where('name', $role)->where('guard_name', $guard)->exists())
             ->values()
             ->all();
