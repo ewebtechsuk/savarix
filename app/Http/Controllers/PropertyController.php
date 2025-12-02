@@ -25,6 +25,8 @@ class PropertyController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Property::class);
+
         $tenant = tenant();
         if (!$tenant) {
             abort(404, 'Tenant not found.');
@@ -63,6 +65,8 @@ class PropertyController extends Controller
      */
     public function create(Request $request)
     {
+        $this->authorize('create', Property::class);
+
         $landlord_id = $request->get('landlord_id');
         // Static features list (replace with DB if you add a master table)
         $featuresList = [
@@ -81,6 +85,8 @@ class PropertyController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Property::class);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -177,6 +183,8 @@ class PropertyController extends Controller
      */
     public function show(Property $property)
     {
+        $this->authorize('view', $property);
+
         $tenant = tenant(); // Stancl Tenancy v3+ helper
         if (!$tenant || $property->tenant_id !== $tenant->id) {
             abort(404, 'Property not found for this tenant.');
@@ -229,6 +237,8 @@ class PropertyController extends Controller
      */
     public function edit(Property $property)
     {
+        $this->authorize('update', $property);
+
         $featuresList = [
             'Fully Furnished', 'River view', 'Shops and amenities nearby', 'Air Conditioning',
             'Gym', 'Guest cloakroom', 'Mezzanine', 'Fitted Kitchen', 'Communal Garden',
@@ -248,6 +258,8 @@ class PropertyController extends Controller
      */
     public function update(Request $request, Property $property)
     {
+        $this->authorize('update', $property);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -352,6 +364,8 @@ class PropertyController extends Controller
      */
     public function destroy(Property $property)
     {
+        $this->authorize('delete', $property);
+
         $property->delete();
 
         return redirect()->route('properties.index')->with('success', 'Property deleted successfully.');
