@@ -1,81 +1,77 @@
 #!/bin/bash
-# Laravel deployment script for Hostinger (main branch)
+# Savarix – Hostinger Deploy Script (PHP 8.3)
 
-# Exit on error
-set -euo pipefail
+set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+###############################################
+# CONFIG: Correct Hostinger PHP 8.3 binary
+###############################################
+PHP="/opt/alt/php83/usr/bin/php"
+COMPOSER="/opt/alt/php83/usr/bin/php /usr/bin/composer"
 
-composer_log() { echo "[deploy] $*"; }
-composer_warn() { echo "[deploy][warn] $*" >&2; }
-
-source "${SCRIPT_DIR}/scripts/lib/composer.sh"
-
-
-# 1. SSH into your Hostinger account and navigate to your web root before running this script
-# Example: ssh username@your-hostinger-server.com
-# cd ~/public_html
-
-# Remove any existing public directory if present (to avoid nested Laravel structure)
-if [ -d "public" ] && [ ! -f "artisan" ]; then
-    rm -rf public
+# If Hostinger changed paths, fallback
+if [ ! -f "/opt/alt/php83/usr/bin/php" ]; then
+    PHP="/usr/bin/php83"
+    COMPOSER="$PHP /usr/bin/composer"
 fi
 
-# 2. Always pull latest changes from main branch
-if [ -f "artisan" ]; then
-    # Abort any previous merge if there are unmerged files
-    if git diff --name-only --diff-filter=U | grep -q '^'; then
-        echo "Unmerged files detected. Aborting merge and resetting to remote main branch."
-        git merge --abort || true
-        git reset --hard origin/main
-    fi
-    git pull origin main --allow-unrelated-histories --no-rebase
-else
-    # Clean up directory before cloning if not empty
-    if [ "$(ls -A .)" ]; then
-        echo "Directory is not empty and no artisan file found. Cleaning up before clone."
-        rm -rf ./*
-    fi
-    git clone -b main https://github.com/ewebtechsuk/savirix.git .
+echo "[deploy_hostinger] Using PHP: $PHP"
+$PHP -v
+
+###############################################
+# PATHS
+###############################################
+HOSTINGER_USER="${HOSTINGER_USER}"
+APP_DIR="/home/${HOSTINGER_USER}/domains/savarix.com/laravel_app"
+PUBLIC_HTML="/home/${HOSTINGER_USER}/domains/savarix.com/public_html"
+
+echo "[deploy_hostinger] App directory: $APP_DIR"
+echo "[deploy_hostinger] Public HTML: $PUBLIC_HTML"
+
+cd "$APP_DIR"
+
+###############################################
+# FIX: Ensure composer.json exists
+###############################################
+if [ ! -f "composer.json" ]; then
+  echo "::error title=Missing composer.json::composer.json not found in $APP_DIR."
+  exit 1
 fi
 
-# 3. (Skip pull if just cloned)
+###############################################
+# INSTALL COMPOSER DEPENDENCIES (NO-DEV)
+###############################################
+echo "[deploy_hostinger] Installing Composer dependencies"
+$COMPOSER install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# 4. Install Composer dependencies
-COMPOSER_BIN=()
-if ! ensure_composer; then
-    exit 1
-fi
+###############################################
+# CLEAR CACHES SAFELY
+###############################################
+echo "[deploy_hostinger] Clearing old caches"
+$PHP artisan config:clear || true
+$PHP artisan cache:clear || true
+$PHP artisan route:clear || true
+$PHP artisan view:clear || true
 
-if [ "${COMPOSER_BIN[0]}" = "composer" ]; then
-    composer_version=$("${COMPOSER_BIN[@]}" --version | awk '{print $3}' | cut -d. -f1)
-    if [ "$composer_version" -lt 2 ]; then
-        composer_warn "Composer 2 is required for Laravel 11. Please upgrade Composer using 'composer self-update --2' or Hostinger's control panel."
-        exit 1
-    fi
-fi
+###############################################
+# RUN MIGRATIONS
+###############################################
+echo "[deploy_hostinger] Running migrations"
+$PHP artisan migrate --force || true
 
-"${COMPOSER_BIN[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+###############################################
+# REBUILD OPTIMIZED CACHES
+###############################################
+echo "[deploy_hostinger] Rebuilding caches"
+$PHP artisan config:cache
+$PHP artisan route:cache
+$PHP artisan view:cache
 
+###############################################
+# SYMLINK PUBLIC/LARAVEL_APP/PUBLIC → public_html
+###############################################
+echo "[deploy_hostinger] Ensuring public_html points to Laravel public"
+rm -rf "$PUBLIC_HTML"
+ln -s "$APP_DIR/public" "$PUBLIC_HTML"
 
-# 5. Copy .env if it does not exist
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "Copied .env.example to .env. Please edit your .env file with correct settings."
-fi
-
-# 6. Generate application key (if not already set)
-if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=$' .env; then
-    php artisan key:generate
-fi
-
-# 7. Clear any cached configuration, routes, or views
-php artisan optimize:clear
-
-# 8. Run migrations (optional, remove if not needed)
-php artisan migrate --force
-
-# 9. Set permissions
-chmod -R 775 storage bootstrap/cache
-
-echo "Deployment complete!"
+echo "[deploy_hostinger] Deployment complete!"
