@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CompanyIdGenerator;
+use Database\Seeders\RolePermissionConfig;
 use Database\Seeders\TenantPortalUserSeeder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Throwable;
 use Stancl\Tenancy\Database\DatabaseManager;
@@ -393,24 +395,57 @@ class TenantProvisioner
                 throw new RuntimeException('User model is not configured.');
             }
 
+            $this->ensureTenantRolesAndPermissions();
+
             $user = $userModel::create([
                 'name' => $userPayload['name'],
                 'email' => $userPayload['email'],
                 'password' => Hash::make($userPayload['password']),
             ]);
 
-            $guard = config('permission.defaults.guard', 'web');
-            $assignableRoles = collect(['Admin', 'Tenant'])
-                ->filter(function (string $role) use ($guard) {
-                    return Role::query()->where('name', $role)->where('guard_name', $guard)->exists();
-                })
-                ->values()
-                ->all();
+            $assignableRoles = $this->assignableRoles();
 
             if ($assignableRoles !== []) {
-                $user->assignRole($assignableRoles);
+                $user->syncRoles($assignableRoles);
             }
         });
+    }
+
+    /**
+     * Ensure core tenant roles and permissions exist before assignment.
+     */
+    protected function ensureTenantRolesAndPermissions(): void
+    {
+        $guard = RolePermissionConfig::guard();
+
+        foreach (RolePermissionConfig::permissions() as $permission) {
+            Permission::query()->firstOrCreate([
+                'name' => $permission,
+                'guard_name' => $guard,
+            ]);
+        }
+
+        foreach (RolePermissionConfig::roles() as $roleName) {
+            $role = Role::query()->firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => $guard,
+            ]);
+
+            $role->syncPermissions(RolePermissionConfig::rolePermissions()[$roleName] ?? []);
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function assignableRoles(): array
+    {
+        $guard = RolePermissionConfig::guard();
+
+        return collect(['Admin', 'Tenant'])
+            ->filter(fn (string $role): bool => Role::query()->where('name', $role)->where('guard_name', $guard)->exists())
+            ->values()
+            ->all();
     }
 
     protected function rollbackTenant(Tenant $tenant): void

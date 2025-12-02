@@ -159,7 +159,9 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
 });
 
 // Tenant routes (aktonz.savirix.com, etc.)
-Route::group(['middleware' => ['auth', 'tenancy', 'preventAccessFromCentralDomains', 'setTenantRouteDefaults', 'role:Tenant']], function () {
+Route::group([
+    'middleware' => ['auth:web,tenant', 'tenancy', 'preventAccessFromCentralDomains', 'setTenantRouteDefaults', 'role:Tenant'],
+], function () {
     Route::resource('properties', PropertyController::class);
     Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
     Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
