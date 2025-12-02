@@ -1,0 +1,67 @@
+###############################
+# Savarix – Codex Ignore File
+# Prevent Codex from wasting tokens
+# on build output, vendor, logs, and assets.
+###############################
+
+# --- Laravel vendor & system folders (never needed) ---
+vendor/**
+bootstrap/cache/**
+storage/framework/**
+storage/logs/**
+storage/app/public/**
+storage/debugbar/**
+
+# --- Node & front-end build artefacts ---
+node_modules/**
+public/build/**
+public/hot
+public/mix-manifest.json
+public/assets/**
+
+# --- Vite outputs (CSS/JS bundles) ---
+public/build/**/*.js
+public/build/**/*.css
+public/build/**/*.map
+
+# --- Minified or giant JS/CSS blobs ---
+*.min.js
+*.min.css
+
+# --- File uploads / runtime assets ---
+public/storage/**
+public/uploads/**
+public/temp/**
+storage/app/uploads/**
+storage/app/tmp/**
+storage/app/images/**
+
+# --- Images/fonts/media (Codex useless here) ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# --- Logs / debug / dumps ---
+*.log
+*.sql
+*.dump
+*.tar.gz
+*.zip
+
+# --- CI artefacts ---
+coverage/**
+reports/**
+phpunit.xml.cache
+
+# --- Ignore Scribe / auto-generated API docs if present ---
+public/docs/**
+resources/docs/**
+docs/generated/**
