@@ -13,13 +13,17 @@ class ContactFactory extends Factory
     {
         $firstName = $this->faker->firstName();
         $lastName = $this->faker->lastName();
+        $type = array_rand(Contact::TYPES);
+
         return [
             'first_name' => $firstName,
             'last_name' => $lastName,
             'name' => $firstName . ' ' . $lastName,
+            'company' => $this->faker->company(),
             'email' => $this->faker->unique()->safeEmail(),
             'phone' => $this->faker->phoneNumber(),
-            'type' => $this->faker->randomElement(['landlord', 'applicant', 'tenant', 'other']),
+            'company_id' => $this->faker->numerify('######'),
+            'type' => $type,
             'created_at' => now(),
             'updated_at' => now(),
         ];

@@ -17,7 +17,7 @@ class TenantFactory extends Factory
             'id' => $slug,
             'slug' => $slug,
             'name' => ucfirst(str_replace('_', ' ', $slug)),
-            'domains' => [],
+            'data' => [],
         ];
     }
 
