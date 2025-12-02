@@ -1,37 +1,50 @@
 #!/bin/bash
 # Savarix – Hostinger Deploy Script (PHP 8.3)
 
-set -e
+set -euo pipefail
 
 ###############################################
-# CONFIG: Correct Hostinger PHP 8.3 binary
+# RESOLVE CORRECT PHP 8.3 BINARY
 ###############################################
 PHP="/opt/alt/php83/usr/bin/php"
-COMPOSER="/opt/alt/php83/usr/bin/php /usr/bin/composer"
 
-# If Hostinger changed paths, fallback
-if [ ! -f "/opt/alt/php83/usr/bin/php" ]; then
-    PHP="/usr/bin/php83"
-    COMPOSER="$PHP /usr/bin/composer"
+if [ ! -x "$PHP" ]; then
+  # Fallbacks if Hostinger moves things around
+  if command -v php83 >/dev/null 2>&1; then
+    PHP="$(command -v php83)"
+  elif command -v php >/dev/null 2>&1; then
+    PHP="$(command -v php)"
+  else
+    echo "::error title=PHP binary not found::Could not find PHP 8.3 binary on Hostinger."
+    exit 1
+  fi
 fi
 
+COMPOSER_BIN="/usr/bin/composer"
+
 echo "[deploy_hostinger] Using PHP: $PHP"
-$PHP -v
+$PHP -v || true
 
 ###############################################
 # PATHS
 ###############################################
-HOSTINGER_USER="${HOSTINGER_USER}"
+HOSTINGER_USER="${HOSTINGER_USER:?HOSTINGER_USER is not set}"
+
 APP_DIR="/home/${HOSTINGER_USER}/domains/savarix.com/laravel_app"
 PUBLIC_HTML="/home/${HOSTINGER_USER}/domains/savarix.com/public_html"
 
 echo "[deploy_hostinger] App directory: $APP_DIR"
-echo "[deploy_hostinger] Public HTML: $PUBLIC_HTML"
+echo "[deploy_hostinger] Public HTML:   $PUBLIC_HTML"
+
+if [ ! -d "$APP_DIR" ]; then
+  echo "::error title=Missing app dir::$APP_DIR does not exist."
+  exit 1
+fi
 
 cd "$APP_DIR"
 
 ###############################################
-# FIX: Ensure composer.json exists
+# ENSURE COMPOSER.JSON EXISTS
 ###############################################
 if [ ! -f "composer.json" ]; then
   echo "::error title=Missing composer.json::composer.json not found in $APP_DIR."
@@ -41,8 +54,12 @@ fi
 ###############################################
 # INSTALL COMPOSER DEPENDENCIES (NO-DEV)
 ###############################################
-echo "[deploy_hostinger] Installing Composer dependencies"
-$COMPOSER install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+echo "[deploy_hostinger] Installing Composer dependencies (no-dev)"
+$PHP "$COMPOSER_BIN" install \
+  --no-dev \
+  --optimize-autoloader \
+  --no-interaction \
+  --prefer-dist
 
 ###############################################
 # CLEAR CACHES SAFELY
@@ -68,9 +85,11 @@ $PHP artisan route:cache
 $PHP artisan view:cache
 
 ###############################################
-# SYMLINK PUBLIC/LARAVEL_APP/PUBLIC → public_html
+# SYMLINK LARAVEL public → public_html
 ###############################################
 echo "[deploy_hostinger] Ensuring public_html points to Laravel public"
+
+# remove existing folder/symlink then recreate
 rm -rf "$PUBLIC_HTML"
 ln -s "$APP_DIR/public" "$PUBLIC_HTML"
 
