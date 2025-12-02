@@ -110,4 +110,9 @@ class Property extends Model
     {
         return $this->hasMany(SavarixTenancy::class, 'property_id');
     }
+
+    public function viewings(): HasMany
+    {
+        return $this->hasMany(ContactViewing::class)->orderBy('date');
+    }
 }

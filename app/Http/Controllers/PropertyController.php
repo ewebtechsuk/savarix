@@ -5,13 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Property;
 use App\Models\PropertyFeature;
-use App\Models\PropertyMedia;
 use Illuminate\Support\Facades\Storage;
-use Stancl\Tenancy\Facades\Tenancy;
 use Illuminate\Support\Facades\Http;
 use App\Models\MarketingEvent;
-use App\Models\ContactViewing;
-use App\Models\Offer;
 use App\Services\ApplicantMatcher;
 
 class PropertyController extends Controller
@@ -181,25 +177,17 @@ class PropertyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show(Property $property)
     {
-        $candidateRelations = [
-            'landlord',
-            'features',
+        $property->load([
             'media',
-            'tenancy',
-            'viewings',
-            'inspections',
+            'features',
+            'landlord',
             'documents',
-            'timeline',
-        ];
-
-        $relations = collect($candidateRelations)
-            ->filter(fn (string $relation) => method_exists(Property::class, $relation))
-            ->values()
-            ->all();
-
-        $property = Property::with($relations)->findOrFail($id);
+            'offers' => fn ($query) => $query->with('contact')->orderByDesc('offered_at'),
+            'tenancies' => fn ($query) => $query->with('contact')->orderByDesc('start_date'),
+            'viewings' => fn ($query) => $query->with('contact')->orderBy('date'),
+        ]);
 
         $this->authorize('view', $property);
 
@@ -208,9 +196,7 @@ class PropertyController extends Controller
             abort(404, 'Property not found for this tenant.');
         }
 
-        $features = method_exists($property, 'features')
-            ? $property->features()->pluck('name')->toArray()
-            : [];
+        $features = $property->features->pluck('name')->toArray();
 
         $marketingEvents = MarketingEvent::query()
             ->where('metadata->property_id', $property->id)
@@ -218,12 +204,9 @@ class PropertyController extends Controller
             ->limit(5)
             ->get();
 
-        $media = method_exists($property, 'media') ? $property->media : collect();
-        $documents = method_exists($property, 'documents') ? $property->documents : collect();
-
         $marketingStats = [
-            'media_count' => $media->count(),
-            'document_count' => $documents->count(),
+            'media_count' => $property->media->count(),
+            'document_count' => $property->documents->count(),
             'feature_count' => count($features),
             'portal_status' => $property->publish_to_portal ? 'Live' : 'Offline',
             'campaign_status' => $property->send_marketing_campaign ? 'Enabled' : 'Disabled',
@@ -243,19 +226,6 @@ class PropertyController extends Controller
         }
         $marketingStats['readiness'] = $checklistTotal > 0 ? (int) round(($completed / $checklistTotal) * 100) : 0;
 
-        $viewings = ContactViewing::with('contact')
-            ->where('property_id', $property->id)
-            ->orderBy('date')
-            ->get();
-
-        $offers = method_exists($property, 'offers')
-            ? $property->offers()->with('contact')->orderByDesc('offered_at')->get()
-            : collect();
-
-        $tenancies = method_exists($property, 'tenancies')
-            ? $property->tenancies()->with('contact')->orderByDesc('start_date')->get()
-            : collect();
-
         $matches = $this->applicantMatcher->match($property);
 
         return view('properties.show', [
@@ -263,11 +233,10 @@ class PropertyController extends Controller
             'features' => $features,
             'marketingEvents' => $marketingEvents,
             'marketingStats' => $marketingStats,
-            'viewings' => $viewings,
-            'offers' => $offers,
-            'tenancies' => $tenancies,
+            'viewings' => $property->viewings,
+            'offers' => $property->offers,
+            'tenancies' => $property->tenancies,
             'matches' => $matches,
-            'relations' => $relations,
         ]);
     }
 
