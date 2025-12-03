@@ -105,7 +105,7 @@
                                             data.forEach(function(landlord) {
                                                 const li = document.createElement('li');
                                                 li.className = 'list-group-item list-group-item-action';
-                                                li.textContent = landlord.name;
+                                                li.textContent = landlord.text || landlord.name;
                                                 li.style.cursor = 'pointer';
                                                 li.onclick = function() {
                                                     landlordSelect.value = landlord.id;

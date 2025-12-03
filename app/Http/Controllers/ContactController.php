@@ -148,6 +148,15 @@ class ContactController extends Controller
             'offers.property',
             'tenancies.property',
         ]);
+
+        foreach (['groups', 'tags', 'notes', 'communications', 'viewings', 'offers', 'tenancies', 'properties'] as $relation) {
+            $relationValue = $contact->getRelation($relation);
+
+            if (! $relationValue instanceof \Illuminate\Support\Collection) {
+                $contact->setRelation($relation, collect($relationValue ?? []));
+            }
+        }
+
         return view('contacts.show', compact('contact'));
     }
 
@@ -206,14 +215,27 @@ class ContactController extends Controller
      */
     public function search(Request $request)
     {
-        $type = $request->get('type', 'landlord');
         $q = $request->get('q', '');
         $results = Contact::query()
-            ->where('type', $type)
-            ->where('name', 'like', "%$q%")
+            ->where('type', 'landlord')
+            ->when($q, function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%");
+            })
             ->orderBy('name')
             ->limit(10)
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'phone'])
+            ->map(function (Contact $contact) {
+                $labelParts = array_filter([
+                    $contact->name,
+                    $contact->phone,
+                ]);
+
+                return [
+                    'id' => $contact->id,
+                    'text' => implode(' — ', $labelParts),
+                ];
+            });
+
         return response()->json($results);
     }
 

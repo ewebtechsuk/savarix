@@ -375,9 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             processResults: function (data) {
                 return {
-                    results: data.map(function(item) {
-                        return { id: item.id, text: item.name };
-                    })
+                    results: data
                 };
             },
             cache: true

@@ -75,12 +75,8 @@
                             <p><strong>Phone:</strong> {{ $contact->phone }}</p>
                             <p><strong>Address:</strong> {{ $contact->address }}</p>
                             @php
-                                $groups = $contact->groups instanceof \Illuminate\Support\Collection
-                                    ? $contact->groups
-                                    : $contact->groups()->get();
-                                $tags = $contact->tags instanceof \Illuminate\Support\Collection
-                                    ? $contact->tags
-                                    : $contact->tags()->get();
+                                $groups = collect($contact->groups);
+                                $tags = collect($contact->tags);
                             @endphp
                             <p><strong>Groups:</strong>
                                 @if($groups->isNotEmpty())
