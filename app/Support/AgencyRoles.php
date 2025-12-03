@@ -8,7 +8,7 @@ class AgencyRoles
 {
     public static function propertyManagers(): array
     {
-        return config('roles.property_manager_roles', []);
+        return array_values(array_unique(config('roles.property_manager_roles', [])));
     }
 
     public static function propertyManagersPipe(): string

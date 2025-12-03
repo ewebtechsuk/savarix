@@ -11,5 +11,9 @@ return [
         'Agent',
         'PropertyManager',
         'Owner',
+        'agency_admin',
+        'agent',
+        'property_manager',
+        'lettings_negotiator',
     ],
 ];

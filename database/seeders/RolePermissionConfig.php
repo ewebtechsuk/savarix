@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Support\AgencyRoles;
+
 class RolePermissionConfig
 {
     /**
@@ -9,7 +11,10 @@ class RolePermissionConfig
      */
     public static function roles(): array
     {
-        return ['Admin', 'Landlord', 'Agent', 'Tenant', 'PropertyManager', 'Owner'];
+        return array_values(array_unique(array_merge(
+            AgencyRoles::propertyManagers(),
+            ['Landlord'],
+        )));
     }
 
     /**
