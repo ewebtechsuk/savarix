@@ -31,6 +31,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\SavarixCreateAdmin::class,
         \App\Console\Commands\CheckAgencyImpersonation::class,
         \App\Console\Commands\TenantGrantOwnerRole::class,
+        \App\Console\Commands\Savarix\SyncTenantRoles::class,
     ];
 
     protected function schedule(Schedule $schedule)

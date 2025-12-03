@@ -3,9 +3,12 @@
 namespace App\Exceptions;
 
 use Exception;
-use Throwable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Exceptions\UnauthorizedException;
+use Throwable;
 
 class Handler extends ExceptionHandler
 {
@@ -45,6 +48,10 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e)
     {
+        if ($e instanceof AuthorizationException || $e instanceof UnauthorizedException) {
+            $this->logAuthorizationFailure($request);
+        }
+
         return parent::render($request, $e);
     }
 
@@ -73,5 +80,27 @@ class Handler extends ExceptionHandler
         }
 
         return redirect()->guest(route('marketing.home'));
+    }
+
+    protected function logAuthorizationFailure($request): void
+    {
+        $routeName = $request->route()?->getName();
+
+        if (! is_string($routeName)) {
+            return;
+        }
+
+        if (! str_starts_with($routeName, 'properties.') && ! str_starts_with($routeName, 'contacts.')) {
+            return;
+        }
+
+        $user = $request->user();
+
+        Log::info('Authorization denied for tenant route.', [
+            'tenant_id' => tenant('id'),
+            'route_name' => $routeName,
+            'user_id' => $user?->getAuthIdentifier(),
+            'roles' => $user?->getRoleNames()->values()->all(),
+        ]);
     }
 }
