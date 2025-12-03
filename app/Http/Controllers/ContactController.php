@@ -22,11 +22,7 @@ class ContactController extends Controller
      */
     public function index(Request $request)
     {
-        $tenant = tenant();
-        $companyId = $tenant->company_id ?? null;
-
-        $baseQuery = Contact::query()
-            ->when($companyId, fn ($query) => $query->where('company_id', $companyId));
+        $baseQuery = Contact::query();
 
         $filters = $request->only(['search', 'type', 'group', 'tag']);
         $filteredQuery = clone $baseQuery;
@@ -64,27 +60,18 @@ class ContactController extends Controller
             ->withQueryString();
 
         $typeBreakdown = Contact::query()
-            ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
             ->select('type', DB::raw('COUNT(*) as total'))
             ->groupBy('type')
             ->orderBy('type')
             ->pluck('total', 'type');
 
         $groupBreakdown = ContactGroup::query()
-            ->withCount(['contacts' => function ($relation) use ($companyId) {
-                if ($companyId) {
-                    $relation->where('company_id', $companyId);
-                }
-            }])
+            ->withCount(['contacts'])
             ->orderBy('name')
             ->get();
 
         $tagBreakdown = ContactTag::query()
-            ->withCount(['contacts' => function ($relation) use ($companyId) {
-                if ($companyId) {
-                    $relation->where('company_id', $companyId);
-                }
-            }])
+            ->withCount(['contacts'])
             ->orderBy('name')
             ->get();
 
@@ -221,9 +208,7 @@ class ContactController extends Controller
     {
         $type = $request->get('type', 'landlord');
         $q = $request->get('q', '');
-        $tenant = tenant();
         $results = Contact::query()
-            ->when($tenant?->company_id, fn ($query) => $query->where('company_id', $tenant->company_id))
             ->where('type', $type)
             ->where('name', 'like', "%$q%")
             ->orderBy('name')
@@ -281,9 +266,6 @@ class ContactController extends Controller
             return back()->with('error', 'No action or contacts selected.');
         }
         $contactsQuery = Contact::query()->whereIn('id', $ids);
-        if ($tenant = tenant()) {
-            $contactsQuery->where('company_id', $tenant->company_id);
-        }
         $contacts = $contactsQuery->get();
         if ($action === 'delete') {
             foreach ($contacts as $contact) {

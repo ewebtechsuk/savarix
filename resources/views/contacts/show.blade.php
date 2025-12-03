@@ -74,8 +74,32 @@
                             <p><strong>Email:</strong> {{ $contact->email }}</p>
                             <p><strong>Phone:</strong> {{ $contact->phone }}</p>
                             <p><strong>Address:</strong> {{ $contact->address }}</p>
-                            <p><strong>Groups:</strong> @foreach($contact->groups as $group)<span class="badge bg-info me-1">{{ $group->name }}</span>@endforeach</p>
-                            <p><strong>Tags:</strong> @foreach($contact->tags as $tag)<span class="badge bg-secondary me-1">{{ $tag->name }}</span>@endforeach</p>
+                            @php
+                                $groups = $contact->groups instanceof \Illuminate\Support\Collection
+                                    ? $contact->groups
+                                    : $contact->groups()->get();
+                                $tags = $contact->tags instanceof \Illuminate\Support\Collection
+                                    ? $contact->tags
+                                    : $contact->tags()->get();
+                            @endphp
+                            <p><strong>Groups:</strong>
+                                @if($groups->isNotEmpty())
+                                    @foreach($groups as $group)
+                                        <span class="badge bg-info me-1">{{ $group->name }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">No groups assigned</span>
+                                @endif
+                            </p>
+                            <p><strong>Tags:</strong>
+                                @if($tags->isNotEmpty())
+                                    @foreach($tags as $tag)
+                                        <span class="badge bg-secondary me-1">{{ $tag->name }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">No tags assigned</span>
+                                @endif
+                            </p>
                         </div>
                         <div class="tab-pane fade" id="notes" role="tabpanel">
                             <h5>Notes</h5>
