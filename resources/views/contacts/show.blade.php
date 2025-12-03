@@ -323,69 +323,74 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
-$(document).ready(function() {
-    const csrfToken = '{{ csrf_token() }}';
-    const propertySearchUrl = '{{ route('contacts.properties.search') }}';
-
-    function select2Config(placeholder) {
-        return {
-            placeholder: placeholder,
-            width: '100%',
-            ajax: {
-                url: propertySearchUrl,
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return { q: params.term };
-                },
-                processResults: data => ({ results: data }),
-                cache: true
-            },
-            minimumInputLength: 1
-        };
-    }
-
-    $('#property-select').select2(select2Config('Search properties to assign'));
-    $('#viewing-property').select2(select2Config('Select viewing property'));
-
-    $(document).on('click', '.edit-note-btn', function() {
-        var $li = $(this).closest('li');
-        var noteText = $li.find('.note-text').text();
-        $li.find('.note-text').replaceWith('<input type="text" class="form-control note-edit-input" value="'+noteText+'" style="width:60%">');
-        $(this).hide();
-        $li.find('.save-note-btn').show();
-    });
-
-    $(document).on('click', '.save-note-btn', function() {
-        var $li = $(this).closest('li');
-        var updateUrl = $li.data('update-url');
-        var newText = $li.find('.note-edit-input').val();
-        $.ajax({
-            url: updateUrl,
-            type: 'PATCH',
-            data: { note: newText, _token: csrfToken },
-            success: function(resp) {
-                $li.find('.note-edit-input').replaceWith('<span class="note-text">'+resp.note+'</span>');
-                $li.find('.save-note-btn').hide();
-                $li.find('.edit-note-btn').show();
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ === 'undefined' || !$.fn || !$.fn.select2) {
+                console.error('Select2 initialisation skipped: jQuery or Select2 not available.');
+                return;
             }
-        });
-    });
 
-    $(document).on('click', '.delete-note-btn', function() {
-        var $li = $(this).closest('li');
-        var deleteUrl = $li.data('delete-url');
-        if(confirm('Delete this note?')) {
-            $.ajax({
-                url: deleteUrl,
-                type: 'DELETE',
-                data: { _token: csrfToken },
-                success: function() { $li.remove(); }
+            const csrfToken = '{{ csrf_token() }}';
+            const propertySearchUrl = '{{ route('contacts.properties.search') }}';
+
+            function select2Config(placeholder) {
+                return {
+                    placeholder: placeholder,
+                    width: '100%',
+                    ajax: {
+                        url: propertySearchUrl,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return { q: params.term };
+                        },
+                        processResults: data => ({ results: data }),
+                        cache: true
+                    },
+                    minimumInputLength: 1
+                };
+            }
+
+            $('#property-select').select2(select2Config('Search properties to assign'));
+            $('#viewing-property').select2(select2Config('Select viewing property'));
+
+            $(document).on('click', '.edit-note-btn', function() {
+                var $li = $(this).closest('li');
+                var noteText = $li.find('.note-text').text();
+                $li.find('.note-text').replaceWith('<input type="text" class="form-control note-edit-input" value="'+noteText+'" style="width:60%">');
+                $(this).hide();
+                $li.find('.save-note-btn').show();
             });
-        }
-    });
-});
-</script>
+
+            $(document).on('click', '.save-note-btn', function() {
+                var $li = $(this).closest('li');
+                var updateUrl = $li.data('update-url');
+                var newText = $li.find('.note-edit-input').val();
+                $.ajax({
+                    url: updateUrl,
+                    type: 'PATCH',
+                    data: { note: newText, _token: csrfToken },
+                    success: function(resp) {
+                        $li.find('.note-edit-input').replaceWith('<span class="note-text">'+resp.note+'</span>');
+                        $li.find('.save-note-btn').hide();
+                        $li.find('.edit-note-btn').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.delete-note-btn', function() {
+                var $li = $(this).closest('li');
+                var deleteUrl = $li.data('delete-url');
+                if(confirm('Delete this note?')) {
+                    $.ajax({
+                        url: deleteUrl,
+                        type: 'DELETE',
+                        data: { _token: csrfToken },
+                        success: function() { $li.remove(); }
+                    });
+                }
+            });
+        });
+    </script>
 @endpush

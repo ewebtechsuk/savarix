@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@endpush
+
 @section('content')
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -350,33 +354,40 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('property-map')) {
-        const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-        L.marker([{{ $property->latitude }}, {{ $property->longitude }}]).addTo(map);
-    }
-    $('#landlord-select').select2({
-        placeholder: 'Search for a landlord...',
-        ajax: {
-            url: '{{ route('contacts.search') }}',
-            dataType: 'json',
-            delay: 250,
-            data: function(params) {
-                return { q: params.term };
-            },
-            processResults: data => ({ results: data }),
-            cache: true
-        },
-        minimumInputLength: 1,
-        width: '100%'
-    });
-});
-</script>
+    @include('contacts._jquery')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ === 'undefined' || !$.fn || !$.fn.select2) {
+                console.error('Select2 initialisation skipped: jQuery or Select2 not available.');
+                return;
+            }
+
+            if (document.getElementById('property-map')) {
+                const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                L.marker([{{ $property->latitude }}, {{ $property->longitude }}]).addTo(map);
+            }
+            $('#landlord-select').select2({
+                placeholder: 'Search for a landlord...',
+                ajax: {
+                    url: '{{ route('contacts.search') }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return { q: params.term };
+                    },
+                    processResults: function (data) {
+                        return { results: data };
+                    },
+                    cache: true,
+                },
+                minimumInputLength: 1,
+                width: '100%',
+            });
+        });
+    </script>
 @endpush
