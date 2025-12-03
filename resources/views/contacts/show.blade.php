@@ -243,7 +243,7 @@
                                         Viewing for <strong>{{ $viewing->property->title ?? 'Property #' . $viewing->property_id }}</strong> on <span>{{ $viewing->date }}</span>
                                         <span>
                                             <a href="{{ route('contacts.editViewing', [$contact, $viewing]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                                            <form action="{{ route('contacts.deleteViewing', [$contact, $viewing]) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route('contacts.viewings.destroy', [$contact, $viewing]) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this viewing?')">Delete</button>
@@ -270,7 +270,7 @@
                                         {{ $comm->communication }}
                                         <span>
                                             <a href="{{ route('contacts.editCommunication', [$contact, $comm]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                                            <form action="{{ route('contacts.deleteCommunication', [$contact, $comm]) }}" method="POST" style="display:inline;">
+                                            <form action="{{ route('contacts.communications.destroy', [$contact, $comm]) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this communication?')">Delete</button>

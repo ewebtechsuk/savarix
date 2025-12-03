@@ -2,7 +2,7 @@
 @section('content')
 <div class="container py-4">
     <h3>Edit Viewing</h3>
-    <form action="{{ route('contacts.updateViewing', [$contact, $viewing]) }}" method="POST">
+    <form action="{{ route('contacts.viewings.update', [$contact, $viewing]) }}" method="POST">
         @csrf
         @method('PUT')
         <div class="mb-3">
