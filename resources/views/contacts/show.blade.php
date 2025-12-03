@@ -75,8 +75,16 @@
                             <p><strong>Phone:</strong> {{ $contact->phone }}</p>
                             <p><strong>Address:</strong> {{ $contact->address }}</p>
                             @php
-                                $groups = collect($contact->groups);
-                                $tags = collect($contact->tags);
+                                $asCollection = fn ($value) => $value instanceof \Illuminate\Support\Collection ? $value : collect($value ?? []);
+
+                                $groups = $asCollection($contact->getRelation('groups'));
+                                $tags = $asCollection($contact->getRelation('tags'));
+                                $properties = $asCollection($contact->getRelation('properties'));
+                                $notes = $asCollection($contact->getRelation('notes'));
+                                $communications = $asCollection($contact->getRelation('communications'));
+                                $viewings = $asCollection($contact->getRelation('viewings'));
+                                $offers = $asCollection($contact->getRelation('offers'));
+                                $tenancies = $asCollection($contact->getRelation('tenancies'));
                             @endphp
                             <p><strong>Groups:</strong>
                                 @if($groups->isNotEmpty())
@@ -107,7 +115,7 @@
                                 </div>
                             </form>
                             <ul class="list-group">
-                                @forelse($contact->notes as $note)
+                                @forelse($notes as $note)
                                     <li class="list-group-item d-flex justify-content-between align-items-center"
                                         data-update-url="{{ route('contacts.notes.inline.update', [$contact, $note]) }}"
                                         data-delete-url="{{ route('contacts.notes.inline.destroy', [$contact, $note]) }}">
@@ -155,9 +163,9 @@
                                     <select id="property-select" name="property_id" class="form-select" style="width:100%" data-placeholder="Search properties"></select>
                                     <button type="submit" class="btn btn-primary mt-2">Assign</button>
                                 </form>
-                                @if($contact->properties->count())
+                                @if($properties->count())
                                     <ul class="list-group">
-                                        @foreach($contact->properties as $property)
+                                        @foreach($properties as $property)
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <div>
                                                     <strong>{{ $property->title ?? 'Property #' . $property->id }}</strong><br>
@@ -176,11 +184,11 @@
                         </div>
                         <div class="tab-pane fade" id="management" role="tabpanel">
                             <h5>Management</h5>
-                            @if($contact->tenancies->isEmpty())
+                            @if($tenancies->isEmpty())
                                 <p class="text-muted">No tenancies linked to this contact.</p>
                             @else
                                 <ul class="list-group">
-                                    @foreach($contact->tenancies as $tenancy)
+                                    @foreach($tenancies as $tenancy)
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <div>
                                                 <div class="fw-semibold">{{ $tenancy->property->title ?? 'Property #'.$tenancy->property_id }}</div>
@@ -194,11 +202,11 @@
                         </div>
                         <div class="tab-pane fade" id="offers" role="tabpanel">
                             <h5>Offers</h5>
-                            @if($contact->offers->isEmpty())
+                            @if($offers->isEmpty())
                                 <p class="text-muted">No offers for this contact.</p>
                             @else
                                 <ul class="list-group">
-                                    @foreach($contact->offers as $offer)
+                                    @foreach($offers as $offer)
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <div>
                                                 <div class="fw-semibold">£{{ number_format($offer->amount, 2) }} — {{ $offer->property->title ?? 'Property #'.$offer->property_id }}</div>
@@ -230,7 +238,7 @@
                                 </div>
                             </form>
                             <ul class="list-group">
-                                @forelse($contact->viewings as $viewing)
+                                @forelse($viewings as $viewing)
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         Viewing for <strong>{{ $viewing->property->title ?? 'Property #' . $viewing->property_id }}</strong> on <span>{{ $viewing->date }}</span>
                                         <span>
@@ -257,7 +265,7 @@
                                 </div>
                             </form>
                             <ul class="list-group">
-                                @forelse($contact->communications as $comm)
+                                @forelse($communications as $comm)
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ $comm->communication }}
                                         <span>
