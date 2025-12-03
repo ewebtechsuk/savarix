@@ -28,7 +28,6 @@ class Contact extends Model
         'phone',
         'address',
         'notes',
-        'company_id',
     ];
 
     public function groups()

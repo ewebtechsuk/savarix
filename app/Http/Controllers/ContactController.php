@@ -140,10 +140,6 @@ class ContactController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        if ($tenant = tenant()) {
-            $validated['company_id'] = $tenant->company_id;
-        }
-
         $contact = Contact::create($validated);
         $contact->groups()->sync($request->input('groups', []));
         $contact->tags()->sync($request->input('tags', []));
@@ -202,10 +198,6 @@ class ContactController extends Controller
             'address' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
-
-        if ($tenant = tenant()) {
-            $validated['company_id'] = $tenant->company_id;
-        }
 
         $contact->update($validated);
         $contact->groups()->sync($request->input('groups', []));
