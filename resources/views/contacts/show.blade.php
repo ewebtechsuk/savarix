@@ -1,4 +1,16 @@
-@extends('layouts.app')
+@extends('layouts.agency')
+
+@php
+    $as = fn($v) => $v instanceof \Illuminate\Support\Collection ? $v : collect($v ?? []);
+    $groups = $as($contact->getRelation('groups'));
+    $tags = $as($contact->getRelation('tags'));
+    $notes = $as($contact->getRelation('notes'));
+    $communications = $as($contact->getRelation('communications'));
+    $viewings = $as($contact->getRelation('viewings'));
+    $offers = $as($contact->getRelation('offers'));
+    $tenancies = $as($contact->getRelation('tenancies'));
+    $properties = $as($contact->getRelation('properties'));
+@endphp
 
 {{-- Ensure jQuery is loaded before Select2 and custom scripts --}}
 @include('contacts._jquery')
@@ -8,12 +20,12 @@
 @endpush
 
 @section('content')
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white fw-bold">Contact Details</div>
-                <div class="card-body">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white fw-bold">Contact Details</div>
+                    <div class="card-body">
                     <ul class="nav nav-tabs mb-3" id="contactTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="main-tab" data-bs-toggle="tab" data-bs-target="#main" type="button" role="tab">Main Details</button>
@@ -74,18 +86,6 @@
                             <p><strong>Email:</strong> {{ $contact->email }}</p>
                             <p><strong>Phone:</strong> {{ $contact->phone }}</p>
                             <p><strong>Address:</strong> {{ $contact->address }}</p>
-                            @php
-                                $asCollection = fn ($value) => $value instanceof \Illuminate\Support\Collection ? $value : collect($value ?? []);
-
-                                $groups = $asCollection($contact->getRelation('groups'));
-                                $tags = $asCollection($contact->getRelation('tags'));
-                                $properties = $asCollection($contact->getRelation('properties'));
-                                $notes = $asCollection($contact->getRelation('notes'));
-                                $communications = $asCollection($contact->getRelation('communications'));
-                                $viewings = $asCollection($contact->getRelation('viewings'));
-                                $offers = $asCollection($contact->getRelation('offers'));
-                                $tenancies = $asCollection($contact->getRelation('tenancies'));
-                            @endphp
                             <p><strong>Groups:</strong>
                                 @if($groups->isNotEmpty())
                                     @foreach($groups as $group)
@@ -242,7 +242,7 @@
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         Viewing for <strong>{{ $viewing->property->title ?? 'Property #' . $viewing->property_id }}</strong> on <span>{{ $viewing->date }}</span>
                                         <span>
-                                            <a href="{{ route('contacts.editViewing', [$contact, $viewing]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                                        <a href="{{ route('contacts.viewings.edit', [$contact, $viewing]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
                                             <form action="{{ route('contacts.viewings.destroy', [$contact, $viewing]) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
@@ -269,7 +269,7 @@
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         {{ $comm->communication }}
                                         <span>
-                                            <a href="{{ route('contacts.editCommunication', [$contact, $comm]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                                            <a href="{{ route('contacts.communications.edit', [$contact, $comm]) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
                                             <form action="{{ route('contacts.communications.destroy', [$contact, $comm]) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
@@ -315,11 +315,11 @@
                         </form>
                         <a href="{{ route('contacts.index') }}" class="btn btn-secondary">Back to List</a>
                     </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 @endsection
 
 @push('scripts')
@@ -340,9 +340,7 @@ $(document).ready(function() {
                 data: function(params) {
                     return { q: params.term };
                 },
-                processResults: function (data) {
-                    return { results: data };
-                },
+                processResults: data => ({ results: data }),
                 cache: true
             },
             minimumInputLength: 1

@@ -373,11 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data: function(params) {
                 return { q: params.term, type: 'landlord' };
             },
-            processResults: function (data) {
-                return {
-                    results: data
-                };
-            },
+            processResults: data => ({ results: data }),
             cache: true
         },
         minimumInputLength: 1
