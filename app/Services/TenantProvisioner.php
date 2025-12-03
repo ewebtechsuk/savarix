@@ -8,6 +8,7 @@ use App\Support\CompanyIdGenerator;
 use App\Support\AgencyRoles;
 use Database\Seeders\RolePermissionConfig;
 use Database\Seeders\TenantPortalUserSeeder;
+use App\Services\TenantRoleSynchronizer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Throwable;
 use Stancl\Tenancy\Database\DatabaseManager;
@@ -23,6 +23,10 @@ use Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException;
 
 class TenantProvisioner
 {
+    public function __construct(private readonly TenantRoleSynchronizer $tenantRoleSynchronizer)
+    {
+    }
+
 
     /**
      * @param array{subdomain: string, data?: array|null, user?: array|null, name?: string|null, company_name?: string|null} $payload
@@ -417,23 +421,7 @@ class TenantProvisioner
      */
     protected function ensureTenantRolesAndPermissions(): void
     {
-        $guard = RolePermissionConfig::guard();
-
-        foreach (RolePermissionConfig::permissions() as $permission) {
-            Permission::query()->firstOrCreate([
-                'name' => $permission,
-                'guard_name' => $guard,
-            ]);
-        }
-
-        foreach (RolePermissionConfig::roles() as $roleName) {
-            $role = Role::query()->firstOrCreate([
-                'name' => $roleName,
-                'guard_name' => $guard,
-            ]);
-
-            $role->syncPermissions(RolePermissionConfig::rolePermissions()[$roleName] ?? []);
-        }
+        $this->tenantRoleSynchronizer->syncInCurrentTenant();
     }
 
     /**

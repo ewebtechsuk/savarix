@@ -4,11 +4,11 @@ namespace App\Console\Commands;
 
 use App\Models\Tenant;
 use App\Support\AgencyRoles;
+use App\Services\TenantRoleSynchronizer;
 use Database\Seeders\RolePermissionConfig;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Throwable;
@@ -18,6 +18,11 @@ class TenantGrantOwnerRole extends Command
     protected $signature = 'tenant:grant-owner {email : Email address of the tenant user} {--tenant= : Tenant ID to run the command against}';
 
     protected $description = 'Assign the tenant owner/admin role to a user inside a specific tenant database.';
+
+    public function __construct(private readonly TenantRoleSynchronizer $tenantRoleSynchronizer)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -113,22 +118,6 @@ class TenantGrantOwnerRole extends Command
 
     protected function ensureRolesAndPermissions(): void
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $guard = RolePermissionConfig::guard();
-
-        foreach (RolePermissionConfig::permissions() as $permission) {
-            Permission::query()->firstOrCreate([
-                'name' => $permission,
-                'guard_name' => $guard,
-            ]);
-        }
-
-        foreach (RolePermissionConfig::roles() as $roleName) {
-            Role::query()->firstOrCreate([
-                'name' => $roleName,
-                'guard_name' => $guard,
-            ]);
-        }
+        $this->tenantRoleSynchronizer->syncInCurrentTenant();
     }
 }
