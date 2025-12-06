@@ -166,10 +166,12 @@ Route::group([
         'tenancy',
         'preventAccessFromCentralDomains',
         'setTenantRouteDefaults',
-        'role:' . AgencyRoles::propertyManagersPipe(),
+        'role:' . AgencyRoles::propertyManagersPipe() . '|agency_admin',
     ],
 ], function () {
     Route::resource('properties', PropertyController::class);
+    Route::delete('/properties/{property}/media/{media}', [PropertyController::class, 'destroyMedia'])
+        ->name('properties.media.destroy');
     Route::get('contacts/search', [ContactController::class, 'search'])->name('contacts.search');
     Route::get('contacts/properties/search', [ContactController::class, 'searchProperties'])->name('contacts.properties.search');
     Route::post('contacts/bulk', [ContactController::class, 'bulk'])->name('contacts.bulk');

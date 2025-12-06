@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Property;
 use App\Models\PropertyFeature;
@@ -9,7 +10,9 @@ use App\Models\Contact;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use App\Models\MarketingEvent;
+use App\Models\PropertyMedia;
 use App\Services\ApplicantMatcher;
+use Illuminate\Http\UploadedFile;
 
 class PropertyController extends Controller
 {
@@ -148,14 +151,7 @@ class PropertyController extends Controller
         if ($request->hasFile('media')) {
             $order = ($property->media()->max('order') ?? 0) + 1;
             foreach ($request->file('media') as $file) {
-                $path = $file->store('property_media', 'public');
-                $media = $property->media()->create([
-                    'media_type' => 'photo',
-                    'media_url' => Storage::disk('public')->url($path),
-                    'file_path' => $path,
-                    'type' => $file->getClientMimeType() ?? 'image/png',
-                    'order' => $order,
-                ]);
+                $media = $this->createPropertyMedia($property, $file, 'photo', $order);
                 $order++;
 
                 if (! $featuredMediaCreated) {
@@ -325,14 +321,7 @@ class PropertyController extends Controller
         if ($request->hasFile('media')) {
             $order = ($property->media()->max('order') ?? 0) + 1;
             foreach ($request->file('media') as $file) {
-                $path = $file->store('property_media', 'public');
-                $media = $property->media()->create([
-                    'media_type' => 'photo',
-                    'media_url' => Storage::disk('public')->url($path),
-                    'file_path' => $path,
-                    'type' => $file->getClientMimeType() ?? 'image/png',
-                    'order' => $order,
-                ]);
+                $media = $this->createPropertyMedia($property, $file, 'photo', $order);
                 $order++;
 
                 if (! $property->media()->where('is_featured', true)->exists()) {
@@ -384,6 +373,31 @@ class PropertyController extends Controller
         return redirect()->route('properties.index')->with('success', 'Property deleted successfully.');
     }
 
+    public function destroyMedia(Property $property, PropertyMedia $media): RedirectResponse
+    {
+        $this->authorize('update', $property);
+
+        if ($media->property_id !== $property->id) {
+            abort(404);
+        }
+
+        if ($media->file_path && Storage::disk('public')->exists($media->file_path)) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        $media->delete();
+
+        $property->media()
+            ->orderBy('order')
+            ->get()
+            ->values()
+            ->each(function (PropertyMedia $item, int $index) {
+                $item->update(['order' => $index + 1]);
+            });
+
+        return back()->with('success', 'Media item removed.');
+    }
+
     /**
      * Assign a landlord to a property.
      */
@@ -429,5 +443,19 @@ class PropertyController extends Controller
         }
 
         return null;
+    }
+
+    private function createPropertyMedia(Property $property, UploadedFile $file, string $mediaType, int $order): PropertyMedia
+    {
+        $path = $file->store('property_media', 'public');
+        $mediaUrl = Storage::disk('public')->url($path);
+
+        return $property->media()->create([
+            'media_type' => $mediaType,
+            'media_url' => $mediaUrl,
+            'file_path' => $path,
+            'type' => $file->getClientMimeType() ?? $file->getMimeType() ?? 'application/octet-stream',
+            'order' => $order,
+        ]);
     }
 }
