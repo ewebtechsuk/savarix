@@ -34,3 +34,11 @@ Thumbs.db
 *.tar.gz
 /dist/
 public/build/
+
+# Ignore vendor assets under public by default, but include Leaflet marker images
+/public/vendor/*
+!/public/vendor/leaflet/
+/public/vendor/leaflet/*
+!/public/vendor/leaflet/images/
+/public/vendor/leaflet/images/*
+!/public/vendor/leaflet/images/*.png
