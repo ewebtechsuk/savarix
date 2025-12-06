@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use App\Models\User;
+use App\Services\TenantProvisioner;
 
 class DashboardTest extends TestCase
 {
@@ -22,12 +22,30 @@ class DashboardTest extends TestCase
 
     public function testAuthenticatedUserCanSeeDashboard(): void
     {
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test-user@example.com',
-        ]);
+        $tenantProvisioner = app(TenantProvisioner::class);
 
-        $response = $this->actingAs($user)->get('/dashboard');
+        $email = 'test-user@example.com';
+
+        $tenant = $tenantProvisioner->provision([
+            'subdomain' => 'aktonz',
+            'name' => 'Aktonz',
+            'user' => [
+                'name' => 'Test User',
+                'email' => $email,
+                'password' => 'password',
+            ],
+        ])->tenant();
+
+        $domain = $tenant->domains()->first()->domain;
+
+        tenancy()->initialize($tenant);
+        $userModel = config('auth.providers.users.model');
+        $user = $userModel::where('email', $email)->firstOrFail();
+        tenancy()->end();
+
+        $this->useTenantDomain($domain);
+
+        $response = $this->actingAs($user)->get('https://' . $domain . '/dashboard');
         $response->assertStatus(200)
             ->assertSee('Dashboard');
 
