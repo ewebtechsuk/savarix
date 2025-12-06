@@ -148,11 +148,12 @@ class PropertyController extends Controller
         if ($request->hasFile('media')) {
             $order = $property->media()->max('order') ?? 0;
             foreach ($request->file('media') as $file) {
-                $order++;
+                $order++; 
                 $path = Storage::disk('public')->putFile('property_media', $file);
                 $media = $property->media()->create([
                     'file_path' => $path,
-                    'type' => $file->getClientMimeType(),
+                    'type' => $file->getClientMimeType() ?? 'image/png',
+                    'media_type' => 'photo',
                     'order' => $order,
                 ]);
 
@@ -323,11 +324,12 @@ class PropertyController extends Controller
         if ($request->hasFile('media')) {
             $order = $property->media()->max('order') ?? 0;
             foreach ($request->file('media') as $file) {
-                $order++;
+                $order++; 
                 $path = Storage::disk('public')->putFile('property_media', $file);
                 $media = $property->media()->create([
                     'file_path' => $path,
-                    'type' => $file->getClientMimeType(),
+                    'type' => $file->getClientMimeType() ?? 'image/png',
+                    'media_type' => 'photo',
                     'order' => $order,
                 ]);
 

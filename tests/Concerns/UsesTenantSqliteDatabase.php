@@ -35,6 +35,8 @@ trait UsesTenantSqliteDatabase
     {
         return Schema::hasTable('contacts')
             && Schema::hasTable('properties')
+            && Schema::hasTable('property_media')
+            && Schema::hasColumn('property_media', 'media_type')
             && Schema::hasTable('tenancies')
             && Schema::hasTable('invoices')
             && Schema::hasTable('payments');
