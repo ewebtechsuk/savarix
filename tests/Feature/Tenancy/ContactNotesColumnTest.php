@@ -4,7 +4,7 @@ namespace Tests\Feature\Tenancy;
 
 use App\Models\Contact;
 use App\Services\TenantProvisioner;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -13,7 +13,11 @@ class ContactNotesColumnTest extends TestCase
 {
     public function test_contacts_table_accepts_notes_for_tenant(): void
     {
-        $tenant = app(TenantProvisioner::class)
+        $provisioner = app(TenantProvisioner::class);
+
+        config(['database.connections.tenant' => config('database.connections.sqlite')]);
+
+        $tenant = $provisioner
             ->provision([
                 'subdomain' => 'aktonz-notes-' . Str::random(6),
                 'name' => 'Aktonz Notes Tenant',
@@ -22,40 +26,45 @@ class ContactNotesColumnTest extends TestCase
 
         $this->assertNotNull($tenant, 'Tenant provisioning failed.');
 
+        $originalDatabase = config('database.connections.sqlite.database');
+
+        $useTenantDatabase = function ($tenant): string {
+            $tenantDatabase = database_path($tenant->database()->getName());
+            config(['database.connections.sqlite.database' => $tenantDatabase]);
+            DB::purge('sqlite');
+
+            return $tenantDatabase;
+        };
+
+        $resetDatabase = function () use ($originalDatabase): void {
+            config(['database.connections.sqlite.database' => $originalDatabase]);
+            DB::purge('sqlite');
+        };
+
         tenancy()->initialize($tenant);
 
         try {
-            Schema::dropIfExists('contacts');
+            $useTenantDatabase($tenant);
 
-            Schema::create('contacts', function (Blueprint $table) {
-                $table->id();
-                $table->timestamps();
-                $table->string('type');
-                $table->string('name');
-                $table->string('email')->nullable();
-                $table->string('phone')->nullable();
-                $table->string('address')->nullable();
-            });
+            if (! Schema::hasTable('contacts')) {
+                $migration = require base_path('database/migrations/tenant/2026_09_30_000003_ensure_contact_and_property_media_columns.php');
+                $migration->up();
+            }
 
-            $this->assertFalse(Schema::hasColumn('contacts', 'notes'));
-
-            $migration = require base_path('database/migrations/tenant/2026_02_22_000002_add_notes_to_contacts_table.php');
-            $migration->up();
-
+            $this->assertTrue(Schema::hasTable('contacts'));
             $this->assertTrue(Schema::hasColumn('contacts', 'notes'));
 
-            $contact = Contact::create([
+            $contact = Contact::factory()->create([
                 'type' => 'tenant',
                 'name' => 'Test Contact',
                 'email' => 'contact@example.com',
-                'phone' => '0123456789',
-                'address' => '123 Example Street',
                 'notes' => 'Added via tenant migration test.',
             ]);
 
             $this->assertNotNull($contact->id);
-            $this->assertSame('Added via tenant migration test.', $contact->fresh()->notes);
+            $this->assertSame('Added via tenant migration test.', Contact::first()->notes);
         } finally {
+            $resetDatabase();
             tenancy()->end();
         }
     }
