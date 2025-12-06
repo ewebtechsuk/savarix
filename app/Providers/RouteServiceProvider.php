@@ -27,8 +27,9 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function map(): void
     {
-        $this->mapApiRoutes();
         $this->mapWebRoutes();
+        $this->mapTenantRoutes();
+        $this->mapApiRoutes();
     }
 
     protected function mapWebRoutes(): void
@@ -38,6 +39,16 @@ class RouteServiceProvider extends ServiceProvider
             'namespace' => $this->namespace,
         ], function () {
             require base_path('routes/web.php');
+        });
+    }
+
+    protected function mapTenantRoutes(): void
+    {
+        Route::group([
+            'middleware' => 'web',
+            'namespace' => $this->namespace,
+        ], function () {
+            require base_path('routes/tenant.php');
         });
     }
 

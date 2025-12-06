@@ -364,6 +364,12 @@
             }
 
             if (document.getElementById('property-map')) {
+                L.Icon.Default.mergeOptions({
+                    iconRetinaUrl: "{{ asset('vendor/leaflet/images/marker-icon-2x.png') }}",
+                    iconUrl: "{{ asset('vendor/leaflet/images/marker-icon.png') }}",
+                    shadowUrl: "{{ asset('vendor/leaflet/images/marker-shadow.png') }}",
+                });
+
                 const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
