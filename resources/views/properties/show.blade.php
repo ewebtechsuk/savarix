@@ -364,12 +364,21 @@
             }
 
             if (document.getElementById('property-map')) {
+                const defaultIcon = L.icon({
+                    iconUrl: "{{ asset('vendor/leaflet/images/marker-icon.png') }}",
+                    iconRetinaUrl: "{{ asset('vendor/leaflet/images/marker-icon-2x.png') }}",
+                    shadowUrl: "{{ asset('vendor/leaflet/images/marker-shadow.png') }}",
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    shadowSize: [41, 41],
+                });
+
                 const map = L.map('property-map').setView([{{ $property->latitude }}, {{ $property->longitude }}], 13);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(map);
-                L.marker([{{ $property->latitude }}, {{ $property->longitude }}]).addTo(map);
+                L.marker([{{ $property->latitude }}, {{ $property->longitude }}], { icon: defaultIcon }).addTo(map);
             }
             $('#landlord-select').select2({
                 placeholder: 'Search for a landlord...',
