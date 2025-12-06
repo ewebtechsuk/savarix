@@ -5,12 +5,17 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class LogRequestHost
 {
     public function handle(Request $request, Closure $next)
     {
+        if ($this->shouldSkip($request)) {
+            return $next($request);
+        }
+
         $response = $next($request);
 
         $route = $request->route();
@@ -18,6 +23,7 @@ class LogRequestHost
         $hasTenancyHelper = function_exists('tenancy');
         $tenancyInitialized = $hasTenancyHelper && tenancy()->initialized;
         $tenantId = $tenancyInitialized ? optional(tenancy()->tenant)->getTenantKey() : null;
+        $dbConnection = DB::connection();
 
         $context = [
             'host' => $request->getHost(),
@@ -27,6 +33,8 @@ class LogRequestHost
             'tenancy_helper_available' => $hasTenancyHelper,
             'tenancy_initialized' => $tenancyInitialized,
             'tenant_id' => $tenantId,
+            'db_connection' => $dbConnection->getName(),
+            'db_database' => $dbConnection->getDatabaseName(),
         ];
 
         $includeConfig = $this->isDashboardPath($request) || ! $tenancyInitialized;
@@ -61,6 +69,17 @@ class LogRequestHost
         Log::info('Request host debug', $context);
 
         return $response;
+    }
+
+    private function shouldSkip(Request $request): bool
+    {
+        $path = $request->getPathInfo();
+
+        if ($path === '/favicon.ico') {
+            return true;
+        }
+
+        return str_contains($path, 'marker-icon') || str_contains($path, 'marker-shadow');
     }
 
     private function isDashboardPath(Request $request): bool

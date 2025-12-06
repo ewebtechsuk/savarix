@@ -122,20 +122,6 @@ Route::prefix($secretAdminPath)->group(function () {
     });
 });
 
-// Single dashboard route for route('dashboard')
-Route::group(['middleware' => ['auth', 'verified']], function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
-});
-
-
-// Central app routes (localhost:8888/)
-Route::group(['middleware' => 'auth'], function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
 // Central dashboard routes (should NOT use tenancy middleware)
 Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], function () {
     // Remove duplicate dashboard route
@@ -164,12 +150,20 @@ Route::group(['middleware' => ['auth', 'verified', 'role:Admin|Landlord']], func
 Route::group([
     'middleware' => [
         'auth:web,tenant',
+        'verified',
         'tenancy',
         'preventAccessFromCentralDomains',
         'setTenantRouteDefaults',
         'role:' . AgencyRoles::propertyManagersPipe() . '|agency_admin',
     ],
 ], function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
     Route::resource('properties', PropertyController::class);
     Route::delete('/properties/{property}/media/{media}', [PropertyMediaController::class, 'destroy'])
         ->name('properties.media.destroy');
