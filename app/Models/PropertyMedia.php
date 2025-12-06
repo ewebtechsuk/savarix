@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class PropertyMedia extends Model
 {
-    protected $fillable = ['property_id', 'file_path', 'type', 'order', 'is_featured'];
+    protected $fillable = ['property_id', 'file_path', 'type', 'media_type', 'order', 'is_featured'];
+
+    protected $attributes = [
+        'media_type' => 'photo',
+    ];
 
     protected $casts = [
         'is_featured' => 'boolean',

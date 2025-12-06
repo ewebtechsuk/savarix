@@ -140,6 +140,7 @@ return new class extends Migration
                 $table->foreignId('property_id')->constrained()->onDelete('cascade');
                 $table->string('file_path');
                 $table->string('type');
+                $table->string('media_type')->default('photo');
                 $table->unsignedInteger('order')->default(0);
                 $table->timestamps();
             });
@@ -153,6 +154,9 @@ return new class extends Migration
                 }
                 if (! Schema::hasColumn('property_media', 'type')) {
                     $table->string('type');
+                }
+                if (! Schema::hasColumn('property_media', 'media_type')) {
+                    $table->string('media_type')->default('photo');
                 }
                 if (! Schema::hasColumn('property_media', 'order')) {
                     $table->unsignedInteger('order')->default(0);

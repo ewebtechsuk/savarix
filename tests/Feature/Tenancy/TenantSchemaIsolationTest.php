@@ -52,6 +52,7 @@ class TenantSchemaIsolationTest extends TestCase
             $this->assertTrue(Schema::hasTable('tenancies'));
             $this->assertTrue(Schema::hasTable('invoices'));
             $this->assertTrue(Schema::hasTable('payments'));
+            $this->assertTrue(Schema::hasColumn('property_media', 'media_type'));
 
             $firstContact = Contact::factory()->create([
                 'name' => 'Contact for first tenancy',
