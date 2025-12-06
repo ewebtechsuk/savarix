@@ -57,6 +57,83 @@ return new class extends Migration
             });
         }
 
+        if (! Schema::hasTable('properties')) {
+            Schema::create('properties', function (Blueprint $table) {
+                $table->id();
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->decimal('price', 12, 2)->nullable();
+                $table->string('address')->nullable();
+                $table->string('city')->nullable();
+                $table->string('postcode')->nullable();
+                $table->integer('bedrooms')->nullable();
+                $table->integer('bathrooms')->nullable();
+                $table->string('type')->nullable();
+                $table->string('status')->default('available');
+                $table->foreignId('vendor_id')->nullable()->constrained('contacts');
+                $table->foreignId('landlord_id')->nullable()->constrained('contacts');
+                $table->foreignId('applicant_id')->nullable()->constrained('contacts');
+                $table->text('notes')->nullable();
+                $table->json('activity_log')->nullable();
+                $table->string('document')->nullable();
+                $table->timestamps();
+            });
+        } else {
+            Schema::table('properties', function (Blueprint $table) {
+                if (! Schema::hasColumn('properties', 'title')) {
+                    $table->string('title');
+                }
+                if (! Schema::hasColumn('properties', 'description')) {
+                    $table->text('description')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'price')) {
+                    $table->decimal('price', 12, 2)->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'address')) {
+                    $table->string('address')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'city')) {
+                    $table->string('city')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'postcode')) {
+                    $table->string('postcode')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'bedrooms')) {
+                    $table->integer('bedrooms')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'bathrooms')) {
+                    $table->integer('bathrooms')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'type')) {
+                    $table->string('type')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'status')) {
+                    $table->string('status')->default('available');
+                }
+                if (! Schema::hasColumn('properties', 'vendor_id')) {
+                    $table->foreignId('vendor_id')->nullable()->constrained('contacts');
+                }
+                if (! Schema::hasColumn('properties', 'landlord_id')) {
+                    $table->foreignId('landlord_id')->nullable()->constrained('contacts');
+                }
+                if (! Schema::hasColumn('properties', 'applicant_id')) {
+                    $table->foreignId('applicant_id')->nullable()->constrained('contacts');
+                }
+                if (! Schema::hasColumn('properties', 'notes')) {
+                    $table->text('notes')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'activity_log')) {
+                    $table->json('activity_log')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'document')) {
+                    $table->string('document')->nullable();
+                }
+                if (! Schema::hasColumn('properties', 'created_at')) {
+                    $table->timestamps();
+                }
+            });
+        }
+
         if (! Schema::hasTable('property_media')) {
             Schema::create('property_media', function (Blueprint $table) {
                 $table->id();
