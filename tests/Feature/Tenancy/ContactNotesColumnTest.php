@@ -4,13 +4,15 @@ namespace Tests\Feature\Tenancy;
 
 use App\Models\Contact;
 use App\Services\TenantProvisioner;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\UsesTenantSqliteDatabase;
 use Tests\TestCase;
 
 class ContactNotesColumnTest extends TestCase
 {
+    use UsesTenantSqliteDatabase;
+
     public function test_contacts_table_accepts_notes_for_tenant(): void
     {
         $provisioner = app(TenantProvisioner::class);
@@ -28,28 +30,11 @@ class ContactNotesColumnTest extends TestCase
 
         $originalDatabase = config('database.connections.sqlite.database');
 
-        $useTenantDatabase = function ($tenant): string {
-            $tenantDatabase = database_path($tenant->database()->getName());
-            config(['database.connections.sqlite.database' => $tenantDatabase]);
-            DB::purge('sqlite');
-
-            return $tenantDatabase;
-        };
-
-        $resetDatabase = function () use ($originalDatabase): void {
-            config(['database.connections.sqlite.database' => $originalDatabase]);
-            DB::purge('sqlite');
-        };
-
         tenancy()->initialize($tenant);
 
         try {
-            $useTenantDatabase($tenant);
-
-            if (! Schema::hasTable('contacts')) {
-                $migration = require base_path('database/migrations/tenant/2026_09_30_000003_ensure_contact_and_property_media_columns.php');
-                $migration->up();
-            }
+            $this->useTenantDatabase($tenant);
+            $this->ensureTenantSchema();
 
             $this->assertTrue(Schema::hasTable('contacts'));
             $this->assertTrue(Schema::hasColumn('contacts', 'notes'));
@@ -64,7 +49,7 @@ class ContactNotesColumnTest extends TestCase
             $this->assertNotNull($contact->id);
             $this->assertSame('Added via tenant migration test.', Contact::first()->notes);
         } finally {
-            $resetDatabase();
+            $this->resetTenantDatabase($originalDatabase);
             tenancy()->end();
         }
     }

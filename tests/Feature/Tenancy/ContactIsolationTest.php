@@ -4,13 +4,15 @@ namespace Tests\Feature\Tenancy;
 
 use App\Models\Contact;
 use App\Services\TenantProvisioner;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\UsesTenantSqliteDatabase;
 use Tests\TestCase;
 
 class ContactIsolationTest extends TestCase
 {
+    use UsesTenantSqliteDatabase;
+
     public function test_contacts_are_isolated_by_tenant_database(): void
     {
         $provisioner = app(TenantProvisioner::class);
@@ -36,28 +38,11 @@ class ContactIsolationTest extends TestCase
 
         $originalDatabase = config('database.connections.sqlite.database');
 
-        $useTenantDatabase = function ($tenant): string {
-            $tenantDatabase = database_path($tenant->database()->getName());
-            config(['database.connections.sqlite.database' => $tenantDatabase]);
-            DB::purge('sqlite');
-
-            return $tenantDatabase;
-        };
-
-        $resetDatabase = function () use ($originalDatabase): void {
-            config(['database.connections.sqlite.database' => $originalDatabase]);
-            DB::purge('sqlite');
-        };
-
         tenancy()->initialize($firstTenant);
 
         try {
-            $firstDatabaseName = $useTenantDatabase($firstTenant);
-
-            if (! Schema::hasTable('contacts')) {
-                $migration = require base_path('database/migrations/tenant/2026_09_30_000003_ensure_contact_and_property_media_columns.php');
-                $migration->up();
-            }
+            $firstDatabaseName = $this->useTenantDatabase($firstTenant);
+            $this->ensureTenantSchema();
 
             Contact::factory()->create([
                 'name' => 'Contact for first tenant',
@@ -66,19 +51,15 @@ class ContactIsolationTest extends TestCase
 
             $this->assertSame(['Contact for first tenant'], Contact::pluck('name')->all());
         } finally {
-            $resetDatabase();
+            $this->resetTenantDatabase($originalDatabase);
             tenancy()->end();
         }
 
         tenancy()->initialize($secondTenant);
 
         try {
-            $secondDatabaseName = $useTenantDatabase($secondTenant);
-
-            if (! Schema::hasTable('contacts')) {
-                $migration = require base_path('database/migrations/tenant/2026_09_30_000003_ensure_contact_and_property_media_columns.php');
-                $migration->up();
-            }
+            $secondDatabaseName = $this->useTenantDatabase($secondTenant);
+            $this->ensureTenantSchema();
 
             Contact::factory()->create([
                 'name' => 'Contact for second tenant',
@@ -87,7 +68,7 @@ class ContactIsolationTest extends TestCase
 
             $this->assertSame(['Contact for second tenant'], Contact::pluck('name')->all());
         } finally {
-            $resetDatabase();
+            $this->resetTenantDatabase($originalDatabase);
             tenancy()->end();
         }
 
@@ -96,10 +77,10 @@ class ContactIsolationTest extends TestCase
         tenancy()->initialize($firstTenant);
 
         try {
-            $this->assertSame($firstDatabaseName, $useTenantDatabase($firstTenant));
+            $this->assertSame($firstDatabaseName, $this->useTenantDatabase($firstTenant));
             $this->assertSame(['Contact for first tenant'], Contact::pluck('name')->all());
         } finally {
-            $resetDatabase();
+            $this->resetTenantDatabase($originalDatabase);
             tenancy()->end();
         }
     }

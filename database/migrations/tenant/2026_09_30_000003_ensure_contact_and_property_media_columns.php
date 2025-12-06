@@ -162,6 +162,127 @@ return new class extends Migration
                 }
             });
         }
+
+        if (! Schema::hasTable('tenancies')) {
+            Schema::create('tenancies', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('property_id')->constrained('properties');
+                $table->foreignId('contact_id')->constrained('contacts');
+                $table->date('start_date');
+                $table->date('end_date')->nullable();
+                $table->decimal('rent', 12, 2);
+                $table->string('status');
+                $table->text('notes')->nullable();
+                $table->timestamps();
+            });
+        } else {
+            Schema::table('tenancies', function (Blueprint $table) {
+                if (! Schema::hasColumn('tenancies', 'property_id')) {
+                    $table->foreignId('property_id')->constrained('properties');
+                }
+                if (! Schema::hasColumn('tenancies', 'contact_id')) {
+                    $table->foreignId('contact_id')->constrained('contacts');
+                }
+                if (! Schema::hasColumn('tenancies', 'start_date')) {
+                    $table->date('start_date');
+                }
+                if (! Schema::hasColumn('tenancies', 'end_date')) {
+                    $table->date('end_date')->nullable();
+                }
+                if (! Schema::hasColumn('tenancies', 'rent')) {
+                    $table->decimal('rent', 12, 2);
+                }
+                if (! Schema::hasColumn('tenancies', 'status')) {
+                    $table->string('status');
+                }
+                if (! Schema::hasColumn('tenancies', 'notes')) {
+                    $table->text('notes')->nullable();
+                }
+                if (! Schema::hasColumn('tenancies', 'created_at')) {
+                    $table->timestamps();
+                }
+            });
+        }
+
+        if (! Schema::hasTable('invoices')) {
+            Schema::create('invoices', function (Blueprint $table) {
+                $table->id();
+                $table->timestamps();
+                $table->string('number')->unique();
+                $table->date('date');
+                $table->unsignedBigInteger('contact_id')->nullable();
+                $table->unsignedBigInteger('property_id')->nullable();
+                $table->unsignedBigInteger('tenancy_id')->nullable();
+                $table->foreign('tenancy_id')->references('id')->on('tenancies')->onDelete('cascade');
+                $table->decimal('amount', 12, 2);
+                $table->string('status')->default('unpaid');
+                $table->date('due_date')->nullable();
+                $table->text('notes')->nullable();
+            });
+        } else {
+            Schema::table('invoices', function (Blueprint $table) {
+                if (! Schema::hasColumn('invoices', 'number')) {
+                    $table->string('number')->unique();
+                }
+                if (! Schema::hasColumn('invoices', 'date')) {
+                    $table->date('date');
+                }
+                if (! Schema::hasColumn('invoices', 'contact_id')) {
+                    $table->unsignedBigInteger('contact_id')->nullable();
+                }
+                if (! Schema::hasColumn('invoices', 'property_id')) {
+                    $table->unsignedBigInteger('property_id')->nullable();
+                }
+                if (! Schema::hasColumn('invoices', 'tenancy_id')) {
+                    $table->unsignedBigInteger('tenancy_id')->nullable();
+                    $table->foreign('tenancy_id')->references('id')->on('tenancies')->onDelete('cascade');
+                }
+                if (! Schema::hasColumn('invoices', 'amount')) {
+                    $table->decimal('amount', 12, 2);
+                }
+                if (! Schema::hasColumn('invoices', 'status')) {
+                    $table->string('status')->default('unpaid');
+                }
+                if (! Schema::hasColumn('invoices', 'due_date')) {
+                    $table->date('due_date')->nullable();
+                }
+                if (! Schema::hasColumn('invoices', 'notes')) {
+                    $table->text('notes')->nullable();
+                }
+                if (! Schema::hasColumn('invoices', 'created_at')) {
+                    $table->timestamps();
+                }
+            });
+        }
+
+        if (! Schema::hasTable('payments')) {
+            Schema::create('payments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenancy_id')->constrained()->onDelete('cascade');
+                $table->decimal('amount', 12, 2);
+                $table->string('status')->default('pending');
+                $table->string('stripe_reference')->nullable();
+                $table->timestamps();
+            });
+        } else {
+            Schema::table('payments', function (Blueprint $table) {
+                if (! Schema::hasColumn('payments', 'tenancy_id')) {
+                    $table->foreignId('tenancy_id')->constrained()->onDelete('cascade');
+                }
+                if (! Schema::hasColumn('payments', 'amount')) {
+                    $table->decimal('amount', 12, 2);
+                }
+                if (! Schema::hasColumn('payments', 'status')) {
+                    $table->string('status')->default('pending');
+                }
+                if (! Schema::hasColumn('payments', 'stripe_reference')) {
+                    $table->string('stripe_reference')->nullable();
+                }
+                if (! Schema::hasColumn('payments', 'created_at')) {
+                    $table->timestamps();
+                }
+            });
+        }
     }
 
     public function down(): void
